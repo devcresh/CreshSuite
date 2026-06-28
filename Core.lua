@@ -4272,6 +4272,7 @@ function CC:InitializeDatabase()
     end
 
     if previousVersion < 76 then
+        -- v76 removes non-table playerCache entries and trims any cache over the 500-entry cap, evicting the oldest-seen records first.
         local pc = CreshChatDB.playerCache
         if type(pc) == "table" then
             local pcEntries = {}
