@@ -1,10 +1,9 @@
 ## Interface: 20505
 ## Title: CreshChat
 ## Notes: Compact TBC Anniversary chat, games, progression, themes, voice calls and collectible media.
-## Author: Casey Campbell / OpenAI
+## Author: creshor
 ## Version: 0.2
 ## SavedVariables: CreshChatDB
-## IconTexture: Interface\ChatFrame\UI-ChatIcon-Chat-Up
 
 Core.lua
 SoundLibrary.lua
