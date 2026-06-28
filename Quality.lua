@@ -657,7 +657,7 @@ local originalShowHelp = CC.ShowHelp
 function CC:ShowHelp()
     originalShowHelp(self)
     self:Print("/cc health - show event, refresh and cache diagnostics")
-    self:Print("/cc chatcheck - repair chat capture and refresh account friends")
+    self:Print("/cc chatcheck - repair chat capture, refresh friends and show filter status")
     self:Print("/cc optimise - validate saved settings and enforce safe limits")
     self:Print("/cc profile balanced|minimal|messenger|popout|performance")
 end
