@@ -2559,9 +2559,11 @@ function CC:DispatchChatEvent(source, event, ...)
             -- Never leave the player with no visible chat. After repeated processing
             -- failures, reveal Blizzard chat as a safety fallback while diagnostics
             -- remain available through /cc chatcheck.
+            local wasReady = self.state.chatCaptureReady ~= false
             self.state.chatCaptureReady = false
             if self.db and self.db.hideBlizzard and self.ApplyBlizzardChatVisibility then
                 pcall(self.ApplyBlizzardChatVisibility, self)
+                if wasReady then CC:Print("Chat capture was disabled after repeated errors. Blizzard chat has been restored. Run /cc chatcheck to attempt repair.") end
             end
         end
         return nil
