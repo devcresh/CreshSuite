@@ -231,6 +231,12 @@ end
 function Voice:RequestCall(target)
     target = routeName(target)
     if target == "" then return false end
+    if not self:CanUseNative() then
+        if CC.Print then
+            CC:Print("Voice calls require Blizzard native voice chat, which is not available on this client.")
+        end
+        return false
+    end
     if self.active and namesEquivalent(self.active.target, target) then
         self:EndCall()
         return true
@@ -322,7 +328,7 @@ end
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("PLAYER_LOGIN")
 eventFrame:RegisterEvent("CHAT_MSG_ADDON")
-eventFrame:RegisterEvent("VOICE_CHAT_CHANNEL_JOINED")
+pcall(function() eventFrame:RegisterEvent("VOICE_CHAT_CHANNEL_JOINED") end)
 eventFrame:SetScript("OnEvent", function(_, event, ...)
     if event == "PLAYER_LOGIN" then
         Voice:Register()

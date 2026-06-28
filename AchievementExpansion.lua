@@ -551,7 +551,8 @@ end
 function A:CacheQuestLog()
     local e = expansionSave(); if not e or type(_G.GetNumQuestLogEntries) ~= "function" or type(_G.GetQuestLogTitle) ~= "function" then return end
     local zone = trim((type(_G.GetRealZoneText) == "function" and _G.GetRealZoneText()) or (type(_G.GetZoneText) == "function" and _G.GetZoneText()) or "")
-    for index = 1, tonumber(safeCall(_G.GetNumQuestLogEntries)) or 0 do
+    local numEntries = safeCall(_G.GetNumQuestLogEntries)
+    for index = 1, tonumber(numEntries) or 0 do
         local title, _, _, isHeader, _, _, frequency, questID = safeCall(_G.GetQuestLogTitle, index)
         if not isHeader and questID then
             e.questCache[tostring(questID)] = { title = tostring(title or "Quest"), zone = zone, daily = tonumber(frequency) == (tonumber(_G.LE_QUEST_FREQUENCY_DAILY) or 1) }

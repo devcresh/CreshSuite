@@ -8,6 +8,8 @@ local Developer = {
         "CardDeckLibrary", "CardDecks", "UI", "ChessAssets", "DungeonAssets",
         "Tetris", "Games", "SoloGames", "BattlePass", "GameProgression", "GameAudio",
         "Voice", "Quality", "Settings", "Developer",
+        "Achievements", "AchievementExpansion", "ClassAchievements",
+        "DungeonContent", "DungeonDwellersPass",
     },
 }
 CC.Developer = Developer

@@ -5,7 +5,7 @@ _G.CreshChat = CC
 CC.name = ADDON_NAME or "CreshChat"
 CC.BUILD = CC.BUILD or {
     version = "0.2",
-    schema = 75,
+    schema = 76,
     interface = 20505,
     stage = "Alpha",
 }
@@ -1202,6 +1202,30 @@ function CC:PlayerCacheKey(name)
     return short .. ((realm and realm ~= "") and ("-" .. realm) or "")
 end
 
+local MAX_PLAYER_CACHE = 500
+
+local function prunePlayerCache(cache)
+    local count = 0
+    for _ in pairs(cache) do count = count + 1 end
+    if count <= MAX_PLAYER_CACHE then return end
+    local entries = {}
+    for k, v in pairs(cache) do
+        entries[#entries + 1] = { key = k, lastSeen = type(v) == "table" and (tonumber(v.lastSeen) or 0) or 0 }
+    end
+    table.sort(entries, function(a, b)
+        if a.lastSeen ~= b.lastSeen then return a.lastSeen < b.lastSeen end
+        return a.key < b.key
+    end)
+    local target = math.floor(MAX_PLAYER_CACHE * 0.9)
+    local removeCount = count - target
+    for i = 1, removeCount do
+        local k = entries[i].key
+        cache[k] = nil
+        local shortK = string.match(k, "^([^-]+)-")
+        if shortK then cache[shortK] = nil end
+    end
+end
+
 function CC:CachePlayerInfo(name, guid)
     if not self.db then
         return nil
@@ -1238,6 +1262,7 @@ function CC:CachePlayerInfo(name, guid)
     if shortKey and shortKey ~= key and not self.db.playerCache[shortKey] then
         self.db.playerCache[shortKey] = cached
     end
+    prunePlayerCache(self.db.playerCache)
     return cached
 end
 
@@ -1550,7 +1575,7 @@ function CC:ShouldAlertGuild(text)
     return true
 end
 
-local function escapeLuaPattern(value)
+local function escapeLuaPatternWord(value)
     return (tostring(value or ""):gsub("([^%w])", "%%%1"))
 end
 
@@ -1565,7 +1590,7 @@ function CC:MessageMentionsPlayer(text)
         candidate = string.lower(tostring(candidate or ""))
         candidate = string.match(candidate, "^([^%-]+)") or candidate
         if candidate ~= "" then
-            local pattern = "%f[%w]" .. escapeLuaPattern(candidate) .. "%f[%W]"
+            local pattern = "%f[%w]" .. escapeLuaPatternWord(candidate) .. "%f[%W]"
             if string.find(haystack, pattern) then return true end
         end
     end
@@ -3816,6 +3841,43 @@ function CC:InitializeDatabase()
         local allowedDuration = { [5]=true, [10]=true, [15]=true, [30]=true, [45]=true, [60]=true }
         if not allowedDuration[tetris.multiplayerDuration] then tetris.multiplayerDuration = 10 end
     end
+    if previousVersion < 53 then
+        -- v53 replaces the old five-room random boss loop with fixed ten-level
+        -- milestone guardians, unique boss mechanics, boss crates, class-armour
+        -- drops, first-kill rewards and account-safe pity counters.
+        CreshChatDB.soloGames = CreshChatDB.soloGames or deepCopy(defaults.soloGames)
+        CreshChatDB.soloGames.dungeon = CreshChatDB.soloGames.dungeon or deepCopy(defaults.soloGames.dungeon)
+        local dungeon = CreshChatDB.soloGames.dungeon
+        dungeon.bossKillsByType = type(dungeon.bossKillsByType) == "table" and dungeon.bossKillsByType or {}
+        dungeon.firstBossKills = type(dungeon.firstBossKills) == "table" and dungeon.firstBossKills or {}
+        dungeon.unlockedArmour = type(dungeon.unlockedArmour) == "table" and dungeon.unlockedArmour or {}
+        dungeon.equippedArmour = type(dungeon.equippedArmour) == "table" and dungeon.equippedArmour or {}
+        dungeon.crateInventory = type(dungeon.crateInventory) == "table" and dungeon.crateInventory or {}
+        dungeon.crateHistory = type(dungeon.crateHistory) == "table" and dungeon.crateHistory or {}
+        dungeon.permanentDamage = math.max(0, tonumber(dungeon.permanentDamage) or 0)
+        dungeon.armourPity = math.max(0, tonumber(dungeon.armourPity) or 0)
+        dungeon.voidCratePity = math.max(0, tonumber(dungeon.voidCratePity) or 0)
+        dungeon.armourShards = math.max(0, tonumber(dungeon.armourShards) or 0)
+        dungeon.portraitTokens = math.max(0, tonumber(dungeon.portraitTokens) or 0)
+        dungeon.fullBodyTokens = math.max(0, tonumber(dungeon.fullBodyTokens) or 0)
+    end
+    if previousVersion < 54 then
+        -- v54 activates gameplay statistics for equipped Dungeon armour and
+        -- preserves each class's selected loadout. No ownership data is reset.
+        CreshChatDB.soloGames = CreshChatDB.soloGames or deepCopy(defaults.soloGames)
+        CreshChatDB.soloGames.dungeon = CreshChatDB.soloGames.dungeon or deepCopy(defaults.soloGames.dungeon)
+        local dungeon = CreshChatDB.soloGames.dungeon
+        dungeon.unlockedArmour = type(dungeon.unlockedArmour) == "table" and dungeon.unlockedArmour or {}
+        dungeon.equippedArmour = type(dungeon.equippedArmour) == "table" and dungeon.equippedArmour or {}
+    end
+    if previousVersion < 55 then
+        -- v55 adds persistent unopened Dungeon chest drops. A queued chest is
+        -- restored after reload so first-kill and milestone rewards cannot be lost.
+        CreshChatDB.soloGames = CreshChatDB.soloGames or deepCopy(defaults.soloGames)
+        CreshChatDB.soloGames.dungeon = CreshChatDB.soloGames.dungeon or deepCopy(defaults.soloGames.dungeon)
+        local dungeon = CreshChatDB.soloGames.dungeon
+        dungeon.pendingCrates = type(dungeon.pendingCrates) == "table" and dungeon.pendingCrates or {}
+    end
     if previousVersion < 56 then
         -- v56 separates multiplayer Tetris into Race 10, timed Endless and
         -- Endless Attack, adds selectable 5–60 minute timers and expands the
@@ -3872,43 +3934,6 @@ function CC:InitializeDatabase()
                 profile.version = 57
             end
         end
-    end
-    if previousVersion < 53 then
-        -- v53 replaces the old five-room random boss loop with fixed ten-level
-        -- milestone guardians, unique boss mechanics, boss crates, class-armour
-        -- drops, first-kill rewards and account-safe pity counters.
-        CreshChatDB.soloGames = CreshChatDB.soloGames or deepCopy(defaults.soloGames)
-        CreshChatDB.soloGames.dungeon = CreshChatDB.soloGames.dungeon or deepCopy(defaults.soloGames.dungeon)
-        local dungeon = CreshChatDB.soloGames.dungeon
-        dungeon.bossKillsByType = type(dungeon.bossKillsByType) == "table" and dungeon.bossKillsByType or {}
-        dungeon.firstBossKills = type(dungeon.firstBossKills) == "table" and dungeon.firstBossKills or {}
-        dungeon.unlockedArmour = type(dungeon.unlockedArmour) == "table" and dungeon.unlockedArmour or {}
-        dungeon.equippedArmour = type(dungeon.equippedArmour) == "table" and dungeon.equippedArmour or {}
-        dungeon.crateInventory = type(dungeon.crateInventory) == "table" and dungeon.crateInventory or {}
-        dungeon.crateHistory = type(dungeon.crateHistory) == "table" and dungeon.crateHistory or {}
-        dungeon.permanentDamage = math.max(0, tonumber(dungeon.permanentDamage) or 0)
-        dungeon.armourPity = math.max(0, tonumber(dungeon.armourPity) or 0)
-        dungeon.voidCratePity = math.max(0, tonumber(dungeon.voidCratePity) or 0)
-        dungeon.armourShards = math.max(0, tonumber(dungeon.armourShards) or 0)
-        dungeon.portraitTokens = math.max(0, tonumber(dungeon.portraitTokens) or 0)
-        dungeon.fullBodyTokens = math.max(0, tonumber(dungeon.fullBodyTokens) or 0)
-    end
-    if previousVersion < 54 then
-        -- v54 activates gameplay statistics for equipped Dungeon armour and
-        -- preserves each class's selected loadout. No ownership data is reset.
-        CreshChatDB.soloGames = CreshChatDB.soloGames or deepCopy(defaults.soloGames)
-        CreshChatDB.soloGames.dungeon = CreshChatDB.soloGames.dungeon or deepCopy(defaults.soloGames.dungeon)
-        local dungeon = CreshChatDB.soloGames.dungeon
-        dungeon.unlockedArmour = type(dungeon.unlockedArmour) == "table" and dungeon.unlockedArmour or {}
-        dungeon.equippedArmour = type(dungeon.equippedArmour) == "table" and dungeon.equippedArmour or {}
-    end
-    if previousVersion < 55 then
-        -- v55 adds persistent unopened Dungeon chest drops. A queued chest is
-        -- restored after reload so first-kill and milestone rewards cannot be lost.
-        CreshChatDB.soloGames = CreshChatDB.soloGames or deepCopy(defaults.soloGames)
-        CreshChatDB.soloGames.dungeon = CreshChatDB.soloGames.dungeon or deepCopy(defaults.soloGames.dungeon)
-        local dungeon = CreshChatDB.soloGames.dungeon
-        dungeon.pendingCrates = type(dungeon.pendingCrates) == "table" and dungeon.pendingCrates or {}
     end
     if previousVersion < 58 then
         -- v58 replaces the separate priority/secondary card lanes with one
@@ -4242,6 +4267,33 @@ function CC:InitializeDatabase()
                 if profileUI.showBuildBadge == nil then profileUI.showBuildBadge = false end
                 if profileUI.rosterCollapsed == nil then profileUI.rosterCollapsed = false end
                 profile.version = 75
+            end
+        end
+    end
+
+    if previousVersion < 76 then
+        local pc = CreshChatDB.playerCache
+        if type(pc) == "table" then
+            local pcEntries = {}
+            for k, v in pairs(pc) do
+                if type(v) == "table" then
+                    pcEntries[#pcEntries + 1] = { key = k, lastSeen = tonumber(v.lastSeen) or 0 }
+                else
+                    pc[k] = nil
+                end
+            end
+            if #pcEntries > MAX_PLAYER_CACHE then
+                table.sort(pcEntries, function(a, b)
+                    if a.lastSeen ~= b.lastSeen then return a.lastSeen < b.lastSeen end
+                    return a.key < b.key
+                end)
+                local target = math.floor(MAX_PLAYER_CACHE * 0.9)
+                for i = 1, #pcEntries - target do
+                    local k = pcEntries[i].key
+                    pc[k] = nil
+                    local shortK = string.match(k, "^([^-]+)-")
+                    if shortK then pc[shortK] = nil end
+                end
             end
         end
     end
