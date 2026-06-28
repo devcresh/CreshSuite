@@ -633,6 +633,12 @@ function CC:HandleSlashCommand(input)
         Quality:PrintHealth()
         if CC.state.lastChatError then CC:Print("Last chat error: " .. tostring(CC.state.lastChatErrorEvent or "unknown") .. " · " .. tostring(CC.state.lastChatError)) end
         if CC.state.lastChatUIError then CC:Print("Last chat UI error: " .. tostring(CC.state.lastChatUIError)) end
+        if CC.state.chatFilterUnavailable then
+            CC:Print("System message filter: INACTIVE (ChatFrame_AddMessageEventFilter not available on this client)")
+            CC:Print("suppressOfflineWhisperErrors cannot hide offline whisper errors in Blizzard chat")
+        else
+            CC:Print("System message filter: " .. (CC.state.systemMessageFilterRegistered and "active" or "not registered"))
+        end
         CC:Print("Chat events, filters, storage and account friends were refreshed.")
         return
     elseif command == "optimise" or command == "optimize" then
