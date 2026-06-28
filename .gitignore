@@ -1,0 +1,20 @@
+﻿# Windows
+Thumbs.db
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.old
+*.log
+
+# Release packages
+*.zip
+
+# Local AI configuration
+CLAUDE.local.md
+.claude/settings.local.json
+
+# Miscellaneous
+.DS_Store

@@ -1,0 +1,13 @@
+﻿{
+    "files.eol": "\n",
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "editor.formatOnSave": false,
+    "Lua.runtime.version": "Lua 5.1",
+    "Lua.workspace.checkThirdParty": false,
+    "Lua.telemetry.enable": false,
+    "search.exclude": {
+        "**/.git": true,
+        "**/*.zip": true
+    }
+}
