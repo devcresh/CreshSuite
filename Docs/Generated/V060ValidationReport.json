@@ -1,0 +1,111 @@
+{
+  "build": "0.3.60-dungeon-dice-tetris-expanded",
+  "schema": 56,
+  "passed": true,
+  "lua": {
+    "files": 21,
+    "errors": []
+  },
+  "toc": {
+    "entries": 21,
+    "unique_entries": 21,
+    "missing": [],
+    "duplicates": []
+  },
+  "version": {
+    "core": "0.3.60-dungeon-dice-tetris-expanded",
+    "toc": "0.3.60-dungeon-dice-tetris-expanded",
+    "match": true,
+    "schema": 56
+  },
+  "assets": {
+    "static_references_checked": 482,
+    "static_missing": [],
+    "tga_files": 732,
+    "dimensions": {
+      "128x128": 528,
+      "256x256": 54,
+      "256x512": 118,
+      "32x32": 1,
+      "512x512": 5,
+      "64x64": 26
+    },
+    "uncompressed_32_bit": 732,
+    "tga_errors": [],
+    "ogg_files": 136,
+    "dice_textures": 9,
+    "tetris_background_textures": 20
+  },
+  "dungeon": {
+    "bosses": 20,
+    "boss_placeholders": 0,
+    "active_armour_sets": 40,
+    "reserved_armour_sets": 10,
+    "remaining_reserved_armour_texture_placeholders": 20,
+    "dice_faces": 8,
+    "webbed_die": true,
+    "animated_roll_icons": true,
+    "ui_geometry": {
+      "hero_panel_height": 366,
+      "hero_button_bottom_from_top": 92,
+      "hero_body_top_from_top": 106,
+      "hero_stats_top_from_bottom": 88,
+      "hero_body_bottom_from_bottom": 94,
+      "enemy_hp_bottom_from_top": 55,
+      "enemy_body_top_from_top": 70,
+      "enemy_stats_top_from_bottom": 88,
+      "enemy_body_bottom_from_bottom": 94,
+      "hero_controls_clear": true,
+      "hero_stats_clear": true,
+      "enemy_header_clear": true,
+      "enemy_stats_clear": true
+    }
+  },
+  "tetris": {
+    "themes": 50,
+    "background_themes": 20,
+    "background_missing": [],
+    "pass_levels": 100,
+    "pass_theme_rewards": 20,
+    "multiplayer_protocol": 3,
+    "versus_formats": [
+      "RACE",
+      "ENDLESS",
+      "ATTACK"
+    ],
+    "endless_durations_minutes": [
+      5,
+      10,
+      15,
+      30,
+      45,
+      60
+    ],
+    "endless_attack_garbage_fix": true
+  },
+  "runtime_tests": {
+    "solo_window_constructed": true,
+    "dungeon_view_constructed": true,
+    "dungeon_armour_picker_constructed": true,
+    "dungeon_fullbody_controls_no_overlap": true,
+    "dungeon_dice_hero_animation": true,
+    "dungeon_dice_enemy_animation": true,
+    "dungeon_dice_final_value_settles": true,
+    "solo_tetris_constructed": true,
+    "theme_panel_50_sets": true,
+    "multiplayer_tetris_constructed": true,
+    "race_mode_started": true,
+    "timed_endless_5_min_started": true,
+    "endless_attack_started": true,
+    "garbage_after_lock_does_not_false_topout": true,
+    "timed_endless_topout_resets": true,
+    "schema55_endless_migrates_to_attack": true,
+    "profile_migration_all_characters": true
+  },
+  "remaining_missing_art": {
+    "druid_armour_pairs": 5,
+    "shaman_armour_pairs": 5,
+    "confirmed_texture_files": 20,
+    "custom_profile_cosmetics": "quantity not yet defined"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "build": "0.3.74-social-roster-actions",
+  "schema": 67,
+  "interface": 20505,
+  "result": "PASS_STATIC",
+  "checks": {
+    "luaModulesParsed": 22,
+    "parseErrors": 0,
+    "coreTocVersionsMatch": true,
+    "tocEntriesExist": true,
+    "whisperAddButton": true,
+    "whisperPartyButton": true,
+    "previousWhisperActions": true,
+    "friendsAndPreviousWhispersSections": true,
+    "battleNetAccountPrimary": true,
+    "battleNetActiveCharacterSecondary": true,
+    "guildOnlineOfflineRoster": true,
+    "guildRosterEvents": true,
+    "localWhoRoster": true,
+    "localWhoThrottleSeconds": 30,
+    "offlineLeftAreaLabel": true,
+    "prominentActionButtonStyles": true,
+    "customPartyInviteFlowPreserved": true,
+    "schemaUnchanged": true,
+    "secondaryRosterTextPersists": true,
+    "fileManifestEntries": 1015
+  },
+  "runtimeMock": {
+    "friendsPreviousWhispers": "PASS",
+    "battleNetIdentity": "PASS",
+    "guildOnlineOffline": "PASS",
+    "localWhoRoster": "PASS"
+  },
+  "limitation": "Static and mocked roster validation passed. A live TBC Anniversary client is still required to validate server roster timing, who-result limits and protected invite APIs."
+}

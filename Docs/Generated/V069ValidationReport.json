@@ -1,0 +1,133 @@
+{
+  "build": "0.3.69-tetris-image-reveal-fix",
+  "schema": 64,
+  "passed": true,
+  "lua": {
+    "files": 22,
+    "parser": "luaparser",
+    "compiler": "Lua load() via lupa",
+    "parse_errors": [],
+    "compile_errors": []
+  },
+  "toc": {
+    "entries": 22,
+    "unique_entries": 22,
+    "missing": [],
+    "duplicates": []
+  },
+  "version": {
+    "core": "0.3.69-tetris-image-reveal-fix",
+    "toc": "0.3.69-tetris-image-reveal-fix",
+    "match": true,
+    "schema": 64
+  },
+  "assets": {
+    "tga_files": 762,
+    "dimensions": {
+      "128x128": 528,
+      "256x256": 84,
+      "256x512": 118,
+      "32x32": 1,
+      "512x512": 5,
+      "64x64": 26
+    },
+    "uncompressed_32_bit": 762,
+    "tga_errors": [],
+    "active_tetris_background_tga": 50,
+    "missing_backgrounds": []
+  },
+  "tetris_image_reveal": {
+    "segments": 10,
+    "lines_per_segment": 10,
+    "dark_full_image": true,
+    "bright_real_image_bands": true,
+    "source_checks": {
+      "solo_artwork_background": true,
+      "solo_bright_band_layer": true,
+      "solo_dark_full_image": true,
+      "solo_neutral_empty_cells": true,
+      "solo_transparent_empty_cells": true,
+      "multiplayer_artwork_background": true,
+      "multiplayer_bright_band_layer": true,
+      "multiplayer_dark_full_image": true,
+      "multiplayer_neutral_empty_cells": true,
+      "multiplayer_transparent_empty_cells": true,
+      "solo_grid_above_image": true,
+      "multiplayer_grid_above_image": true,
+      "solo_progress_hook": true,
+      "multiplayer_progress_hook": true
+    },
+    "runtime_progress": [
+      {
+        "label": "start",
+        "key": "ZONE_ELWYNN_FOREST",
+        "lines": 0,
+        "stage": 0,
+        "next": 10,
+        "unlock": 100,
+        "revealing": true
+      },
+      {
+        "label": "9",
+        "key": "ZONE_ELWYNN_FOREST",
+        "lines": 9,
+        "stage": 0,
+        "next": 1,
+        "unlock": 91,
+        "revealing": true
+      },
+      {
+        "label": "10",
+        "key": "ZONE_ELWYNN_FOREST",
+        "lines": 10,
+        "stage": 1,
+        "next": 10,
+        "unlock": 90,
+        "revealing": true
+      },
+      {
+        "label": "20",
+        "key": "ZONE_ELWYNN_FOREST",
+        "lines": 20,
+        "stage": 2,
+        "next": 10,
+        "unlock": 80,
+        "revealing": true
+      },
+      {
+        "label": "completion_return",
+        "completed": true,
+        "key": "ZONE_ELWYNN_FOREST",
+        "stage": 10
+      },
+      {
+        "label": "after100",
+        "key": "ZONE_WESTFALL",
+        "lines": 0,
+        "stage": 0,
+        "next": 10,
+        "unlock": 100,
+        "revealing": true
+      }
+    ],
+    "runtime_passed": true,
+    "modes": [
+      "Solo Timed Endless",
+      "VS CPU Timed Endless",
+      "VS CPU Endless Attack",
+      "Multiplayer Timed Endless",
+      "Multiplayer Endless Attack"
+    ],
+    "protocol": 5
+  },
+  "preserved_systems": [
+    "Tetris block themes",
+    "Tetris background ownership and partial progress",
+    "Dungeon Collection",
+    "Dungeon Dwellers Battle Pass",
+    "main Battle Pass",
+    "notification hub",
+    "account-wide friends",
+    "account-wide direct conversations"
+  ]
+}

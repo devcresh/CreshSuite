@@ -1,0 +1,16 @@
+CreshChat v0.3.60 UI and regression audit
+
+Dungeon Dweller
+- Hero body begins 14 px below the class/armour button row.
+- Hero body ends 6 px above the hero statistics row.
+- Enemy body begins 15 px below the enemy health/header region.
+- Enemy body ends 6 px above the enemy statistics row.
+- Armour rows reserve 108 px for state text and wrap effect summaries inside a fixed 22 px region.
+- Hero and enemy dice animations were constructed and exercised in the mocked TBC UI.
+
+Tetris
+- Solo theme UI constructed with 50 sets and 20 background thumbnails.
+- Multiplayer Race 10, 5-minute Endless and Endless Attack each started in the mocked UI.
+- Regression: one incoming garbage row after piece lock no longer causes a false top-out.
+- Regression: timed Endless top-outs reset the board and increment reset count without ending the match.
+- Schema 55 ENDLESS values migrate to ATTACK for the root and stored character profiles.

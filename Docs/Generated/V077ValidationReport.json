@@ -1,0 +1,160 @@
+{
+  "build": "0.3.77-social-roster-sections",
+  "schema": 68,
+  "interface": 20505,
+  "luaFilesParsed": 22,
+  "checksPassed": 29,
+  "checksTotal": 29,
+  "checks": [
+    {
+      "name": "All top-level Lua modules parse",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Build version updated",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "SavedVariables schema preserved",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Party roster function exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Party roster excludes raids",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Party roster only reads player and party units",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Party roster does not read local who",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Group roster online/offline sections",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Raid roster function exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Instance roster follows current group",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Group roster events refresh",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Friends section BATTLE.NET ONLINE",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Friends section GAME FRIENDS ONLINE",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Friends section BATTLE.NET OFFLINE",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Friends section GAME FRIENDS OFFLINE",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Friends section PREVIOUS WHISPERS",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Previous whispers final rank",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Friend source dedupe removed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Exact game friend status preserved",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Party handled before local general roster",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Party directory selects dedicated roster",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Raid directory selects dedicated roster",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Instance directory selects dedicated roster",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Local roster excludes group tabs",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Already grouped members cannot be reinvited",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "General who remains background only",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TBC Battle.net project filter preserved",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Notification controls preserved",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Custom party invite flow preserved",
+      "passed": true,
+      "detail": ""
+    }
+  ],
+  "liveVerificationRecommended": [
+    "Disconnect/reconnect an actual party or raid member.",
+    "Test cross-realm group names.",
+    "Convert party to raid and confirm Party empties while Raid populates."
+  ]
+}

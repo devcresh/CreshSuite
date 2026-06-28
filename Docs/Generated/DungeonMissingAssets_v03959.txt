@@ -1,0 +1,11 @@
+Remaining placeholder textures after v0.3.59 integration:
+
+Bosses still missing: none.
+
+Reserved armour still missing (icon + full body each):
+- Druid: Moonbark Raiment, Cenarion Wildguard, Zangarmarsh Dreamer, Emerald Shapewarden, Archdruid of the Twisting Nether
+- Shaman: Stonecaller Mail, Earthen Ring Regalia, Stormforged Elements, Elemental Arena Champion, Farseer of the Broken World
+
+This equals 20 remaining placeholder armour textures total (10 icons + 10 full-body files).
+
+Optional custom player portrait/full-body reward cosmetics have not been created yet.

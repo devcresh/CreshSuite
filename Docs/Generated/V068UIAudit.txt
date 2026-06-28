@@ -1,0 +1,30 @@
+CreshChat v0.3.68 Tetris UI audit
+
+PASS: Solo Timed Endless
+- block theme + image labels
+- score/lines/speed/time cards
+- reveal progress + next-row requirement
+- next piece, controls strip and mouse controls
+- explicit 10x20 grid
+
+PASS: VS CPU Timed Endless
+PASS: VS CPU Endless Attack
+- dual boards and shared image reveal
+- CPU comparison panel and format controls
+- side panel extends to the frame bottom
+- controls remain below content with no overlap
+
+PASS: Multiplayer Timed Endless
+PASS: Multiplayer Endless Attack
+- independent local/remote block theme and image keys
+- line comparison, reveal card, timer/garbage status
+- controls strip separated from status content
+- movement buttons contained inside centre panel
+- explicit grid on both boards
+
+Measured multiplayer centre panel:
+- information content lower edge: 243 px from top
+- controls panel upper edge: 311 px from top
+- separation: 68 px
+- movement button row width: 235 px
+- available centre width: 242 px

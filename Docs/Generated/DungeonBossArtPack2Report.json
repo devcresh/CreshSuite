@@ -1,0 +1,149 @@
+{
+  "assets": [
+    {
+      "boss": "Nexus Lord Vaelrix",
+      "asset_key": "NexusLordVaelrix",
+      "source": "/mnt/data/regal_elven_mage_with_glowing_crystals.png",
+      "icon_path": "Media/Games/DungeonDwellers/Bosses/Icons/NexusLordVaelrix.tga",
+      "fullbody_path": "Media/Games/DungeonDwellers/Bosses/FullBody/NexusLordVaelrix.tga",
+      "source_size": [
+        1672,
+        941
+      ]
+    },
+    {
+      "boss": "High Seer Skyrend",
+      "asset_key": "HighSeerSkyrend",
+      "source": "/mnt/data/majestic_bird_mage_with_arcane_lightning.png",
+      "icon_path": "Media/Games/DungeonDwellers/Bosses/Icons/HighSeerSkyrend.tga",
+      "fullbody_path": "Media/Games/DungeonDwellers/Bosses/FullBody/HighSeerSkyrend.tga",
+      "source_size": [
+        1672,
+        941
+      ]
+    },
+    {
+      "boss": "Akoru the Soulkeeper",
+      "asset_key": "AkoruSoulkeeper",
+      "source": "/mnt/data/undead_sorcerer_with_spectral_magic.png",
+      "icon_path": "Media/Games/DungeonDwellers/Bosses/Icons/AkoruSoulkeeper.tga",
+      "fullbody_path": "Media/Games/DungeonDwellers/Bosses/FullBody/AkoruSoulkeeper.tga",
+      "source_size": [
+        1672,
+        941
+      ]
+    },
+    {
+      "boss": "Sunblade Grand Magister",
+      "asset_key": "SunbladeGrandMagister",
+      "source": "/mnt/data/regal_elven_mage_with_arcane_staff.png",
+      "icon_path": "Media/Games/DungeonDwellers/Bosses/Icons/SunbladeGrandMagister.tga",
+      "fullbody_path": "Media/Games/DungeonDwellers/Bosses/FullBody/SunbladeGrandMagister.tga",
+      "source_size": [
+        1672,
+        941
+      ]
+    },
+    {
+      "boss": "Gorvak the Unchained",
+      "asset_key": "GorvakUnchained",
+      "source": "/mnt/data/savage_orc_warrior_with_glowing_axe.png",
+      "icon_path": "Media/Games/DungeonDwellers/Bosses/Icons/GorvakUnchained.tga",
+      "fullbody_path": "Media/Games/DungeonDwellers/Bosses/FullBody/GorvakUnchained.tga",
+      "source_size": [
+        1672,
+        941
+      ]
+    },
+    {
+      "boss": "The Drowned Ancient",
+      "asset_key": "DrownedAncient",
+      "source": "/mnt/data/ancient_swamp_sage_druid_guardian.png",
+      "icon_path": "Media/Games/DungeonDwellers/Bosses/Icons/DrownedAncient.tga",
+      "fullbody_path": "Media/Games/DungeonDwellers/Bosses/FullBody/DrownedAncient.tga",
+      "source_size": [
+        1672,
+        941
+      ]
+    },
+    {
+      "boss": "Astralax the Devourer",
+      "asset_key": "AstralaxDevourer",
+      "source": "/mnt/data/magical_serpent_sorcerer_in_gold_armor.png",
+      "icon_path": "Media/Games/DungeonDwellers/Bosses/Icons/AstralaxDevourer.tga",
+      "fullbody_path": "Media/Games/DungeonDwellers/Bosses/FullBody/AstralaxDevourer.tga",
+      "source_size": [
+        1672,
+        941
+      ]
+    },
+    {
+      "boss": "Prototype Omega-Reaver",
+      "asset_key": "OmegaReaver",
+      "source": "/mnt/data/steampunk_mech_character_concept_sheet.png",
+      "icon_path": "Media/Games/DungeonDwellers/Bosses/Icons/OmegaReaver.tga",
+      "fullbody_path": "Media/Games/DungeonDwellers/Bosses/FullBody/OmegaReaver.tga",
+      "source_size": [
+        1672,
+        941
+      ]
+    },
+    {
+      "boss": "ZLR Arena Overlord",
+      "asset_key": "ZLRArenaOverlord",
+      "source": "/mnt/data/ghostwriter_images/context/37e2e9e1-611a-5577-ba7a-b2255c6461f3.png",
+      "icon_path": "Media/Games/DungeonDwellers/Bosses/Icons/ZLRArenaOverlord.tga",
+      "fullbody_path": "Media/Games/DungeonDwellers/Bosses/FullBody/ZLRArenaOverlord.tga",
+      "source_size": [
+        1672,
+        941
+      ]
+    },
+    {
+      "boss": "CATS, Master of the Base",
+      "asset_key": "CATSMasterBase",
+      "source": "/mnt/data/mecha_cat_warrior_with_golden_accents.png",
+      "icon_path": "Media/Games/DungeonDwellers/Bosses/Icons/CATSMasterBase.tga",
+      "fullbody_path": "Media/Games/DungeonDwellers/Bosses/FullBody/CATSMasterBase.tga",
+      "source_size": [
+        1672,
+        941
+      ]
+    }
+  ],
+  "status": {
+    "integrated_bosses_in_pack_2": [
+      "Nexus Lord Vaelrix",
+      "High Seer Skyrend",
+      "Akoru the Soulkeeper",
+      "Sunblade Grand Magister",
+      "Gorvak the Unchained",
+      "The Drowned Ancient",
+      "Astralax the Devourer",
+      "Prototype Omega-Reaver",
+      "ZLR Arena Overlord",
+      "CATS, Master of the Base"
+    ],
+    "integrated_texture_files": 20,
+    "boss_art_complete": true,
+    "remaining_placeholder_bosses": [],
+    "remaining_druid_shaman_texture_files": 20,
+    "remaining_confirmed_placeholder_files": 20,
+    "remaining_placeholder_armour_sets": {
+      "Druid": [
+        "Moonbark Raiment",
+        "Cenarion Wildguard",
+        "Zangarmarsh Dreamer",
+        "Emerald Shapewarden",
+        "Archdruid of the Twisting Nether"
+      ],
+      "Shaman": [
+        "Stonecaller Mail",
+        "Earthen Ring Regalia",
+        "Stormforged Elements",
+        "Elemental Arena Champion",
+        "Farseer of the Broken World"
+      ]
+    }
+  }
+}

@@ -1,0 +1,324 @@
+{
+  "build": "0.3.83-class-achievements",
+  "schema": 73,
+  "generated_utc": "2026-06-27T09:48:06.147739+00:00",
+  "lua_modules": 25,
+  "achievement_total": 531,
+  "class_achievements": 90,
+  "dungeon_dwellers_achievements": 33,
+  "checks_total": 62,
+  "checks_passed": 62,
+  "checks_failed": 0,
+  "checks": [
+    {
+      "name": "All top-level Lua modules parse",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Expected 25 Lua modules",
+      "passed": true,
+      "detail": "25"
+    },
+    {
+      "name": "Interface 20505 retained",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Version is 0.3.83 class achievements",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: Core.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: SoundLibrary.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: Quest.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: Friends.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: Voice.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: Themes.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: CardDeckLibrary.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: CardDecks.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: UI.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: ChessTextureManifest.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: DungeonDwellersAssetSets.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: DungeonCrawlerContent.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: TetrisThemes.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: Games.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: SoloGames.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: BattlePass.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: DungeonDwellersProgression.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: Progression.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: Achievements.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: AchievementExpansion.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: ClassAchievements.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: GameAudio.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: Quality.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: Developer.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: Settings.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Class achievements load after expansion",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Class achievements load before game audio",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "SavedVariables schema is 73",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Schema 73 migration exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Class progress migration exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Runtime catalogue contains 531 achievements",
+      "passed": true,
+      "detail": "531"
+    },
+    {
+      "name": "Runtime lookup contains unique keys",
+      "passed": true,
+      "detail": "531"
+    },
+    {
+      "name": "Exactly 90 class-only achievements",
+      "passed": true,
+      "detail": "90"
+    },
+    {
+      "name": "All nine TBC classes have ten achievements",
+      "passed": true,
+      "detail": "{'DRUID': 10, 'HUNTER': 10, 'MAGE': 10, 'PALADIN': 10, 'PRIEST': 10, 'ROGUE': 10, 'SHAMAN': 10, 'WARLOCK': 10, 'WARRIOR': 10}"
+    },
+    {
+      "name": "All approved class titles implemented in order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "All class achievements use class-specific stats",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Exactly 33 Dungeon Dwellers achievements in Games",
+      "passed": true,
+      "detail": "33"
+    },
+    {
+      "name": "No Dungeon Dwellers achievements remain in Dungeons",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Base real-dungeon tracks use WoW-only metrics",
+      "passed": true,
+      "detail": "33"
+    },
+    {
+      "name": "Dungeon Dwellers kills use game save only",
+      "passed": true,
+      "detail": "123"
+    },
+    {
+      "name": "Dungeon Dwellers bosses use game save only",
+      "passed": true,
+      "detail": "7"
+    },
+    {
+      "name": "Dungeon Dwellers runs use game save only",
+      "passed": true,
+      "detail": "9"
+    },
+    {
+      "name": "Real dungeon mobs exclude Dungeon Dwellers",
+      "passed": true,
+      "detail": "44"
+    },
+    {
+      "name": "Real dungeon bosses exclude Dungeon Dwellers",
+      "passed": true,
+      "detail": "5"
+    },
+    {
+      "name": "Real dungeon clear total sums real dungeon map",
+      "passed": true,
+      "detail": "5"
+    },
+    {
+      "name": "Class Mastery category filter exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Individual class filter buttons exist",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Achievement completion filters retained",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Battle Pass status filters retained",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Class combat log tracking registered",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Class cast tracking registered",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Known class spell backfills included",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Hunter active pet backfill included",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Class counters are isolated by class token",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Class rewards remain account-wide",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Game Friends and Battle.net tabs retained",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Guild online/offline visibility settings retained",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Battle.net online/offline visibility settings retained",
+      "passed": true,
+      "detail": ""
+    }
+  ]
+}

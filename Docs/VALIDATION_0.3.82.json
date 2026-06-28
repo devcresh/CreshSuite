@@ -1,0 +1,488 @@
+{
+  "build": "0.3.82-achievement-expansion",
+  "schema": 72,
+  "generated_utc": "2026-06-27T09:30:20.780249+00:00",
+  "lua_modules": 24,
+  "achievement_total": 408,
+  "achievement_expansion": 300,
+  "checks_total": 92,
+  "checks_passed": 92,
+  "checks_failed": 0,
+  "checks": [
+    {
+      "name": "All top-level Lua modules parse",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Expected 24 Lua modules",
+      "passed": true,
+      "detail": "24"
+    },
+    {
+      "name": "Interface 20505 retained",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Version is 0.3.82 achievement expansion",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Achievement expansion loads after base achievements",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: Core.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: SoundLibrary.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: Quest.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: Friends.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: Voice.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: Themes.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: CardDeckLibrary.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: CardDecks.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: UI.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: ChessTextureManifest.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: DungeonDwellersAssetSets.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: DungeonCrawlerContent.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: TetrisThemes.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: Games.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: SoloGames.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: BattlePass.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: DungeonDwellersProgression.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: Progression.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: Achievements.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: AchievementExpansion.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: GameAudio.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: Quality.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: Developer.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "TOC module exists: Settings.lua",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "SavedVariables schema is 72",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Account achievement expansion migration exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Exactly 300 expansion achievement keys",
+      "passed": true,
+      "detail": "300"
+    },
+    {
+      "name": "All expansion keys unique",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Expansion keys cover EXP_001 through EXP_300",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "All approved achievement titles implemented in order",
+      "passed": true,
+      "detail": "mismatches=0"
+    },
+    {
+      "name": "Bronze reward band retained",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Silver reward band retained",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Gold reward band retained",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Epic reward band retained",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Legendary reward band retained",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Runtime catalog contains 408 achievements",
+      "passed": true,
+      "detail": "408"
+    },
+    {
+      "name": "Runtime expansion contains 300 achievements",
+      "passed": true,
+      "detail": "300"
+    },
+    {
+      "name": "Runtime lookup contains 408 unique keys",
+      "passed": true,
+      "detail": "408"
+    },
+    {
+      "name": "Account progression save initializes expansion",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Achievement All filter exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Achievement In Progress filter exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Achievement Completed filter exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Achievement status filtering logic exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Battle Pass READY filter exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Battle Pass CLAIMED filter exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Battle Pass LOCKED filter exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Battle Pass reward-state filtering logic exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Roster controls are under Windows/card section",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Roster toggle: Game Friends: online",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Roster default/migration: showGameFriendsOnline",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Roster UI applies: showGameFriendsOnline",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Roster toggle: Game Friends: offline",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Roster default/migration: showGameFriendsOffline",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Roster UI applies: showGameFriendsOffline",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Roster toggle: Battle.net: online",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Roster default/migration: showBattleNetFriendsOnline",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Roster UI applies: showBattleNetFriendsOnline",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Roster toggle: Battle.net: offline",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Roster default/migration: showBattleNetFriendsOffline",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Roster UI applies: showBattleNetFriendsOffline",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Roster toggle: Guild members: online",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Roster default/migration: showGuildMembersOnline",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Roster UI applies: showGuildMembersOnline",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Roster toggle: Guild members: offline",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Roster default/migration: showGuildMembersOffline",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Roster UI applies: showGuildMembersOffline",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Friends only use actual Blizzard player roster",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Battle.net zero-count session cache exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Game friend session cache exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Guild zero-count session cache exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Legacy Battle.net tuple includes class and level parsing",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Expansion save inherits account game progression",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Expansion tracking event: QUEST_TURNED_IN",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Expansion tracking event: COMBAT_LOG_EVENT_UNFILTERED",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Expansion tracking event: UPDATE_FACTION",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Expansion tracking event: TAXIMAP_OPENED",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Expansion tracking event: HEARTHSTONE_BOUND",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Expansion tracking event: PLAYER_PVP_KILLS_CHANGED",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Flying/walking distance feeds achievements",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Area discovery feeds achievements",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Legacy Battle.net mock returns one TBC friend",
+      "passed": true,
+      "detail": "1"
+    },
+    {
+      "name": "Battle.net account display name retained",
+      "passed": true,
+      "detail": "AccountFriend"
+    },
+    {
+      "name": "Battle.net active character and realm retained",
+      "passed": true,
+      "detail": "Buddy-Realm"
+    },
+    {
+      "name": "Battle.net character level retained",
+      "passed": true,
+      "detail": "70"
+    },
+    {
+      "name": "Battle.net character class retained",
+      "passed": true,
+      "detail": "Mage"
+    },
+    {
+      "name": "Battle.net online state retained",
+      "passed": true,
+      "detail": "true"
+    },
+    {
+      "name": "Guild mock returns online and offline members",
+      "passed": true,
+      "detail": "2 entries"
+    }
+  ],
+  "social_mock": {
+    "battle_net": {
+      "count": 1,
+      "account": "AccountFriend",
+      "active_character": "Buddy-Realm",
+      "level": 70,
+      "class": "Mage",
+      "online": true
+    },
+    "guild": {
+      "count": 2,
+      "online": 1,
+      "offline": 1
+    }
+  }
+}

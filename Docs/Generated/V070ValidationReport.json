@@ -1,0 +1,18 @@
+{
+  "build": "0.3.70-party-invite-chat-fix",
+  "schema": 64,
+  "interface": 20505,
+  "result": "PASS",
+  "checks": {
+    "luaModulesParsed": 22,
+    "staticPopupHideCallsInInvitePath": 0,
+    "acceptPathCallsDecline": false,
+    "declinePathCallsAccept": false,
+    "pendingInviteProtectedFromExpiry": true,
+    "pendingInviteProtectedFromCapacityTrim": true,
+    "partyEventsRegistered": true,
+    "partyTabVisibleWhileGrouped": true,
+    "partyMessagesInPartyFeed": true,
+    "partyMessagesInGeneralFeed": true
+  }
+}

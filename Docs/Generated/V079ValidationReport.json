@@ -1,0 +1,252 @@
+{
+  "build": "0.3.79-account-achievements",
+  "schema": 70,
+  "interface": 20505,
+  "luaFilesParsed": 23,
+  "achievementCount": 108,
+  "checksPassed": 47,
+  "checksTotal": 47,
+  "checks": [
+    {
+      "name": "All top-level Lua modules parse",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Build version updated",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "SavedVariables schema 70",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Account progression root exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Account-wide field soloGames",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Account-wide field arcadeRewards",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Account-wide field gameProgression",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Account-wide field gameHistory",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Account-wide field gameLeaderboards",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Account-wide field multiplayerStats",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Account-wide field cardDecks",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Character binding uses account progression",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Migration unions tables",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Migration avoids numeric duplication",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Schema migration block exists",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Achievements module loaded",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Achievement drawer button beside Battle Pass",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Achievement count label",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Achievement search box",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Achievement category EXPLORATION",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Achievement category COMBAT",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Achievement category DUNGEONS",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Achievement category PROFESSIONS",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Achievement category GAMES",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Step milestones include requested values",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Detailed dungeon mob milestones",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Detailed boss milestones",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Profession goals included",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Rewards scale by tier",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Silent migration rewards batch",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Boss events deduplicated",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Boss rewards added",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Taxi flights tracked",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Deaths tracked",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Dungeon entries tracked",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Profession nil slots handled",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Walking rewards improved",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Zone and area rewards included",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Dungeon clear reward increased",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Dungeon Dwellers feeds achievements",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Achievement data sanitized",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Guild repair preserved",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Actual friend filtering preserved",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Roster collapse preserved",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Notification centre preserved",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Custom party invite flow preserved",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Achievement runtime and reward batching",
+      "passed": true,
+      "detail": ""
+    }
+  ],
+  "liveVerificationRecommended": [
+    "Walk across a 1,000-step boundary and confirm the account wallet and achievement progress update once.",
+    "Kill a dungeon boss and confirm one boss reward despite multiple Blizzard boss events.",
+    "Log onto two characters with different professions and confirm the account profession totals retain both.",
+    "Switch characters and confirm Battle Pass, coins, game saves, Dungeon collections and achievement totals remain identical."
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "set_count": 7,
+  "asset_count": 84,
+  "player_portrait_count": 8,
+  "player_fullbody_count": 8,
+  "minion_portrait_count": 28,
+  "boss_icon_count": 20,
+  "boss_fullbody_count": 20,
+  "all_tga_rgba": true,
+  "all_dimensions_power_of_two": true,
+  "all_tga_uncompressed_true_colour": true,
+  "all_tga_32_bit": true,
+  "errors": []
+}

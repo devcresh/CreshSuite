@@ -1,0 +1,98 @@
+{
+  "build": "0.3.72-messaging-friends-invite-repair",
+  "schema": 66,
+  "passed": true,
+  "lua": {
+    "files": 22,
+    "compiler": "luaparse Lua 5.1 parser",
+    "compile_errors": []
+  },
+  "toc": {
+    "entries": 22,
+    "unique_entries": 22,
+    "missing": [],
+    "duplicates": []
+  },
+  "version": {
+    "core": "0.3.72-messaging-friends-invite-repair",
+    "toc": "0.3.72-messaging-friends-invite-repair",
+    "match": true,
+    "schema": 66
+  },
+  "assets": {
+    "tga_files": 762,
+    "ogg_files": 144,
+    "dimensions": {
+      "128x128": 528,
+      "64x64": 26,
+      "256x512": 118,
+      "256x256": 84,
+      "512x512": 5,
+      "32x32": 1
+    },
+    "uncompressed_32_bit": 762,
+    "tga_errors": [],
+    "active_tetris_background_tga": 50,
+    "missing_backgrounds": []
+  },
+  "chat_foundation": {
+    "schema_storage_repair": true,
+    "direct_event_capture": true,
+    "backup_filter_capture": true,
+    "backup_filters_suppress_messages": false,
+    "ui_errors_isolated": true,
+    "native_fallback_after_consecutive_errors": 3,
+    "optimistic_outgoing": true,
+    "delivery_reconciliation": true,
+    "captured_families": [
+      "character whispers",
+      "Battle.net whispers",
+      "Guild/Officer",
+      "Party/Raid/Instance/Battleground",
+      "Say/Yell/Emote",
+      "public channels",
+      "NPC/boss",
+      "loot/money/XP/honor/reputation/skill",
+      "system"
+    ],
+    "character_bnet_namespaces_separate": true
+  },
+  "account_friends": {
+    "sync_without_opening_ui": true,
+    "login_world_and_friendlist_update_hooks": true,
+    "cross_profile_union": true,
+    "removal_tombstones": true,
+    "legacy_alias_repair": true,
+    "bnet_cached_identities": true,
+    "stale_numeric_routes_reused": false
+  },
+  "runtime_validation": {
+    "script": "Static compatibility assertions; live WoW client unavailable in this environment",
+    "passed": true,
+    "tests": [
+      "chat alias table and direct routing present",
+      "dual friend API discovery present",
+      "Friends tab click registration and profile migration present",
+      "party popup acceptance and API fallbacks present",
+      "no StaticPopup_Hide calls"
+    ]
+  },
+  "preserved_systems": [
+    "party invite fix",
+    "Tetris block/background separation and image reveal",
+    "Dungeon Collection and pass",
+    "main Battle Pass",
+    "notification hub",
+    "character profiles"
+  ],
+  "messaging_friends_invites": {
+    "direct_chat_aliases": true,
+    "global_and_namespace_send_fallbacks": true,
+    "legacy_and_modern_friend_apis": true,
+    "online_offline_sections": true,
+    "friends_tab_click_layer_repair": true,
+    "profile_visibility_migration": true,
+    "native_popup_accept_preferred": true,
+    "guild_and_other_popups_untouched": true
+  }
+}

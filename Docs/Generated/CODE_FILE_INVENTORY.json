@@ -1,0 +1,143 @@
+{
+  "build": "0.3.79-account-achievements",
+  "files": [
+    {
+      "file": "Achievements.lua",
+      "bytes": 33681,
+      "sha256": "9f519cca3d34c1f232184a6f956d670a1a9d480ed550b1776066340bbde046f8",
+      "functions": 42
+    },
+    {
+      "file": "BattlePass.lua",
+      "bytes": 54454,
+      "sha256": "431c92951d712a5135a9e54cdd4cf4ada866179a724a43dc1f740209b78e0bfb",
+      "functions": 45
+    },
+    {
+      "file": "CardDeckLibrary.lua",
+      "bytes": 42534,
+      "sha256": "e34947a09ae731e6fabd1c7d40c89684d059eaceffa057446d2386f150fa15aa",
+      "functions": 2
+    },
+    {
+      "file": "CardDecks.lua",
+      "bytes": 10972,
+      "sha256": "57510253708ff474fc531558504abc733662e942ad5dd8fad5489aaf0f4e51dd",
+      "functions": 26
+    },
+    {
+      "file": "ChessTextureManifest.lua",
+      "bytes": 2701,
+      "sha256": "aa25f3364ba12f32ae3770cbeb86123f58152171ca01e6a5ca9b64c209ecb66b",
+      "functions": 0
+    },
+    {
+      "file": "Core.lua",
+      "bytes": 209277,
+      "sha256": "ee0a340df9f559b4df7582a7970bf2067e27bab03a8086d917be02591891d345",
+      "functions": 181
+    },
+    {
+      "file": "Developer.lua",
+      "bytes": 6727,
+      "sha256": "3131cb78a532db1a4d1da45a8ed20391eacf3cabb5fb30cf2a121c6535fa167d",
+      "functions": 15
+    },
+    {
+      "file": "DungeonCrawlerContent.lua",
+      "bytes": 72817,
+      "sha256": "da7533636b61ef11b67b589160191021521391fab46a6c7fabfe41b35280750d",
+      "functions": 16
+    },
+    {
+      "file": "DungeonDwellersAssetSets.lua",
+      "bytes": 15244,
+      "sha256": "770e582cb3270ec7adf12847349f15eca8eb31c7275a1d01fd0df413bfbab012",
+      "functions": 2
+    },
+    {
+      "file": "DungeonDwellersProgression.lua",
+      "bytes": 14588,
+      "sha256": "f0c516b73392fb8ec91aea07f278d32fb59ab1505fc1e3d257175f1b0b9bbf44",
+      "functions": 32
+    },
+    {
+      "file": "Friends.lua",
+      "bytes": 46364,
+      "sha256": "3868a2c343302722ded8dc2e8fa36e57380f2042e137f0d5414063012c1532c0",
+      "functions": 79
+    },
+    {
+      "file": "GameAudio.lua",
+      "bytes": 3714,
+      "sha256": "2f514bcdee9a4979465847d4df40be60ee53065e3374c58ecc8a7cf7eddebbfb",
+      "functions": 16
+    },
+    {
+      "file": "Games.lua",
+      "bytes": 138849,
+      "sha256": "c9b785297706fe001a95aaca2031a7e614fcb9a7bea069ae9b23d04488e48031",
+      "functions": 194
+    },
+    {
+      "file": "Progression.lua",
+      "bytes": 17815,
+      "sha256": "b8166b4e4e6800c4a2330d6d931585779b8da4949aa3d7ab8701d190b875ce61",
+      "functions": 26
+    },
+    {
+      "file": "Quality.lua",
+      "bytes": 36996,
+      "sha256": "15aed9d4d6ac78c3bfdad166bef7dd20187213a1a2fc90a806f4b3087fc974c7",
+      "functions": 22
+    },
+    {
+      "file": "Quest.lua",
+      "bytes": 12535,
+      "sha256": "881146fbddf02b810250828b80eebb5e0cd1a8a77fa754a54dfe9448152b2fb8",
+      "functions": 37
+    },
+    {
+      "file": "Settings.lua",
+      "bytes": 84018,
+      "sha256": "93a7d939a2f1e6ba669c8e0158f07009c48fddc8169c7053f80a10b26f1a3e5a",
+      "functions": 77
+    },
+    {
+      "file": "SoloGames.lua",
+      "bytes": 426329,
+      "sha256": "24e1d35efef897a14627a131d61cfad587ebbd6658877eea4cd38543b40e31b1",
+      "functions": 416
+    },
+    {
+      "file": "SoundLibrary.lua",
+      "bytes": 3552,
+      "sha256": "80db38330d0e92e5803323b99f4d37c9a60c9da686be781fe95c04ceaf2a9d2b",
+      "functions": 0
+    },
+    {
+      "file": "TetrisThemes.lua",
+      "bytes": 46134,
+      "sha256": "3e00dc1dbf720b77564196026a83586748e917e51904bb0e61ff37db7c1b6486",
+      "functions": 56
+    },
+    {
+      "file": "Themes.lua",
+      "bytes": 11534,
+      "sha256": "ffc8f1bbf0cdb4dfef7e8115c11999d0dad9cc9c198392de0fd835be8104f94b",
+      "functions": 10
+    },
+    {
+      "file": "UI.lua",
+      "bytes": 373096,
+      "sha256": "d9590da18f837f9137c2cf8f65982d582bd925ce275479b528035afedfa200a2",
+      "functions": 333
+    },
+    {
+      "file": "Voice.lua",
+      "bytes": 12832,
+      "sha256": "67524d0c9e87f2c46f56b49fa2b1cb70f5481022dfcb49ae5ef52074945e96ee",
+      "functions": 38
+    }
+  ]
+}

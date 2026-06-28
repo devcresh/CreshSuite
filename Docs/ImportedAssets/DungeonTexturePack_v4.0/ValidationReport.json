@@ -1,0 +1,29 @@
+{
+  "enemy_count": 20,
+  "class_armor_set_count": 40,
+  "chest_count": 5,
+  "reward_icon_count": 5,
+  "expected": {
+    "icon": [
+      128,
+      128
+    ],
+    "class_fullbody": [
+      256,
+      512
+    ],
+    "chest_display": [
+      512,
+      512
+    ],
+    "reward_icon": [
+      128,
+      128
+    ],
+    "mode": "RGBA"
+  },
+  "tga_files": 135,
+  "png_files": 135,
+  "errors": [],
+  "passed": true
+}

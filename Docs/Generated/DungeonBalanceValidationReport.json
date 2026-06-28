@@ -1,0 +1,208 @@
+{
+  "build": "0.3.56-dungeon-texture-pack",
+  "schema": 55,
+  "balance_version": 2,
+  "saved_variables_changed": false,
+  "health_monotonic_levels_1_500": true,
+  "attack_monotonic_levels_1_500": true,
+  "variance": {
+    "health_percent": 8,
+    "attack_percent": 7
+  },
+  "sample_curve": [
+    {
+      "level": 1,
+      "normal_hp": 6,
+      "normal_attack": 1,
+      "boss_base_hp": 17,
+      "boss_base_attack": 2
+    },
+    {
+      "level": 5,
+      "normal_hp": 12,
+      "normal_attack": 1,
+      "boss_base_hp": 29,
+      "boss_base_attack": 2
+    },
+    {
+      "level": 10,
+      "normal_hp": 21,
+      "normal_attack": 2,
+      "boss_base_hp": 49,
+      "boss_base_attack": 3,
+      "boss_key": "KING_CANDLEWICK",
+      "boss_name": "King Candlewick",
+      "boss_final_hp": 108,
+      "boss_final_attack": 5
+    },
+    {
+      "level": 20,
+      "normal_hp": 40,
+      "normal_attack": 4,
+      "boss_base_hp": 91,
+      "boss_base_attack": 6,
+      "boss_key": "GNARLFANG_PACKLORD",
+      "boss_name": "Gnarlfang the Packlord",
+      "boss_final_hp": 214,
+      "boss_final_attack": 8
+    },
+    {
+      "level": 40,
+      "normal_hp": 87,
+      "normal_attack": 9,
+      "boss_base_hp": 193,
+      "boss_base_attack": 12,
+      "boss_key": "ZARISS_COIL_QUEEN",
+      "boss_name": "Zariss the Coil Queen",
+      "boss_final_hp": 492,
+      "boss_final_attack": 15
+    },
+    {
+      "level": 60,
+      "normal_hp": 146,
+      "normal_attack": 16,
+      "boss_base_hp": 319,
+      "boss_base_attack": 20,
+      "boss_key": "STORMTALON_MATRIARCH",
+      "boss_name": "Stormtalon Matriarch",
+      "boss_final_hp": 877,
+      "boss_final_attack": 23
+    },
+    {
+      "level": 80,
+      "normal_hp": 216,
+      "normal_attack": 23,
+      "boss_base_hp": 467,
+      "boss_base_attack": 29,
+      "boss_key": "AZARAK_WEB_TYRANT",
+      "boss_name": "Azarak the Web Tyrant",
+      "boss_final_hp": 1401,
+      "boss_final_attack": 33
+    },
+    {
+      "level": 100,
+      "normal_hp": 297,
+      "normal_attack": 32,
+      "boss_base_hp": 637,
+      "boss_base_attack": 39,
+      "boss_key": "EMPEROR_BLACKFUSE",
+      "boss_name": "Emperor Blackfuse",
+      "boss_final_hp": 2070,
+      "boss_final_attack": 44
+    },
+    {
+      "level": 120,
+      "normal_hp": 392,
+      "normal_attack": 43,
+      "boss_base_hp": 835,
+      "boss_base_attack": 51,
+      "boss_key": "HIGH_SEER_SKYREND",
+      "boss_name": "High Seer Skyrend",
+      "boss_final_hp": 2839,
+      "boss_final_attack": 56
+    },
+    {
+      "level": 150,
+      "normal_hp": 564,
+      "normal_attack": 63,
+      "boss_base_hp": 1191,
+      "boss_base_attack": 73,
+      "boss_key": "GORVAK_UNCHAINED",
+      "boss_name": "Gorvak the Unchained",
+      "boss_final_hp": 4347,
+      "boss_final_attack": 79
+    },
+    {
+      "level": 200,
+      "normal_hp": 931,
+      "normal_attack": 103,
+      "boss_base_hp": 1945,
+      "boss_base_attack": 117,
+      "boss_key": "CATS_MASTER_BASE",
+      "boss_name": "CATS, Master of the Base",
+      "boss_final_hp": 8266,
+      "boss_final_attack": 125
+    },
+    {
+      "level": 250,
+      "normal_hp": 1397,
+      "normal_attack": 151,
+      "boss_base_hp": 2897,
+      "boss_base_attack": 168,
+      "boss_key": "GRUMBAR_EARTHBREAKER",
+      "boss_name": "Grumbar Earthbreaker",
+      "boss_final_hp": 7822,
+      "boss_final_attack": 171
+    },
+    {
+      "level": 300,
+      "normal_hp": 1962,
+      "normal_attack": 207,
+      "boss_base_hp": 4047,
+      "boss_base_attack": 227,
+      "boss_key": "EMPEROR_BLACKFUSE",
+      "boss_name": "Emperor Blackfuse",
+      "boss_final_hp": 13153,
+      "boss_final_attack": 232
+    }
+  ],
+  "old_vs_new": [
+    {
+      "level": 10,
+      "old_average_hp": 7,
+      "new_base_hp": 21,
+      "hp_multiplier": 3.0,
+      "old_average_attack": 1.5,
+      "new_base_attack": 2,
+      "attack_multiplier": 1.33
+    },
+    {
+      "level": 40,
+      "old_average_hp": 17,
+      "new_base_hp": 87,
+      "hp_multiplier": 5.12,
+      "old_average_attack": 4.5,
+      "new_base_attack": 9,
+      "attack_multiplier": 2.0
+    },
+    {
+      "level": 80,
+      "old_average_hp": 31,
+      "new_base_hp": 216,
+      "hp_multiplier": 6.97,
+      "old_average_attack": 8.5,
+      "new_base_attack": 23,
+      "attack_multiplier": 2.71
+    },
+    {
+      "level": 100,
+      "old_average_hp": 38,
+      "new_base_hp": 297,
+      "hp_multiplier": 7.82,
+      "old_average_attack": 10.5,
+      "new_base_attack": 32,
+      "attack_multiplier": 3.05
+    },
+    {
+      "level": 150,
+      "old_average_hp": 56,
+      "new_base_hp": 564,
+      "hp_multiplier": 10.07,
+      "old_average_attack": 15.5,
+      "new_base_attack": 63,
+      "attack_multiplier": 4.06
+    },
+    {
+      "level": 200,
+      "old_average_hp": 73,
+      "new_base_hp": 931,
+      "hp_multiplier": 12.75,
+      "old_average_attack": 20.5,
+      "new_base_attack": 103,
+      "attack_multiplier": 5.02
+    }
+  ],
+  "boss_definition_multipliers_preserved": true,
+  "enemy_type_modifiers_preserved": true,
+  "runtime_content_load": true
+}

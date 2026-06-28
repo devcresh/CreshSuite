@@ -1,0 +1,161 @@
+{
+  "build": "0.3.65-dungeon-collection-pass",
+  "schema": 61,
+  "passed": true,
+  "lua": {
+    "files": 22,
+    "toc_files": 22,
+    "parser": "luaparser",
+    "compiler": "Lua load() via lupa",
+    "parse_errors": [],
+    "compile_errors": []
+  },
+  "toc": {
+    "entries": 22,
+    "unique_entries": 22,
+    "missing": [],
+    "duplicates": []
+  },
+  "version": {
+    "core": "0.3.65-dungeon-collection-pass",
+    "toc": "0.3.65-dungeon-collection-pass",
+    "match": true,
+    "schema": 61
+  },
+  "assets": {
+    "tga_files": 782,
+    "dimensions": {
+      "128x128": 528,
+      "256x256": 104,
+      "256x512": 118,
+      "32x32": 1,
+      "512x512": 5,
+      "64x64": 26
+    },
+    "uncompressed_32_bit": 782,
+    "tga_errors": [],
+    "ogg_files": 144
+  },
+  "dungeon_collection": {
+    "minion_variants": 24,
+    "playable_classes": 8,
+    "armour_sets": 50,
+    "crate_types": 4,
+    "milestone_chests": 5,
+    "reward_item_types": 5,
+    "filters": [
+      "category",
+      "unlocked",
+      "locked",
+      "class"
+    ],
+    "source_markers": {
+      "collection_types": true,
+      "ownership_filters": true,
+      "class_filter": true,
+      "stats_panel": true,
+      "pass_panel": true,
+      "minion_tracking": true,
+      "class_stats": true,
+      "wow_kill_hook": true,
+      "zone_hook": true,
+      "dungeon_kill_hook": true,
+      "quest_hook": true,
+      "achievement_hook": true,
+      "main_pass_bridge": true,
+      "escape_overlay": true
+    }
+  },
+  "dungeon_statistics": {
+    "aggregate": [
+      "runs",
+      "best room",
+      "high score",
+      "kills",
+      "bosses",
+      "minions",
+      "chests",
+      "armour",
+      "boss coins"
+    ],
+    "per_class": [
+      "runs",
+      "max room",
+      "kills",
+      "bosses",
+      "high score",
+      "deaths"
+    ],
+    "legacy_migration": true
+  },
+  "dungeon_battle_pass": {
+    "levels": 100,
+    "max_cumulative_xp": 23364,
+    "activity_awards": {
+      "wow_mob": [
+        1,
+        1
+      ],
+      "dungeon_enemy": [
+        2,
+        1
+      ],
+      "dungeon_boss": [
+        5,
+        3
+      ],
+      "quest": [
+        15,
+        5
+      ],
+      "first_zone": [
+        20,
+        0
+      ],
+      "achievement": [
+        50,
+        15
+      ]
+    },
+    "reward_coins_total": 6145,
+    "buff_totals": {
+      "maxHP": 5,
+      "attack": 5,
+      "minionPower": 5,
+      "regenRoom": 5,
+      "regenTurn": 2,
+      "bossDamage": 4,
+      "extraDieChance": 10,
+      "coinBonus": 10
+    },
+    "runtime_tests": {
+      "migration": true,
+      "activity_awards": true,
+      "activity_xp_totals": true,
+      "zone_dedupe": true,
+      "achievement_dedupe": true,
+      "curve_100_levels": true,
+      "max_cumulative_xp": 23364,
+      "claim_100_rewards": true,
+      "claim_dedupe": true,
+      "total_reward_coins": 6145,
+      "buff_totals": {
+        "maxHP": 5,
+        "attack": 5,
+        "minionPower": 5,
+        "regenRoom": 5,
+        "regenTurn": 2,
+        "bossDamage": 4,
+        "extraDieChance": 10,
+        "coinBonus": 10
+      }
+    }
+  },
+  "regression": {
+    "multiplayer_protocol": 5,
+    "tetris_themes": 100,
+    "tetris_reveal_backgrounds": 70,
+    "notification_hub_preserved": true,
+    "account_chat_preserved": true
+  }
+}

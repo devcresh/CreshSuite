@@ -1,0 +1,43 @@
+{
+  "build": "0.3.56-dungeon-texture-pack",
+  "source_pack": "CreshChat_DungeonCrawler_Enemies_ClassArmor_Chests_Rewards_TBC_v4.0",
+  "passed": true,
+  "checks": {
+    "pack_tga_count_135": true,
+    "source_hashes_preserved": true,
+    "pack_tga_formats_valid": true,
+    "all_dungeon_root_references_exist": true,
+    "all_lua_files_parse": true,
+    "live_enemy_records_20": true,
+    "live_armour_records_40": true,
+    "milestone_chests_5": true,
+    "reward_icon_types_6": true,
+    "reward_cards_use_icons": true,
+    "chest_popup_uses_display_and_badge": true,
+    "core_toc_version_match": true,
+    "schema_unchanged_55": true
+  },
+  "integrated": {
+    "enemies": 20,
+    "active_class_armour_sets": 40,
+    "milestone_chests": 5,
+    "reward_icons": 5,
+    "tga_files": 135
+  },
+  "tga_dimensions": {
+    "512x512_RGBA": 5,
+    "128x128_RGBA": 70,
+    "256x512_RGBA": 60
+  },
+  "content_root_reference_count": 200,
+  "retained_placeholders": {
+    "bosses": 20,
+    "future_class_armour_sets": 10
+  },
+  "hash_errors": [],
+  "format_errors": [],
+  "missing_content_paths": [],
+  "lua_files_parsed": 21,
+  "lua_errors": [],
+  "saved_variables_schema": 55
+}

@@ -1,0 +1,214 @@
+Legacy theme reference retained for compatibility. Current build: 0.3.46-progression-voice-audio.
+See Docs/DEVELOPER_GUIDE.md and Docs/UI_REFERENCE.md.
+
+CRESHCHAT v0.3.26 THEME GUIDE
+================================
+
+CATALOG SUMMARY
+- 100 named global themes plus Custom colours.
+- 65 themes are immediately available.
+- 25 themes are purchased once with Cresh Coins.
+- 10 zone and raid themes are earned through Battle Pass milestones.
+- 21 named Guild palettes plus Auto faction and Custom guild colours.
+
+FEATURED FACTION THEMES
+- For the Alliance: royal blue, lion gold and bright Alliance trim.
+- For the Horde: crimson iron, war-banner red and ember highlights.
+- Undead Forsaken: Undercity violet, plague green and shadowed stone.
+
+ARCADE COIN SHOP — 25 THEMES
+- Ubuntu — 100 coins.
+- Windows 95 — 200 coins.
+- MSN Messenger — 300 coins.
+- WoW Classic — 400 coins.
+- ZLR Arena — 500 coins.
+- For the Alliance — 150 coins.
+- For the Horde — 150 coins.
+- Undead Forsaken — 225 coins.
+- Elwynn Forest — 250 coins.
+- Durotar — 275 coins.
+- Stranglethorn Vale — 325 coins.
+- Tanaris — 350 coins.
+- Winterspring — 400 coins.
+- Hellfire Peninsula — 450 coins.
+- Zangarmarsh — 500 coins.
+- Nagrand — 550 coins.
+- Netherstorm — 625 coins.
+- Shadowmoon Valley — 700 coins.
+- Shattrath City — 750 coins.
+- Silvermoon City — 800 coins.
+- Stormwind City — 850 coins.
+- Orgrimmar — 850 coins.
+- Black Temple — 950 coins.
+- Sunwell Plateau — 1050 coins.
+- The Dark Portal — 1200 coins.
+
+BATTLE PASS THEME REWARDS
+- Level 10: Westfall.
+- Level 20: Duskwood.
+- Level 30: The Barrens.
+- Level 40: Ashenvale.
+- Level 50: Un'Goro Crater.
+- Level 60: Eastern Plaguelands.
+- Level 70: Terokkar Forest.
+- Level 80: Blade's Edge Mountains.
+- Level 90: Tempest Keep.
+- Level 100: Serpentshrine Cavern.
+
+FULL 100-THEME CATALOG
+LEGACY / INTERFACE
+- Cresh Minimal [Free]
+- WoW Classic [Coin shop]
+- ZLR Arena [Coin shop]
+- ElvUI Charcoal [Free]
+- Tukui Obsidian [Free]
+- WIM Messenger [Free]
+- Prat Glass [Free]
+- LS Glass [Free]
+- Chattynator Slate [Free]
+- Spartan Steel [Free]
+- NDui Azure [Free]
+- Benik Teal [Free]
+- Gingi Neon [Free]
+- Nord Frost [Free]
+- Classic Bronze [Free]
+- High Contrast [Free]
+- Messenger Blue [Free]
+- Snapchat Contrast [Free]
+- Discord Dark [Free]
+- ICQ [Free]
+- MSN Messenger [Coin shop]
+- Windows 3.1 [Free]
+- Windows 95 [Coin shop]
+- Ubuntu [Coin shop]
+- Midnight [Free]
+
+FACTION
+- For the Alliance [Coin shop]
+- For the Horde [Coin shop]
+- Undead Forsaken [Coin shop]
+- Night Elf Moon [Free]
+- Blood Elf Sun [Free]
+- Draenei Crystal [Free]
+- Orcish Warsong [Free]
+- Tauren Earth [Free]
+- Dwarven Forge [Free]
+- Gnomish Gadget [Free]
+- Human Lion [Free]
+- Troll Voodoo [Free]
+- Dark Iron [Free]
+- High Elf [Free]
+- Goblin Cartel [Free]
+
+ZONE
+- Elwynn Forest [Coin shop]
+- Durotar [Coin shop]
+- Teldrassil [Free]
+- Mulgore [Free]
+- Westfall [Battle Pass]
+- Redridge Mountains [Free]
+- Duskwood [Battle Pass]
+- Stranglethorn Vale [Coin shop]
+- Tanaris [Coin shop]
+- Un'Goro Crater [Battle Pass]
+- Winterspring [Coin shop]
+- Eastern Plaguelands [Battle Pass]
+- Silithus [Free]
+- Ashenvale [Battle Pass]
+- The Barrens [Battle Pass]
+- Hellfire Peninsula [Coin shop]
+- Zangarmarsh [Coin shop]
+- Terokkar Forest [Battle Pass]
+- Nagrand [Coin shop]
+- Blade's Edge Mountains [Battle Pass]
+- Netherstorm [Coin shop]
+- Shadowmoon Valley [Coin shop]
+- Shattrath City [Coin shop]
+- Silvermoon City [Coin shop]
+- Eversong Woods [Free]
+- Ghostlands [Free]
+- Azuremyst Isle [Free]
+- Bloodmyst Isle [Free]
+- Stormwind City [Coin shop]
+- Orgrimmar [Coin shop]
+- Undercity [Free]
+- Ironforge [Free]
+- Darnassus [Free]
+- Thunder Bluff [Free]
+- The Exodar [Free]
+
+RAID
+- Black Temple [Coin shop]
+- Karazhan [Free]
+- Sunwell Plateau [Coin shop]
+- Tempest Keep [Battle Pass]
+- Serpentshrine Cavern [Battle Pass]
+
+CLASS
+- Paladin Gold [Free]
+- Shaman Storm [Free]
+- Druid Grove [Free]
+- Rogue Shadow [Free]
+- Mage Arcane [Free]
+- Warlock Fel [Free]
+- Warrior Steel [Free]
+- Priest Holy [Free]
+- Hunter Wild [Free]
+
+PROFESSION
+- Alchemy [Free]
+- Blacksmith [Free]
+- Enchanting [Free]
+- Engineering [Free]
+- Herbalism [Free]
+- Mining [Free]
+
+SPECIAL
+- Frostmourne [Free]
+- Molten Core [Free]
+- Ahn'Qiraj Sand [Free]
+- The Dark Portal [Coin shop]
+- Outland Sky [Free]
+
+GUILD THEMES
+- Auto faction
+- Verdant guild
+- Emerald hall
+- Jade night
+- Moss and stone
+- Sage parchment
+- Fel green
+- Deep forest
+- Alliance royal
+- Alliance arcane
+- Horde crimson
+- Horde iron
+- Custom guild colours
+- For the Alliance
+- For the Horde
+- Forsaken Covenant
+- Stormwind Guard
+- Orgrimmar Warband
+- Silvermoon Court
+- Undercity Circle
+- Ironforge Clan
+- Darnassus Sentinels
+- Thunder Bluff Tribe
+
+NOTIFICATION APPEARANCE
+- Whisper and General unread tabs pulse with the selected global theme accent.
+- Unread Whisper conversation boxes and player portrait rings use a subtle matching pulse.
+- Red numeric unread counters are removed; unread state remains tracked internally.
+
+ZLR ARENA
+- Idle launcher and console logo text: q3a.
+- Composer prompt: /say or /console.
+- Notification letters temporarily replace q3a and restore to q3a when cleared.
+
+
+THEME PREVIEW WORKFLOW
+- Settings > Themes stores the dropdown choice only in the active Settings session.
+- PREVIEW snapshots the equipped theme and seven global surface colours, then applies the selected preset through the normal visual refresh path.
+- Locked themes may be previewed, but APPLY THEME still uses BattlePass:IsThemeUnlocked before committing.
+- REVERT and Settings OnHide restore the original preset and colour snapshot.
+- Preview state is never written to SavedVariables.

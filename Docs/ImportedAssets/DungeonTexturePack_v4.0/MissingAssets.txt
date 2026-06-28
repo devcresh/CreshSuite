@@ -1,0 +1,16 @@
+CRESHCHAT DUNGEON CRAWLER - MISSING ASSETS
+
+COMPLETE
+- Expansion enemy roster 01-20: complete (20 icons + 20 full-body textures).
+- Current class armor is complete for all eight current classes: Paladin, Warrior, Rogue, Ranger, Mage, Priest, Warlock, Defender.
+- Milestone chests 20/40/60/80/100: complete.
+- Reward icons complete: Damage Relic, Cresh Coin Cache, Portrait Token, Full-Body Token, Armour Choice Token.
+
+MISSING FUTURE CLASS SETS
+- Druid: 5 sets / 10 textures.
+- Shaman: 5 sets / 10 textures.
+Total future-class gap: 10 sets / 20 textures.
+
+NOT IMPORTED
+- Poster or multi-asset sheets retained only as references.
+- Some loose concept sheets remain unassigned to live assets until explicitly mapped.

@@ -1,0 +1,5 @@
+key,assetKey,name,rarity,coinMin,coinMax,damageChance,portraitChance,fullBodyChance,armourChance,icon
+ADVENTURER,AdventurersCache,Adventurer's Cache,COMMON,8,18,20,1,0,2,Media/Games/DungeonDwellers/Crates/AdventurersCache.tga
+WARBOUND,WarboundStrongbox,Warbound Strongbox,UNCOMMON,15,35,35,3,1,5,Media/Games/DungeonDwellers/Crates/WarboundStrongbox.tga
+ROYAL,RoyalVanguardChest,Royal Vanguard Chest,RARE,30,60,45,10,5,15,Media/Games/DungeonDwellers/Crates/RoyalVanguardChest.tga
+VOID,VoidlordReliquary,Voidlord Reliquary,EPIC,50,100,60,20,12,30,Media/Games/DungeonDwellers/Crates/VoidlordReliquary.tga

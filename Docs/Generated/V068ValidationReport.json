@@ -1,0 +1,26 @@
+{
+  "build": "0.3.68-tetris-theme-background-separation",
+  "schema": 64,
+  "multiplayerProtocol": 5,
+  "result": "PASS",
+  "luaModules": 22,
+  "blockThemes": 50,
+  "imageBackgrounds": 50,
+  "activeBackgroundTGA": 50,
+  "tests": {
+    "luaParser": true,
+    "luaCompiler": true,
+    "independentCatalogues": true,
+    "noBlockTexturePaths": true,
+    "backgroundPathsOneToOne": true,
+    "tga256x256x32": true,
+    "revealAt10Lines": true,
+    "unlockAt100Lines": true,
+    "retiredKeyProgressMigration": true,
+    "soloGrid": true,
+    "cpuGrid": true,
+    "multiplayerGrid": true,
+    "allModeFeatureAudit": true,
+    "versusOverlapBounds": true
+  }
+}

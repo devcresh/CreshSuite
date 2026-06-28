@@ -1,0 +1,8 @@
+CreshChat v0.3.46 Game Progression
+
+- Every game has persistent level and XP.
+- Solo game start: 5 game XP. Multiplayer start: 10 game XP.
+- Win 30, draw 20, loss 15; endless runs get 15 plus score bonus. Multiplayer result XP is doubled.
+- Every game level awards 10 Cresh Coins and 10 Battle Pass XP.
+- Every 1,000 estimated walking steps awards 1 Cresh Coin and 1 Battle Pass XP.
+- Battle Pass also contains walking and creature-kill milestone goals.
