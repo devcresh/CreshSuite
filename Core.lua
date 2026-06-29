@@ -5,7 +5,7 @@ _G.CreshChat = CC
 CC.name = ADDON_NAME or "CreshChat"
 CC.BUILD = CC.BUILD or {
     version = "0.2.1",
-    schema = 76,
+    schema = 77,
     interface = 20505,
     stage = "Alpha",
 }
@@ -378,6 +378,216 @@ local function mergeAccountProgressionValue(target, source)
     return target
 end
 
+-- Explicit old-key → new stable-key map for every auto-generated achievement.
+-- Keys in save.unlocked that match a left-hand entry are renamed to the right-hand
+-- stable ID. This table is the single authoritative source for the v77 migration.
+local ACHIEVEMENT_MIGRATION_V77 = {
+    -- EXPLORATION / STEPS (10)
+    ["EXPLORATION_STEPS_1000"]    = "ACH_WOW_STEPS_001",
+    ["EXPLORATION_STEPS_2000"]    = "ACH_WOW_STEPS_002",
+    ["EXPLORATION_STEPS_5000"]    = "ACH_WOW_STEPS_003",
+    ["EXPLORATION_STEPS_10000"]   = "ACH_WOW_STEPS_004",
+    ["EXPLORATION_STEPS_25000"]   = "ACH_WOW_STEPS_005",
+    ["EXPLORATION_STEPS_50000"]   = "ACH_WOW_STEPS_006",
+    ["EXPLORATION_STEPS_100000"]  = "ACH_WOW_STEPS_007",
+    ["EXPLORATION_STEPS_250000"]  = "ACH_WOW_STEPS_008",
+    ["EXPLORATION_STEPS_500000"]  = "ACH_WOW_STEPS_009",
+    ["EXPLORATION_STEPS_1000000"] = "ACH_WOW_STEPS_010",
+    -- EXPLORATION / ZONES (7)
+    ["EXPLORATION_ZONES_1"]   = "ACH_WOW_ZONES_001",
+    ["EXPLORATION_ZONES_5"]   = "ACH_WOW_ZONES_002",
+    ["EXPLORATION_ZONES_10"]  = "ACH_WOW_ZONES_003",
+    ["EXPLORATION_ZONES_25"]  = "ACH_WOW_ZONES_004",
+    ["EXPLORATION_ZONES_50"]  = "ACH_WOW_ZONES_005",
+    ["EXPLORATION_ZONES_75"]  = "ACH_WOW_ZONES_006",
+    ["EXPLORATION_ZONES_100"] = "ACH_WOW_ZONES_007",
+    -- EXPLORATION / FLIGHTS (7)
+    ["EXPLORATION_FLIGHTS_1"]   = "ACH_WOW_FLIGHTS_001",
+    ["EXPLORATION_FLIGHTS_5"]   = "ACH_WOW_FLIGHTS_002",
+    ["EXPLORATION_FLIGHTS_10"]  = "ACH_WOW_FLIGHTS_003",
+    ["EXPLORATION_FLIGHTS_25"]  = "ACH_WOW_FLIGHTS_004",
+    ["EXPLORATION_FLIGHTS_50"]  = "ACH_WOW_FLIGHTS_005",
+    ["EXPLORATION_FLIGHTS_100"] = "ACH_WOW_FLIGHTS_006",
+    ["EXPLORATION_FLIGHTS_250"] = "ACH_WOW_FLIGHTS_007",
+    -- COMBAT / KILLS (10)
+    ["COMBAT_KILLS_10"]    = "ACH_WOW_KILLS_001",
+    ["COMBAT_KILLS_25"]    = "ACH_WOW_KILLS_002",
+    ["COMBAT_KILLS_50"]    = "ACH_WOW_KILLS_003",
+    ["COMBAT_KILLS_100"]   = "ACH_WOW_KILLS_004",
+    ["COMBAT_KILLS_250"]   = "ACH_WOW_KILLS_005",
+    ["COMBAT_KILLS_500"]   = "ACH_WOW_KILLS_006",
+    ["COMBAT_KILLS_1000"]  = "ACH_WOW_KILLS_007",
+    ["COMBAT_KILLS_2500"]  = "ACH_WOW_KILLS_008",
+    ["COMBAT_KILLS_5000"]  = "ACH_WOW_KILLS_009",
+    ["COMBAT_KILLS_10000"] = "ACH_WOW_KILLS_010",
+    -- COMBAT / DEATHS (6)
+    ["COMBAT_DEATHS_1"]   = "ACH_WOW_DEATHS_001",
+    ["COMBAT_DEATHS_5"]   = "ACH_WOW_DEATHS_002",
+    ["COMBAT_DEATHS_10"]  = "ACH_WOW_DEATHS_003",
+    ["COMBAT_DEATHS_25"]  = "ACH_WOW_DEATHS_004",
+    ["COMBAT_DEATHS_50"]  = "ACH_WOW_DEATHS_005",
+    ["COMBAT_DEATHS_100"] = "ACH_WOW_DEATHS_006",
+    -- DUNGEONS / EXP|WOW_DUNGEON_MOBS| (10)
+    ["DUNGEONS_EXP|WOW_DUNGEON_MOBS|_10"]    = "ACH_WOW_DUNGEON_MOBS_001",
+    ["DUNGEONS_EXP|WOW_DUNGEON_MOBS|_25"]    = "ACH_WOW_DUNGEON_MOBS_002",
+    ["DUNGEONS_EXP|WOW_DUNGEON_MOBS|_50"]    = "ACH_WOW_DUNGEON_MOBS_003",
+    ["DUNGEONS_EXP|WOW_DUNGEON_MOBS|_100"]   = "ACH_WOW_DUNGEON_MOBS_004",
+    ["DUNGEONS_EXP|WOW_DUNGEON_MOBS|_250"]   = "ACH_WOW_DUNGEON_MOBS_005",
+    ["DUNGEONS_EXP|WOW_DUNGEON_MOBS|_500"]   = "ACH_WOW_DUNGEON_MOBS_006",
+    ["DUNGEONS_EXP|WOW_DUNGEON_MOBS|_1000"]  = "ACH_WOW_DUNGEON_MOBS_007",
+    ["DUNGEONS_EXP|WOW_DUNGEON_MOBS|_2500"]  = "ACH_WOW_DUNGEON_MOBS_008",
+    ["DUNGEONS_EXP|WOW_DUNGEON_MOBS|_5000"]  = "ACH_WOW_DUNGEON_MOBS_009",
+    ["DUNGEONS_EXP|WOW_DUNGEON_MOBS|_10000"] = "ACH_WOW_DUNGEON_MOBS_010",
+    -- DUNGEONS / EXP|WOW_DUNGEON_BOSSES| (9)
+    ["DUNGEONS_EXP|WOW_DUNGEON_BOSSES|_1"]   = "ACH_WOW_DUNGEON_BOSSES_001",
+    ["DUNGEONS_EXP|WOW_DUNGEON_BOSSES|_3"]   = "ACH_WOW_DUNGEON_BOSSES_002",
+    ["DUNGEONS_EXP|WOW_DUNGEON_BOSSES|_5"]   = "ACH_WOW_DUNGEON_BOSSES_003",
+    ["DUNGEONS_EXP|WOW_DUNGEON_BOSSES|_10"]  = "ACH_WOW_DUNGEON_BOSSES_004",
+    ["DUNGEONS_EXP|WOW_DUNGEON_BOSSES|_25"]  = "ACH_WOW_DUNGEON_BOSSES_005",
+    ["DUNGEONS_EXP|WOW_DUNGEON_BOSSES|_50"]  = "ACH_WOW_DUNGEON_BOSSES_006",
+    ["DUNGEONS_EXP|WOW_DUNGEON_BOSSES|_100"] = "ACH_WOW_DUNGEON_BOSSES_007",
+    ["DUNGEONS_EXP|WOW_DUNGEON_BOSSES|_250"] = "ACH_WOW_DUNGEON_BOSSES_008",
+    ["DUNGEONS_EXP|WOW_DUNGEON_BOSSES|_500"] = "ACH_WOW_DUNGEON_BOSSES_009",
+    -- DUNGEONS / EXP|UNIQUE_DUNGEON_FINAL_BOSSES| (7)
+    ["DUNGEONS_EXP|UNIQUE_DUNGEON_FINAL_BOSSES|_1"]  = "ACH_WOW_UNIQUE_FINAL_BOSSES_001",
+    ["DUNGEONS_EXP|UNIQUE_DUNGEON_FINAL_BOSSES|_3"]  = "ACH_WOW_UNIQUE_FINAL_BOSSES_002",
+    ["DUNGEONS_EXP|UNIQUE_DUNGEON_FINAL_BOSSES|_5"]  = "ACH_WOW_UNIQUE_FINAL_BOSSES_003",
+    ["DUNGEONS_EXP|UNIQUE_DUNGEON_FINAL_BOSSES|_8"]  = "ACH_WOW_UNIQUE_FINAL_BOSSES_004",
+    ["DUNGEONS_EXP|UNIQUE_DUNGEON_FINAL_BOSSES|_10"] = "ACH_WOW_UNIQUE_FINAL_BOSSES_005",
+    ["DUNGEONS_EXP|UNIQUE_DUNGEON_FINAL_BOSSES|_12"] = "ACH_WOW_UNIQUE_FINAL_BOSSES_006",
+    ["DUNGEONS_EXP|UNIQUE_DUNGEON_FINAL_BOSSES|_15"] = "ACH_WOW_UNIQUE_FINAL_BOSSES_007",
+    -- DUNGEONS / EXP|WOW_DUNGEON_COMPLETES_TOTAL| (7)
+    ["DUNGEONS_EXP|WOW_DUNGEON_COMPLETES_TOTAL|_1"]   = "ACH_WOW_DUNGEON_CLEARS_001",
+    ["DUNGEONS_EXP|WOW_DUNGEON_COMPLETES_TOTAL|_5"]   = "ACH_WOW_DUNGEON_CLEARS_002",
+    ["DUNGEONS_EXP|WOW_DUNGEON_COMPLETES_TOTAL|_10"]  = "ACH_WOW_DUNGEON_CLEARS_003",
+    ["DUNGEONS_EXP|WOW_DUNGEON_COMPLETES_TOTAL|_25"]  = "ACH_WOW_DUNGEON_CLEARS_004",
+    ["DUNGEONS_EXP|WOW_DUNGEON_COMPLETES_TOTAL|_50"]  = "ACH_WOW_DUNGEON_CLEARS_005",
+    ["DUNGEONS_EXP|WOW_DUNGEON_COMPLETES_TOTAL|_100"] = "ACH_WOW_DUNGEON_CLEARS_006",
+    ["DUNGEONS_EXP|WOW_DUNGEON_COMPLETES_TOTAL|_250"] = "ACH_WOW_DUNGEON_CLEARS_007",
+    -- PROFESSIONS / PROFESSION_RANK (4)
+    ["PROFESSIONS_PROFESSION_RANK_75"]  = "ACH_WOW_PROF_RANK_001",
+    ["PROFESSIONS_PROFESSION_RANK_150"] = "ACH_WOW_PROF_RANK_002",
+    ["PROFESSIONS_PROFESSION_RANK_225"] = "ACH_WOW_PROF_RANK_003",
+    ["PROFESSIONS_PROFESSION_RANK_300"] = "ACH_WOW_PROF_RANK_004",
+    -- PROFESSIONS / PROFESSION_COUNT (4)
+    ["PROFESSIONS_PROFESSION_COUNT_1"] = "ACH_WOW_PROF_COUNT_001",
+    ["PROFESSIONS_PROFESSION_COUNT_2"] = "ACH_WOW_PROF_COUNT_002",
+    ["PROFESSIONS_PROFESSION_COUNT_4"] = "ACH_WOW_PROF_COUNT_003",
+    ["PROFESSIONS_PROFESSION_COUNT_6"] = "ACH_WOW_PROF_COUNT_004",
+    -- PROFESSIONS / MASTER_PROFESSIONS (4)
+    ["PROFESSIONS_MASTER_PROFESSIONS_1"] = "ACH_WOW_PROF_MASTER_001",
+    ["PROFESSIONS_MASTER_PROFESSIONS_2"] = "ACH_WOW_PROF_MASTER_002",
+    ["PROFESSIONS_MASTER_PROFESSIONS_4"] = "ACH_WOW_PROF_MASTER_003",
+    ["PROFESSIONS_MASTER_PROFESSIONS_6"] = "ACH_WOW_PROF_MASTER_004",
+    -- GAMES / DD_KILLS (10)
+    ["GAMES_DD_KILLS_10"]    = "ACH_DD_KILLS_001",
+    ["GAMES_DD_KILLS_25"]    = "ACH_DD_KILLS_002",
+    ["GAMES_DD_KILLS_50"]    = "ACH_DD_KILLS_003",
+    ["GAMES_DD_KILLS_100"]   = "ACH_DD_KILLS_004",
+    ["GAMES_DD_KILLS_250"]   = "ACH_DD_KILLS_005",
+    ["GAMES_DD_KILLS_500"]   = "ACH_DD_KILLS_006",
+    ["GAMES_DD_KILLS_1000"]  = "ACH_DD_KILLS_007",
+    ["GAMES_DD_KILLS_2500"]  = "ACH_DD_KILLS_008",
+    ["GAMES_DD_KILLS_5000"]  = "ACH_DD_KILLS_009",
+    ["GAMES_DD_KILLS_10000"] = "ACH_DD_KILLS_010",
+    -- GAMES / DD_BOSSES (9)
+    ["GAMES_DD_BOSSES_1"]   = "ACH_DD_BOSSES_001",
+    ["GAMES_DD_BOSSES_3"]   = "ACH_DD_BOSSES_002",
+    ["GAMES_DD_BOSSES_5"]   = "ACH_DD_BOSSES_003",
+    ["GAMES_DD_BOSSES_10"]  = "ACH_DD_BOSSES_004",
+    ["GAMES_DD_BOSSES_25"]  = "ACH_DD_BOSSES_005",
+    ["GAMES_DD_BOSSES_50"]  = "ACH_DD_BOSSES_006",
+    ["GAMES_DD_BOSSES_100"] = "ACH_DD_BOSSES_007",
+    ["GAMES_DD_BOSSES_250"] = "ACH_DD_BOSSES_008",
+    ["GAMES_DD_BOSSES_500"] = "ACH_DD_BOSSES_009",
+    -- GAMES / DD_UNIQUE_BOSSES (7)
+    ["GAMES_DD_UNIQUE_BOSSES_1"]   = "ACH_DD_UNIQUE_BOSSES_001",
+    ["GAMES_DD_UNIQUE_BOSSES_5"]   = "ACH_DD_UNIQUE_BOSSES_002",
+    ["GAMES_DD_UNIQUE_BOSSES_10"]  = "ACH_DD_UNIQUE_BOSSES_003",
+    ["GAMES_DD_UNIQUE_BOSSES_25"]  = "ACH_DD_UNIQUE_BOSSES_004",
+    ["GAMES_DD_UNIQUE_BOSSES_50"]  = "ACH_DD_UNIQUE_BOSSES_005",
+    ["GAMES_DD_UNIQUE_BOSSES_75"]  = "ACH_DD_UNIQUE_BOSSES_006",
+    ["GAMES_DD_UNIQUE_BOSSES_100"] = "ACH_DD_UNIQUE_BOSSES_007",
+    -- GAMES / DD_RUNS (7)
+    ["GAMES_DD_RUNS_1"]   = "ACH_DD_RUNS_001",
+    ["GAMES_DD_RUNS_5"]   = "ACH_DD_RUNS_002",
+    ["GAMES_DD_RUNS_10"]  = "ACH_DD_RUNS_003",
+    ["GAMES_DD_RUNS_25"]  = "ACH_DD_RUNS_004",
+    ["GAMES_DD_RUNS_50"]  = "ACH_DD_RUNS_005",
+    ["GAMES_DD_RUNS_100"] = "ACH_DD_RUNS_006",
+    ["GAMES_DD_RUNS_250"] = "ACH_DD_RUNS_007",
+    -- GAMES / GAME_PLAYS (6)
+    ["GAMES_GAME_PLAYS_1"]   = "ACH_WOW_GAME_PLAYS_001",
+    ["GAMES_GAME_PLAYS_10"]  = "ACH_WOW_GAME_PLAYS_002",
+    ["GAMES_GAME_PLAYS_25"]  = "ACH_WOW_GAME_PLAYS_003",
+    ["GAMES_GAME_PLAYS_50"]  = "ACH_WOW_GAME_PLAYS_004",
+    ["GAMES_GAME_PLAYS_100"] = "ACH_WOW_GAME_PLAYS_005",
+    ["GAMES_GAME_PLAYS_250"] = "ACH_WOW_GAME_PLAYS_006",
+    -- GAMES / GAME_WINS (5)
+    ["GAMES_GAME_WINS_1"]   = "ACH_WOW_GAME_WINS_001",
+    ["GAMES_GAME_WINS_10"]  = "ACH_WOW_GAME_WINS_002",
+    ["GAMES_GAME_WINS_25"]  = "ACH_WOW_GAME_WINS_003",
+    ["GAMES_GAME_WINS_50"]  = "ACH_WOW_GAME_WINS_004",
+    ["GAMES_GAME_WINS_100"] = "ACH_WOW_GAME_WINS_005",
+    -- GAMES / GAME_LEVELS (6)
+    ["GAMES_GAME_LEVELS_5"]   = "ACH_WOW_GAME_LEVELS_001",
+    ["GAMES_GAME_LEVELS_10"]  = "ACH_WOW_GAME_LEVELS_002",
+    ["GAMES_GAME_LEVELS_25"]  = "ACH_WOW_GAME_LEVELS_003",
+    ["GAMES_GAME_LEVELS_50"]  = "ACH_WOW_GAME_LEVELS_004",
+    ["GAMES_GAME_LEVELS_100"] = "ACH_WOW_GAME_LEVELS_005",
+    ["GAMES_GAME_LEVELS_250"] = "ACH_WOW_GAME_LEVELS_006",
+    -- GAMES / UNLOCKS (6)
+    ["GAMES_UNLOCKS_1"]   = "ACH_WOW_UNLOCKS_001",
+    ["GAMES_UNLOCKS_5"]   = "ACH_WOW_UNLOCKS_002",
+    ["GAMES_UNLOCKS_10"]  = "ACH_WOW_UNLOCKS_003",
+    ["GAMES_UNLOCKS_25"]  = "ACH_WOW_UNLOCKS_004",
+    ["GAMES_UNLOCKS_50"]  = "ACH_WOW_UNLOCKS_005",
+    ["GAMES_UNLOCKS_100"] = "ACH_WOW_UNLOCKS_006",
+}
+
+-- Idempotent: skips when shared.migratedSchema >= 77. Renames every legacy
+-- auto-generated achievement key to its stable ACH_WOW_* / ACH_DD_* equivalent.
+-- Never calls AddCoins or AddPassXP — progress is preserved, not re-awarded.
+-- When both old and new records coexist, the earlier unlock timestamp is kept
+-- and the higher stat value is kept; the old key is then removed.
+local function MigrateToV77(shared)
+    if tonumber(shared.migratedSchema or 0) >= 77 then return 0 end
+    local gameProgression = type(shared.gameProgression) == "table" and shared.gameProgression or nil
+    if not gameProgression then shared.migratedSchema = 77; return 0 end
+    local achievements = type(gameProgression.achievements) == "table" and gameProgression.achievements or nil
+    if not achievements then shared.migratedSchema = 77; return 0 end
+    local unlocked = type(achievements.unlocked) == "table" and achievements.unlocked or nil
+    if not unlocked then shared.migratedSchema = 77; return 0 end
+
+    local migrated = 0
+    for oldKey, newKey in pairs(ACHIEVEMENT_MIGRATION_V77) do
+        local oldRecord = unlocked[oldKey]
+        if oldRecord then
+            local newRecord = unlocked[newKey]
+            if not newRecord then
+                if type(oldRecord) == "table" then oldRecord.sourceId = newKey end
+                unlocked[newKey] = oldRecord
+            else
+                -- Both keys present: keep the earliest unlock time, highest value.
+                if type(oldRecord) == "table" and type(newRecord) == "table" then
+                    local oldAt = tonumber(oldRecord.at) or 0
+                    local newAt = tonumber(newRecord.at) or 0
+                    if oldAt > 0 and (newAt == 0 or oldAt < newAt) then newRecord.at = oldAt end
+                    local oldVal = tonumber(oldRecord.value) or 0
+                    local newVal = tonumber(newRecord.value) or 0
+                    if oldVal > newVal then newRecord.value = oldVal end
+                end
+            end
+            unlocked[oldKey] = nil
+            migrated = migrated + 1
+        end
+    end
+
+    shared.migratedSchema = 77
+    if migrated > 0 then shared._v77MigrationCount = migrated end
+    return migrated
+end
+
 function CC:EnsureAccountProgressionStorage(forceMigration)
     CreshChatDB = CreshChatDB or {}
     CreshChatDB.accountProgression = type(CreshChatDB.accountProgression) == "table" and CreshChatDB.accountProgression or {}
@@ -403,6 +613,7 @@ function CC:EnsureAccountProgressionStorage(forceMigration)
             mergeDefaults(shared[field], defaults[field] or {})
         end
     end
+    MigrateToV77(shared)
     return shared
 end
 

@@ -47,11 +47,13 @@ local function rewardFor(index, weight)
     return floor(coins), floor(xp)
 end
 
-function Achievements:Add(category, stat, goal, title, description, index, weight)
+function Achievements:Add(category, stat, goal, title, description, index, weight, stableKey)
     local coins, xp = rewardFor(index, weight)
-    local key = upper(category .. "_" .. stat .. "_" .. tostring(goal))
+    local legacyKey = upper(category .. "_" .. stat .. "_" .. tostring(goal))
+    local key = stableKey or legacyKey
     local achievement = {
         key = key,
+        legacyKey = (key ~= legacyKey) and legacyKey or nil,
         category = category,
         stat = stat,
         goal = goal,
@@ -63,12 +65,13 @@ function Achievements:Add(category, stat, goal, title, description, index, weigh
     }
     self.catalog[#self.catalog + 1] = achievement
     self.byKey[key] = achievement
+    if achievement.legacyKey then self.byKey[achievement.legacyKey] = achievement end
 end
 
-local function addSeries(self, category, stat, goals, titles, description, weight)
+local function addSeries(self, category, stat, goals, titles, description, weight, stableKeys)
     for index, goal in ipairs(goals) do
         local title = titles[index] or ((self.categoryNames[category] or category) .. " " .. tostring(index))
-        self:Add(category, stat, goal, title, description(goal, index), index, weight)
+        self:Add(category, stat, goal, title, description(goal, index), index, weight, stableKeys and stableKeys[index])
     end
 end
 
@@ -78,104 +81,167 @@ function Achievements:BuildCatalog()
     addSeries(self, "EXPLORATION", "STEPS",
         { 1000, 2000, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000 },
         { "First Thousand", "Road Tested", "Trail Seeker", "Ten Thousand Steps", "Azeroth Rambler", "Long-Haul Adventurer", "World Walker", "Continental Trekker", "Half-Million Hero", "One Million Steps" },
-        function(goal) return "Travel " .. formatNumber(goal) .. " estimated steps on foot or mount." end, 1)
+        function(goal) return "Travel " .. formatNumber(goal) .. " estimated steps on foot or mount." end, 1,
+        { "ACH_WOW_STEPS_001", "ACH_WOW_STEPS_002", "ACH_WOW_STEPS_003", "ACH_WOW_STEPS_004", "ACH_WOW_STEPS_005",
+          "ACH_WOW_STEPS_006", "ACH_WOW_STEPS_007", "ACH_WOW_STEPS_008", "ACH_WOW_STEPS_009", "ACH_WOW_STEPS_010" })
 
     addSeries(self, "EXPLORATION", "ZONES",
         { 1, 5, 10, 25, 50, 75, 100 },
         { "New Horizon", "Local Explorer", "Border Crosser", "Map Maker", "World Traveller", "Azeroth Cartographer", "Every Road Leads Somewhere" },
-        function(goal) return "Discover " .. formatNumber(goal) .. " different zones." end, 1)
+        function(goal) return "Discover " .. formatNumber(goal) .. " different zones." end, 1,
+        { "ACH_WOW_ZONES_001", "ACH_WOW_ZONES_002", "ACH_WOW_ZONES_003", "ACH_WOW_ZONES_004",
+          "ACH_WOW_ZONES_005", "ACH_WOW_ZONES_006", "ACH_WOW_ZONES_007" })
 
     addSeries(self, "EXPLORATION", "FLIGHTS",
         { 1, 5, 10, 25, 50, 100, 250 },
         { "First Flight", "Frequent Flier", "Wind Rider", "Flight Master Regular", "Aerial Commuter", "Sky Route Veteran", "Master of the Airways" },
-        function(goal) return "Complete " .. formatNumber(goal) .. " flight-path journeys." end, 1)
+        function(goal) return "Complete " .. formatNumber(goal) .. " flight-path journeys." end, 1,
+        { "ACH_WOW_FLIGHTS_001", "ACH_WOW_FLIGHTS_002", "ACH_WOW_FLIGHTS_003", "ACH_WOW_FLIGHTS_004",
+          "ACH_WOW_FLIGHTS_005", "ACH_WOW_FLIGHTS_006", "ACH_WOW_FLIGHTS_007" })
 
     addSeries(self, "COMBAT", "KILLS",
         { 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000 },
         { "First Hunt", "Threat Cleaner", "Field Fighter", "Centurion", "Mob Breaker", "Battle Hardened", "Azeroth Defender", "Relentless", "Enemy Reaper", "Ten Thousand Victories" },
-        function(goal) return "Defeat " .. formatNumber(goal) .. " creatures." end, 1)
+        function(goal) return "Defeat " .. formatNumber(goal) .. " creatures." end, 1,
+        { "ACH_WOW_KILLS_001", "ACH_WOW_KILLS_002", "ACH_WOW_KILLS_003", "ACH_WOW_KILLS_004", "ACH_WOW_KILLS_005",
+          "ACH_WOW_KILLS_006", "ACH_WOW_KILLS_007", "ACH_WOW_KILLS_008", "ACH_WOW_KILLS_009", "ACH_WOW_KILLS_010" })
 
     addSeries(self, "COMBAT", "DEATHS",
         { 1, 5, 10, 25, 50, 100 },
         { "That Hurt", "Walk It Off", "Spirit Healer Regular", "Hard Lessons", "Too Stubborn to Stay Down", "Immortal in Spirit" },
-        function(goal) return "Return from defeat " .. formatNumber(goal) .. " times." end, 1)
+        function(goal) return "Return from defeat " .. formatNumber(goal) .. " times." end, 1,
+        { "ACH_WOW_DEATHS_001", "ACH_WOW_DEATHS_002", "ACH_WOW_DEATHS_003",
+          "ACH_WOW_DEATHS_004", "ACH_WOW_DEATHS_005", "ACH_WOW_DEATHS_006" })
+
+    -- Combat stats — tracked by CombatTracker.lua from COMBAT_LOG_EVENT_UNFILTERED.
+    -- GetStat() fallback (save.stats[stat]) reads these without explicit handlers.
+    addSeries(self, "COMBAT", "WOW_DAMAGE_DEALT",
+        { 10000, 50000, 100000, 500000, 1000000, 5000000, 10000000 },
+        { "First Blood", "Ten Thousand Damage", "One Hundred Thousand", "Half a Million", "One Million Damage", "Five Million Damage", "Ten Million Damage" },
+        function(goal) return "Deal " .. formatNumber(goal) .. " total damage to enemies." end, 2,
+        { "ACH_WOW_DAMAGE_DEALT_001", "ACH_WOW_DAMAGE_DEALT_002", "ACH_WOW_DAMAGE_DEALT_003",
+          "ACH_WOW_DAMAGE_DEALT_004", "ACH_WOW_DAMAGE_DEALT_005", "ACH_WOW_DAMAGE_DEALT_006",
+          "ACH_WOW_DAMAGE_DEALT_007" })
+
+    addSeries(self, "COMBAT", "WOW_DAMAGE_TAKEN",
+        { 5000, 25000, 100000, 500000, 1000000 },
+        { "First Scar", "Tested in Battle", "Iron Will", "Unyielding Defender", "Indestructible" },
+        function(goal) return "Survive taking " .. formatNumber(goal) .. " total damage." end, 1,
+        { "ACH_WOW_DAMAGE_TAKEN_001", "ACH_WOW_DAMAGE_TAKEN_002", "ACH_WOW_DAMAGE_TAKEN_003",
+          "ACH_WOW_DAMAGE_TAKEN_004", "ACH_WOW_DAMAGE_TAKEN_005" })
+
+    addSeries(self, "COMBAT", "WOW_BEST_HIT",
+        { 500, 1000, 2500, 5000, 10000 },
+        { "Heavy Hitter", "Four-Digit Strike", "Master Strike", "Five Thousand Power", "Ten Thousand Fury" },
+        function(goal) return "Land a single hit dealing " .. formatNumber(goal) .. " or more damage." end, 3,
+        { "ACH_WOW_BEST_HIT_001", "ACH_WOW_BEST_HIT_002", "ACH_WOW_BEST_HIT_003",
+          "ACH_WOW_BEST_HIT_004", "ACH_WOW_BEST_HIT_005" })
+
+    addSeries(self, "COMBAT", "WOW_HEALING",
+        { 5000, 25000, 100000, 500000, 1000000 },
+        { "First Aid", "Field Medic", "Hundred Thousand Healed", "Dedicated Healer", "One Million Healed" },
+        function(goal) return "Restore " .. formatNumber(goal) .. " total health to allies." end, 2,
+        { "ACH_WOW_HEALING_001", "ACH_WOW_HEALING_002", "ACH_WOW_HEALING_003",
+          "ACH_WOW_HEALING_004", "ACH_WOW_HEALING_005" })
+
+    addSeries(self, "COMBAT", "WOW_BEST_HEAL",
+        { 500, 1000, 2500, 5000, 10000 },
+        { "Tender Touch", "Thousand Heal", "Powerful Mend", "Major Restoration", "Divine Intervention" },
+        function(goal) return "Cast a single heal restoring " .. formatNumber(goal) .. " or more health." end, 3,
+        { "ACH_WOW_BEST_HEAL_001", "ACH_WOW_BEST_HEAL_002", "ACH_WOW_BEST_HEAL_003",
+          "ACH_WOW_BEST_HEAL_004", "ACH_WOW_BEST_HEAL_005" })
+
+    addSeries(self, "COMBAT", "WOW_CRITS",
+        { 10, 50, 100, 500, 1000, 5000 },
+        { "Sharp Eye", "Fifty Crits", "Critical Century", "Crit Veteran", "Critical Master", "Critical Legend" },
+        function(goal) return "Land " .. formatNumber(goal) .. " critical strikes." end, 2,
+        { "ACH_WOW_CRITS_001", "ACH_WOW_CRITS_002", "ACH_WOW_CRITS_003",
+          "ACH_WOW_CRITS_004", "ACH_WOW_CRITS_005", "ACH_WOW_CRITS_006" })
+
+    addSeries(self, "COMBAT", "WOW_CRIT_HEALS",
+        { 10, 50, 100, 500, 1000 },
+        { "Inspired Mend", "Fifty Crit Heals", "Critical Restoration", "Critical Healer", "Legendary Healer" },
+        function(goal) return "Land " .. formatNumber(goal) .. " critical heals." end, 2,
+        { "ACH_WOW_CRIT_HEALS_001", "ACH_WOW_CRIT_HEALS_002", "ACH_WOW_CRIT_HEALS_003",
+          "ACH_WOW_CRIT_HEALS_004", "ACH_WOW_CRIT_HEALS_005" })
 
     -- Real WoW dungeon progress is kept separate from the Dungeon Dwellers game.
     addSeries(self, "DUNGEONS", "EXP|WOW_DUNGEON_MOBS|",
         { 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000 },
         { "Dungeon Initiate", "Hallway Cleaner", "Pack Breaker", "Dungeon Centurion", "Elite Sweeper", "Delver Veteran", "Thousand Below", "Deep-Crawl Destroyer", "Dungeon Exterminator", "Ten Thousand in the Dark" },
-        function(goal) return "Defeat " .. formatNumber(goal) .. " enemies inside real WoW five-player dungeons." end, 2)
+        function(goal) return "Defeat " .. formatNumber(goal) .. " enemies inside real WoW five-player dungeons." end, 2,
+        { "ACH_WOW_DUNGEON_MOBS_001", "ACH_WOW_DUNGEON_MOBS_002", "ACH_WOW_DUNGEON_MOBS_003", "ACH_WOW_DUNGEON_MOBS_004", "ACH_WOW_DUNGEON_MOBS_005",
+          "ACH_WOW_DUNGEON_MOBS_006", "ACH_WOW_DUNGEON_MOBS_007", "ACH_WOW_DUNGEON_MOBS_008", "ACH_WOW_DUNGEON_MOBS_009", "ACH_WOW_DUNGEON_MOBS_010" })
 
     addSeries(self, "DUNGEONS", "EXP|WOW_DUNGEON_BOSSES|",
         { 1, 3, 5, 10, 25, 50, 100, 250, 500 },
         { "Boss Breaker", "Triple Threat", "Guardian Hunter", "Ten Bosses Down", "Dungeon Ruler Hunter", "Dungeon Nemesis", "Century of Bosses", "Legendary Slayer", "Five Hundred Crowns" },
-        function(goal) return "Defeat " .. formatNumber(goal) .. " bosses inside real WoW five-player dungeons." end, 2)
+        function(goal) return "Defeat " .. formatNumber(goal) .. " bosses inside real WoW five-player dungeons." end, 2,
+        { "ACH_WOW_DUNGEON_BOSSES_001", "ACH_WOW_DUNGEON_BOSSES_002", "ACH_WOW_DUNGEON_BOSSES_003",
+          "ACH_WOW_DUNGEON_BOSSES_004", "ACH_WOW_DUNGEON_BOSSES_005", "ACH_WOW_DUNGEON_BOSSES_006",
+          "ACH_WOW_DUNGEON_BOSSES_007", "ACH_WOW_DUNGEON_BOSSES_008", "ACH_WOW_DUNGEON_BOSSES_009" })
 
     addSeries(self, "DUNGEONS", "EXP|UNIQUE_DUNGEON_FINAL_BOSSES|",
         { 1, 3, 5, 8, 10, 12, 15 },
         { "New Name on the List", "Boss Collector", "Five Final Foes", "Known Enemy", "Ten Final Tyrants", "Boss Encyclopaedia", "Every TBC Final Boss" },
-        function(goal) return "Defeat " .. formatNumber(goal) .. " different TBC five-player final bosses." end, 2)
+        function(goal) return "Defeat " .. formatNumber(goal) .. " different TBC five-player final bosses." end, 2,
+        { "ACH_WOW_UNIQUE_FINAL_BOSSES_001", "ACH_WOW_UNIQUE_FINAL_BOSSES_002", "ACH_WOW_UNIQUE_FINAL_BOSSES_003",
+          "ACH_WOW_UNIQUE_FINAL_BOSSES_004", "ACH_WOW_UNIQUE_FINAL_BOSSES_005", "ACH_WOW_UNIQUE_FINAL_BOSSES_006",
+          "ACH_WOW_UNIQUE_FINAL_BOSSES_007" })
 
     addSeries(self, "DUNGEONS", "EXP|WOW_DUNGEON_COMPLETES_TOTAL|",
         { 1, 5, 10, 25, 50, 100, 250 },
         { "Into the Instance", "Dungeon Tourist", "Ten Expeditions", "Reliable Delver", "Dungeon Regular", "Instance Veteran", "Endless Expedition" },
-        function(goal) return "Complete " .. formatNumber(goal) .. " real WoW five-player dungeon runs." end, 2)
+        function(goal) return "Complete " .. formatNumber(goal) .. " real WoW five-player dungeon runs." end, 2,
+        { "ACH_WOW_DUNGEON_CLEARS_001", "ACH_WOW_DUNGEON_CLEARS_002", "ACH_WOW_DUNGEON_CLEARS_003",
+          "ACH_WOW_DUNGEON_CLEARS_004", "ACH_WOW_DUNGEON_CLEARS_005", "ACH_WOW_DUNGEON_CLEARS_006",
+          "ACH_WOW_DUNGEON_CLEARS_007" })
 
     addSeries(self, "PROFESSIONS", "PROFESSION_RANK",
         { 75, 150, 225, 300 },
         { "Apprentice Hands", "Journeyman Hands", "Expert Hands", "Master Artisan" },
-        function(goal) return "Reach skill " .. formatNumber(goal) .. " in any profession." end, 2)
+        function(goal) return "Reach skill " .. formatNumber(goal) .. " in any profession." end, 2,
+        { "ACH_WOW_PROF_RANK_001", "ACH_WOW_PROF_RANK_002", "ACH_WOW_PROF_RANK_003", "ACH_WOW_PROF_RANK_004" })
 
     addSeries(self, "PROFESSIONS", "PROFESSION_COUNT",
         { 1, 2, 4, 6 },
         { "Learn a Trade", "Working Pair", "Many Talents", "Renaissance Crafter" },
-        function(goal) return "Learn or advance " .. formatNumber(goal) .. " different professions." end, 1)
+        function(goal) return "Learn or advance " .. formatNumber(goal) .. " different professions." end, 1,
+        { "ACH_WOW_PROF_COUNT_001", "ACH_WOW_PROF_COUNT_002", "ACH_WOW_PROF_COUNT_003", "ACH_WOW_PROF_COUNT_004" })
 
     addSeries(self, "PROFESSIONS", "MASTER_PROFESSIONS",
         { 1, 2, 4, 6 },
         { "One Mastery", "Dual Mastery", "Master of Four", "Trade Grandmaster" },
-        function(goal) return "Reach 300 skill in " .. formatNumber(goal) .. " professions." end, 2)
-
-    -- Dungeon Dwellers is a Cresh game and has its own independent tracks.
-    addSeries(self, "GAMES", "DD_KILLS",
-        { 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000 },
-        { "Dweller Initiate", "Dungeon Dwellers Scout", "Dweller Pack Breaker", "Dweller Centurion", "Dweller Sweeper", "Dweller Veteran", "Thousand Dwellers", "Deep-Dwell Destroyer", "Dungeon Dwellers Exterminator", "Ten Thousand Dwellers" },
-        function(goal) return "Defeat " .. formatNumber(goal) .. " enemies in Dungeon Dwellers." end, 2)
-
-    addSeries(self, "GAMES", "DD_BOSSES",
-        { 1, 3, 5, 10, 25, 50, 100, 250, 500 },
-        { "First Dweller Boss", "Dweller Triple Threat", "Five Dweller Guardians", "Ten Dweller Bosses", "Dweller Crown Hunter", "Dweller Nemesis", "Hundred Dweller Bosses", "Legendary Dweller Slayer", "Five Hundred Dweller Crowns" },
-        function(goal) return "Defeat " .. formatNumber(goal) .. " bosses in Dungeon Dwellers." end, 2)
-
-    addSeries(self, "GAMES", "DD_UNIQUE_BOSSES",
-        { 1, 5, 10, 25, 50, 75, 100 },
-        { "First Dweller Name", "Dweller Boss Collector", "Ten Dweller Tyrants", "Dweller Bestiary", "Dweller Boss Encyclopaedia", "Dweller Master Hunter", "Hundred Dweller Boss Types" },
-        function(goal) return "Defeat " .. formatNumber(goal) .. " different Dungeon Dwellers boss types." end, 2)
-
-    addSeries(self, "GAMES", "DD_RUNS",
-        { 1, 5, 10, 25, 50, 100, 250 },
-        { "First Dungeon Dwellers Run", "Dweller Tourist", "Ten Dweller Runs", "Reliable Dungeon Dweller", "Dungeon Dwellers Regular", "Dungeon Dwellers Veteran", "Endless Dungeon Dweller" },
-        function(goal) return "Complete or start " .. formatNumber(goal) .. " Dungeon Dwellers runs." end, 2)
+        function(goal) return "Reach 300 skill in " .. formatNumber(goal) .. " professions." end, 2,
+        { "ACH_WOW_PROF_MASTER_001", "ACH_WOW_PROF_MASTER_002", "ACH_WOW_PROF_MASTER_003", "ACH_WOW_PROF_MASTER_004" })
 
     addSeries(self, "GAMES", "GAME_PLAYS",
         { 1, 10, 25, 50, 100, 250 },
         { "Game On", "Arcade Regular", "Twenty-Five Plays", "Game Night", "Arcade Veteran", "Cresh Games Loyalist" },
-        function(goal) return "Complete or start " .. formatNumber(goal) .. " Cresh game sessions." end, 1)
+        function(goal) return "Complete or start " .. formatNumber(goal) .. " Cresh game sessions." end, 1,
+        { "ACH_WOW_GAME_PLAYS_001", "ACH_WOW_GAME_PLAYS_002", "ACH_WOW_GAME_PLAYS_003",
+          "ACH_WOW_GAME_PLAYS_004", "ACH_WOW_GAME_PLAYS_005", "ACH_WOW_GAME_PLAYS_006" })
 
     addSeries(self, "GAMES", "GAME_WINS",
         { 1, 10, 25, 50, 100 },
         { "First Win", "Winning Habit", "Arcade Champion", "Fifty Victories", "Century Champion" },
-        function(goal) return "Win " .. formatNumber(goal) .. " Cresh games." end, 2)
+        function(goal) return "Win " .. formatNumber(goal) .. " Cresh games." end, 2,
+        { "ACH_WOW_GAME_WINS_001", "ACH_WOW_GAME_WINS_002", "ACH_WOW_GAME_WINS_003",
+          "ACH_WOW_GAME_WINS_004", "ACH_WOW_GAME_WINS_005" })
 
     addSeries(self, "GAMES", "GAME_LEVELS",
         { 5, 10, 25, 50, 100, 250 },
         { "Level Collector", "Double Digits", "Growing Arcade", "Fifty Combined Levels", "Century of Levels", "Account Arcade Master" },
-        function(goal) return "Reach " .. formatNumber(goal) .. " combined levels across Cresh games." end, 1)
+        function(goal) return "Reach " .. formatNumber(goal) .. " combined levels across Cresh games." end, 1,
+        { "ACH_WOW_GAME_LEVELS_001", "ACH_WOW_GAME_LEVELS_002", "ACH_WOW_GAME_LEVELS_003",
+          "ACH_WOW_GAME_LEVELS_004", "ACH_WOW_GAME_LEVELS_005", "ACH_WOW_GAME_LEVELS_006" })
 
     addSeries(self, "GAMES", "UNLOCKS",
         { 1, 5, 10, 25, 50, 100 },
         { "First Unlock", "Collection Started", "Ten Treasures", "Unlock Hunter", "Collection Curator", "Vault Keeper" },
-        function(goal) return "Own " .. formatNumber(goal) .. " themes, decks, armour sets, minions or game cosmetics." end, 2)
+        function(goal) return "Own " .. formatNumber(goal) .. " themes, decks, armour sets, minions or game cosmetics." end, 2,
+        { "ACH_WOW_UNLOCKS_001", "ACH_WOW_UNLOCKS_002", "ACH_WOW_UNLOCKS_003",
+          "ACH_WOW_UNLOCKS_004", "ACH_WOW_UNLOCKS_005", "ACH_WOW_UNLOCKS_006" })
 end
 
 local function progressionRoot()
@@ -260,8 +326,6 @@ function Achievements:GetStat(stat)
     local save = self:Ensure()
     if not save then return 0 end
     local exploration = CC.db and CC.db.gameProgression and CC.db.gameProgression.exploration or {}
-    local solo = CC.db and CC.db.soloGames or {}
-    local dungeon = solo.dungeon or {}
     if stat == "STEPS" then return floor(max(0, tonumber(exploration.totalSteps) or 0)) end
     if stat == "ZONES" then
         return max(floor(max(0, tonumber(exploration.newZones) or 0)), countMap(save.visitedZones), countMap(exploration.visitedZones))
@@ -275,10 +339,6 @@ function Achievements:GetStat(stat)
     if stat == "BOSSES" then return save.stats.bosses or 0 end
     if stat == "UNIQUE_BOSSES" then return countMap(save.uniqueBosses) end
     if stat == "DUNGEONS" then return max(save.stats.dungeons or 0, floor(max(0, tonumber(exploration.dungeonClears) or 0))) end
-    if stat == "DD_KILLS" then return floor(max(0, tonumber(dungeon.kills) or 0)) end
-    if stat == "DD_BOSSES" then return floor(max(0, tonumber(dungeon.bosses) or 0)) end
-    if stat == "DD_UNIQUE_BOSSES" then return countMap(dungeon.bossKillsByType) end
-    if stat == "DD_RUNS" then return floor(max(0, tonumber(dungeon.runs) or 0)) end
     if stat == "PROFESSION_RANK" then
         local best = 0
         for _, rank in pairs(save.professionRanks or {}) do best = max(best, tonumber(rank) or 0) end
@@ -333,7 +393,15 @@ end
 function Achievements:Unlock(achievement, silent)
     local save = self:Ensure()
     if not save or not achievement or save.unlocked[achievement.key] then return false end
-    save.unlocked[achievement.key] = { at = now(), value = self:GetStat(achievement.stat) }
+    local R = CC.ProgressRouter
+    save.unlocked[achievement.key] = {
+        at           = now(),
+        value        = self:GetStat(achievement.stat),
+        -- F1: reward routing metadata
+        sourceSystem = R and R.SYSTEMS.WOW_ACHIEVEMENTS or "WOW_ACHIEVEMENTS",
+        sourceId     = achievement.key,
+        targetGame   = R and R.GAMES.GLOBAL or "GLOBAL",
+    }
     save.totalCoins = save.totalCoins + achievement.coins
     save.totalPassXP = save.totalPassXP + achievement.xp
     if silent and self.silentRewardBatch then

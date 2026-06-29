@@ -347,9 +347,7 @@ function Progression:RecordKill(destGUID, destName)
     root.exploration.totalKills = (root.exploration.totalKills or 0) + 1
     if CC.Achievements and CC.Achievements.RecordWorldKill then CC.Achievements:RecordWorldKill(destGUID, destName) end
     if CC.BattlePass and CC.BattlePass.CheckMilestoneGoals then CC.BattlePass:CheckMilestoneGoals("KILL", root.exploration.totalKills) end
-    if CC.DungeonDwellersPass and CC.DungeonDwellersPass.RecordMobKill then
-        CC.DungeonDwellersPass:RecordMobKill()
-    end
+    if CC.BattlePass and CC.BattlePass.AddPassXP then CC.BattlePass:AddPassXP(1, "WoW mob defeated", true) end
 end
 
 local events = CreateFrame("Frame")

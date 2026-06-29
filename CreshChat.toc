@@ -6,6 +6,7 @@
 ## SavedVariables: CreshChatDB
 
 Core.lua
+ProgressRouter.lua
 SoundLibrary.lua
 Quest.lua
 Friends.lua
@@ -26,6 +27,7 @@ Progression.lua
 Achievements.lua
 AchievementExpansion.lua
 ClassAchievements.lua
+DungeonAchievements.lua
 GameAudio.lua
 Quality.lua
 Developer.lua

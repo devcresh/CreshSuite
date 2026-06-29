@@ -3,7 +3,7 @@ if not CC then return end
 
 local Pass = {
     version = CC.version,
-    maxLevel = 100,
+    maxLevel = 200,
 }
 CC.BattlePass = Pass
 if CC.RegisterModule then CC:RegisterModule("BattlePass", Pass) end
@@ -35,6 +35,27 @@ Pass.levelNames = {
     "Endless Champion", "Dungeon Warlord", "Chess Virtuoso", "Card Table Legend", "Conqueror Cache",
     "Hundred-Room Hero", "Perfect Crossing", "Grand Rival", "Theme Collector", "Ascendant Cache",
     "Azeroth Icon", "Outland Icon", "Social Arcade Legend", "Cresh Immortal", "Grand Theme Vault",
+    -- Levels 101-200
+    "Legendary Initiate", "Second Horizon", "Grander Fortune", "Realm Walker", "Imperial Cache",
+    "Dawn Herald", "Starfall Seeker", "Crystal Warden", "Vault Delver", "Sovereign Cache",
+    "Flame Warder", "Storm Victor", "Iron Sentinel", "Rift Scout", "Twilight Cache",
+    "Void Wanderer", "Ember Tactician", "Tide Caller", "Sky Marshal", "Celestial Cache",
+    "Rune Keeper", "Pact Forger", "Shadow Dancer", "Oath Bearer", "Eternity Cache",
+    "World Wanderer", "Shard Hunter", "Pinnacle Walker", "Crucible Lord", "Dominion Cache",
+    "Primal Champion", "Ancient Caller", "Lore Master", "Power Forger", "Valor Cache",
+    "Sacred Keeper", "Gate Warden", "Horizon Runner", "Relic Finder", "Conquest Cache",
+    "Titan's Disciple", "Boundless Wanderer", "Throne Seeker", "Beacon Holder", "Primordial Cache",
+    "Storm's Edge", "Void Champion", "Abyss Walker", "Crown Seeker", "Grand Conqueror's Vault",
+    "Arcane Sovereign", "Battle Forged", "Realm Master", "Undying Seeker", "Eternal Cache",
+    "Last Bastion", "Crucible Veteran", "Starlit Rival", "Ironclad Sage", "Timeless Cache",
+    "Light's Ascendant", "Sunlit Keeper", "Radiant Warden", "Dawnbringer", "Unbowed Cache",
+    "Arcane Vanguard", "Fel Warden", "Storm Sentinel", "Grove Champion", "Radiant Cache",
+    "Azeroth Paragon", "Relentless Paragon", "Realm Forger", "Cresh Transcendent", "Ancient Cache",
+    "Bastion Breaker", "Immortal Delver", "Final Rival", "Lore Champion", "Undying Cache",
+    "Arena Paragon", "Void Walker", "Eternal Dawn", "Kingdom's Edge", "Titan Cache",
+    "Forge Mastery", "Pinnacle Seeker", "Immortal Rival", "Grand Arcanist", "Transcendent Cache",
+    "Azeroth Eternal", "Boundless Champion", "Cresh Paragon", "Immortal Seeker", "Infinite Cache",
+    "Last Legend", "Timeless Champion", "Cresh Ascendant", "Immortal of Azeroth", "Grand Eternal Champion",
 }
 
 Pass.requirementRoutes = {
@@ -90,8 +111,8 @@ local function paletteInfo(key, name, price, note, source, level)
     }
 end
 
--- Twenty additional shop themes join the original five. Prices rise with the
--- visual rarity of the faction, zone or raid palette.
+-- Ten shop themes purchasable with Cresh Coins.
+-- The ten Outland and endgame zone themes are reserved as Battle Pass rewards (levels 110-200).
 local SHOP_THEMES = {
     {"FOR_THE_ALLIANCE", "For the Alliance", 150, "Royal blue, lion gold and bright Alliance trim."},
     {"FOR_THE_HORDE", "For the Horde", 150, "Crimson iron, war-banner red and ember highlights."},
@@ -101,31 +122,30 @@ local SHOP_THEMES = {
     {"STRANGLETHORN", "Stranglethorn Vale", 325, "Deep jungle green with treasure-gold accents."},
     {"TANARIS", "Tanaris", 350, "Sandstone panels, desert gold and weathered brass."},
     {"WINTERSPRING", "Winterspring", 400, "Frost blue, snow white and cold mountain shadows."},
-    {"HELLFIRE_PENINSULA", "Hellfire Peninsula", 450, "Cracked red earth, fel-scarred ember and dark rock."},
-    {"ZANGARMARSH", "Zangarmarsh", 500, "Bioluminescent teal, marsh blue and violet spores."},
-    {"NAGRAND", "Nagrand", 550, "Open-sky blue, lush grass and floating-island stone."},
-    {"NETHERSTORM", "Netherstorm", 625, "Arcane violet, storm blue and fractured energy."},
-    {"SHADOWMOON_VALLEY", "Shadowmoon Valley", 700, "Demonic violet, fel green and volcanic shadow."},
-    {"SHATTRATH", "Shattrath City", 750, "Aldor gold, draenic blue and sanctuary stone."},
-    {"SILVERMOON", "Silvermoon City", 800, "Blood-elf crimson, sun gold and polished marble."},
     {"STORMWIND", "Stormwind City", 850, "Alliance blue, royal gold and bright city stone."},
     {"ORGRIMMAR", "Orgrimmar", 850, "Horde crimson, iron brown and fortress firelight."},
-    {"BLACK_TEMPLE", "Black Temple", 950, "Temple shadow, Illidari violet and fel-touched green."},
-    {"SUNWELL", "Sunwell Plateau", 1050, "Radiant gold, phoenix red and high-elven light."},
-    {"DARK_PORTAL", "The Dark Portal", 1200, "Portal violet, fel green and ancient black stone."},
 }
 for _, row in ipairs(SHOP_THEMES) do
     paletteInfo(row[1], row[2], row[3], row[4], "SHOP")
     Pass.themeOrder[#Pass.themeOrder + 1] = row[1]
 end
 
--- Ten popular-zone themes are earned directly from the extended Battle Pass.
+-- Twenty zone themes earned from the extended Battle Pass (levels 10-200, every 10 levels).
+-- Levels 1-100: classic Azeroth and early Outland zones (exclusive to the pass).
+-- Levels 110-200: Outland and endgame zones, moved from the shop to the pass.
+--   Players who previously purchased these themes from the shop retain ownership.
 Pass.passThemeRewards = {
-    [10] = "WESTFALL", [20] = "DUSKWOOD", [30] = "THE_BARRENS", [40] = "ASHENVALE",
-    [50] = "UNGORO", [60] = "EASTERN_PLAGUELANDS", [70] = "TEROKKAR_FOREST",
-    [80] = "BLADES_EDGE", [90] = "TEMPEST_KEEP", [100] = "SERPENTSHRINE",
+    [10]  = "WESTFALL",         [20]  = "DUSKWOOD",           [30]  = "THE_BARRENS",
+    [40]  = "ASHENVALE",        [50]  = "UNGORO",             [60]  = "EASTERN_PLAGUELANDS",
+    [70]  = "TEROKKAR_FOREST",  [80]  = "BLADES_EDGE",        [90]  = "TEMPEST_KEEP",
+    [100] = "SERPENTSHRINE",
+    -- Extended pass rewards: levels 110-200
+    [110] = "HELLFIRE_PENINSULA",  [120] = "ZANGARMARSH",      [130] = "NAGRAND",
+    [140] = "NETHERSTORM",         [150] = "SHADOWMOON_VALLEY",[160] = "SHATTRATH",
+    [170] = "SILVERMOON",          [180] = "BLACK_TEMPLE",     [190] = "SUNWELL",
+    [200] = "DARK_PORTAL",
 }
-for level = 10, 100, 10 do
+for level = 10, 200, 10 do
     local key = Pass.passThemeRewards[level]
     local name = CC.ThemeLibrary and CC.ThemeLibrary.display and CC.ThemeLibrary.display[key] or key
     paletteInfo(key, name, 0, "Exclusive Battle Pass theme unlocked at Level " .. level .. ".", "PASS", level)
@@ -192,6 +212,13 @@ Pass.milestoneDefinitions = {
     { key="KILL_250", kind="KILL", goal=250, coins=50, xp=35, title="Threat Cleaner" },
     { key="KILL_500", kind="KILL", goal=500, coins=100, xp=60, title="Enemy Reaper" },
     { key="KILL_1000", kind="KILL", goal=1000, coins=200, xp=100, title="Azeroth Defender" },
+    -- Extended milestones for levels 101-200
+    { key="WALK_250000",  kind="WALK", goal=250000,  coins=300,  xp=150, title="Marathon Marcher" },
+    { key="WALK_500000",  kind="WALK", goal=500000,  coins=600,  xp=300, title="World Traverser" },
+    { key="WALK_1000000", kind="WALK", goal=1000000, coins=1200, xp=600, title="Azeroth Pilgrim" },
+    { key="KILL_2500",  kind="KILL", goal=2500,  coins=400,  xp=200, title="Unstoppable" },
+    { key="KILL_5000",  kind="KILL", goal=5000,  coins=750,  xp=375, title="Five Thousand Felled" },
+    { key="KILL_10000", kind="KILL", goal=10000, coins=1500, xp=750, title="Slayer of Thousands" },
 }
 
 function Pass:GetGoalProgress(kind)
@@ -261,11 +288,19 @@ end
 
 function Pass:GetLevelFromXP(xp)
     xp = floor(max(0, tonumber(xp) or 0))
-    local level = 1
-    while level < self.maxLevel and xp >= self:GetCumulativeXP(level + 1) do
-        level = level + 1
-    end
+    -- Closed-form solution to 5k²+95k = 2·xp (k = level−1).
+    -- At every level boundary the discriminant (10n+85)² is a perfect square,
+    -- so the formula is exact at thresholds. The ±1 neighbour loop corrects
+    -- any floating-point drift between boundaries.
+    local k = floor((-95 + math.sqrt(9025 + 40 * xp)) / 10)
+    local level = max(1, min(self.maxLevel, 1 + k))
+    while level < self.maxLevel and xp >= self:GetCumulativeXP(level + 1) do level = level + 1 end
+    while level > 1               and xp <  self:GetCumulativeXP(level)     do level = level - 1 end
     return level
+end
+
+function Pass:GetMaxXP()
+    return self:GetCumulativeXP(self.maxLevel)
 end
 
 function Pass:GetProgress()
@@ -283,7 +318,7 @@ function Pass:GetReward(level)
     level = floor(clamp(level, 1, self.maxLevel))
     local coins
     if level == self.maxLevel then
-        coins = 250
+        coins = 1000  -- capstone: completing all 200 levels
     elseif level % 10 == 0 then
         coins = 100 + level * 2
     elseif level % 5 == 0 then
@@ -306,6 +341,10 @@ function Pass:GetReward(level)
         deckName = deckInfo and deckInfo.displayName or nil,
         tetrisThemeKey = tetrisThemeKey,
         tetrisThemeName = tetrisTheme and tetrisTheme.name or nil,
+        -- F1: reward routing metadata
+        sourceSystem = "WOW_BATTLE_PASS",
+        sourceId     = "BATTLEPASS_LEVEL_" .. level,
+        targetGame   = "GLOBAL",
     }
 end
 
@@ -395,7 +434,8 @@ function Pass:IsRewardClaimed(level)
     return save and save.claimed[tostring(level)] == true or false
 end
 
-function Pass:AddCoins(amount, source)
+function Pass:AddCoins(amount, source, isSimulation)
+    if isSimulation == true then return 0 end
     local save = self:Ensure()
     amount = floor(max(0, tonumber(amount) or 0))
     if not save or amount <= 0 then return 0 end
@@ -408,7 +448,8 @@ function Pass:AddCoins(amount, source)
     return amount
 end
 
-function Pass:AddPassXP(amount, source, silent)
+function Pass:AddPassXP(amount, source, silent, isSimulation)
+    if isSimulation == true then return 0 end
     local save = self:Ensure()
     amount = floor(max(0, tonumber(amount) or 0))
     if not save or amount <= 0 then return 0 end
@@ -672,7 +713,7 @@ function Pass:BuildDrawerPanels(drawer, api)
     hero.title:SetText("CRESH BATTLE PASS")
     hero.subtitle = createFont(hero, 9, colors.muted, "LEFT")
     hero.subtitle:SetPoint("TOPLEFT", hero.title, "BOTTOMLEFT", 0, -4)
-    hero.subtitle:SetText("100 levels · play any solo or multiplayer game to earn Pass Points, coins and themes.")
+    hero.subtitle:SetText(tostring(self.maxLevel) .. " levels · play any solo or multiplayer game to earn Pass Points, coins and themes.")
 
     hero.level = createFont(hero, 24, colors.text, "LEFT")
     hero.level:SetPoint("TOPLEFT", hero, "TOPLEFT", 12, -49)

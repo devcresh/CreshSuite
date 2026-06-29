@@ -579,6 +579,7 @@ function A:RecordQuestTurnIn(questID)
             e.zoneQuestCounts[zoneKey] = mapValue(e.zoneQuestCounts, zone) + 1
         end
     end
+    if CC.BattlePass and CC.BattlePass.AddPassXP then CC.BattlePass:AddPassXP(5, "WoW quest", true) end
     self:EvaluateAll(false)
 end
 
@@ -681,7 +682,8 @@ local function guildGroupCount()
 end
 
 local oldRecordBoss = A.RecordBoss
-function A:RecordBoss(key, name)
+function A:RecordBoss(key, name, sourceGame)
+    if sourceGame ~= nil and sourceGame ~= "WOW" then return end
     local base = oldEnsure(self)
     local before = base and tonumber(base.stats and base.stats.bosses) or 0
     oldRecordBoss(self, key, name)

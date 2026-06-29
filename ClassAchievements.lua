@@ -376,7 +376,7 @@ frame:SetScript("OnEvent",function(_,event,...)
         end
     elseif event=="UNIT_COMBO_POINTS" then
         local unit=...
-        if unit=="player" and currentClass()=="ROGUE" and type(_G.GetComboPoints)=="function" then self.lastComboPoints=tonumber(_G.GetComboPoints("player","target")) or 0 end
+        if unit=="player" and currentClass()=="ROGUE" and type(_G.GetComboPoints)=="function" then ClassAchievements.lastComboPoints=tonumber(_G.GetComboPoints("player","target")) or 0 end
     elseif event=="UNIT_PET" then
         local unit=...
         if unit=="player" and currentClass()=="HUNTER" and ClassAchievements.pendingTame and now()-ClassAchievements.pendingTame<8 then

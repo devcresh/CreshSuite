@@ -125,6 +125,10 @@ function Pass:GetReward(level)
         coins = level == 100 and 500 or (10 + floor((level - 1) / 5) * 5),
         buffs = {},
         title = "Delver Rank " .. tostring(level),
+        -- F1: reward routing metadata
+        sourceSystem = "DUNGEON_DWELLER_BATTLE_PASS",
+        sourceId     = "DDPASS_LEVEL_" .. level,
+        targetGame   = "DUNGEON_DWELLER",
     }
 
     local cycle = level % 20
@@ -181,10 +185,10 @@ function Pass:RefreshUI()
     if CC.UI and CC.UI.RefreshConsoleEconomy then CC.UI:RefreshConsoleEconomy() end
 end
 
-function Pass:AddXP(amount, source, mainPassXP, activityKey, silent)
+function Pass:AddXP(amount, source, activityKey, silent, isSimulation)
+    if isSimulation == true then return 0 end
     local save = self:Ensure()
     amount = floor(max(0, tonumber(amount) or 0))
-    mainPassXP = floor(max(0, tonumber(mainPassXP) or 0))
     if not save or amount <= 0 then return 0 end
 
     local previousLevel = self:GetLevelFromXP(save.xp)
@@ -195,25 +199,11 @@ function Pass:AddXP(amount, source, mainPassXP, activityKey, silent)
     end
     save.recent = { source = tostring(source or "Activity"), xp = amount, level = newLevel, at = now() }
 
-    local mainPrevious, mainNew
-    if mainPassXP > 0 and CC.BattlePass and CC.BattlePass.AddPassXP then
-        local _, before, after = CC.BattlePass:AddPassXP(mainPassXP, "Dungeon Dwellers · " .. tostring(source or "Activity"), true)
-        mainPrevious, mainNew = before, after
-    end
-
     if not silent and newLevel > previousLevel then
         showDungeonPassToast(
             "Dungeon Dwellers Pass Level " .. tostring(newLevel),
             "+" .. tostring(amount) .. " XP · " .. self:GetRewardText(newLevel) .. " ready",
             "DDPASS:LEVEL:" .. tostring(newLevel)
-        )
-    end
-    if not silent and mainNew and mainPrevious and mainNew > mainPrevious and CC.UI and CC.UI.ShowBattlePassToast then
-        CC.UI:ShowBattlePassToast(
-            "CreshChat Battle Pass Level " .. tostring(mainNew),
-            "+" .. tostring(mainPassXP) .. " XP from Dungeon Dwellers activity",
-            "BATTLEPASS",
-            "DDPASS:MAIN:" .. tostring(mainNew)
         )
     end
 
@@ -222,17 +212,15 @@ function Pass:AddXP(amount, source, mainPassXP, activityKey, silent)
 end
 
 function Pass:RecordMobKill()
-    return self:AddXP(1, "WoW mob defeated", 1, "mobKills", false)
+    return self:AddXP(1, "WoW mob defeated", "mobKills", false)
 end
 
 function Pass:RecordDungeonKill(isBoss)
-    local result = self:AddXP(isBoss and 5 or 2, isBoss and "Dungeon boss defeated" or "Dungeon enemy defeated", isBoss and 3 or 1, "dungeonKills", false)
-    if CC.Achievements and CC.Achievements.EvaluateAll then CC.Achievements:EvaluateAll(false) end
-    return result
+    return self:AddXP(isBoss and 5 or 2, isBoss and "Dungeon boss defeated" or "Dungeon enemy defeated", "dungeonKills", false)
 end
 
 function Pass:RecordQuest(questID, title)
-    return self:AddXP(15, title or ("Quest " .. tostring(questID or "completed")), 5, "quests", false)
+    return self:AddXP(15, title or ("Quest " .. tostring(questID or "completed")), "quests", false)
 end
 
 function Pass:RecordZone(zoneKey, zoneName)
@@ -241,7 +229,7 @@ function Pass:RecordZone(zoneKey, zoneName)
     zoneKey = tostring(zoneKey or zoneName or "")
     if zoneKey == "" or save.visitedZones[zoneKey] then return 0 end
     save.visitedZones[zoneKey] = { name = tostring(zoneName or zoneKey), at = now() }
-    return self:AddXP(20, "New zone: " .. tostring(zoneName or zoneKey), 0, "zones", false)
+    return self:AddXP(20, "New zone: " .. tostring(zoneName or zoneKey), "zones", false)
 end
 
 function Pass:RecordAchievement(achievementID, name)
@@ -250,7 +238,7 @@ function Pass:RecordAchievement(achievementID, name)
     local key = tostring(achievementID or name or "")
     if key == "" or save.achievements[key] then return 0 end
     save.achievements[key] = { name = tostring(name or ("Achievement " .. key)), at = now() }
-    return self:AddXP(50, "Achievement: " .. tostring(name or key), 15, "achievements", false)
+    return self:AddXP(50, "Achievement: " .. tostring(name or key), "achievements", false)
 end
 
 function Pass:ClaimReward(level, silent)
@@ -331,26 +319,9 @@ local function safeRegister(event)
     if eventFrame and eventFrame.RegisterEvent then pcall(eventFrame.RegisterEvent, eventFrame, event) end
 end
 safeRegister("PLAYER_LOGIN")
-safeRegister("QUEST_TURNED_IN")
-safeRegister("ACHIEVEMENT_EARNED")
 
-eventFrame:SetScript("OnEvent", function(_, event, ...)
+eventFrame:SetScript("OnEvent", function(_, event)
     if event == "PLAYER_LOGIN" then
         Pass:Ensure()
-    elseif event == "QUEST_TURNED_IN" then
-        local questID = ...
-        local title
-        if type(_G.C_QuestLog) == "table" and type(_G.C_QuestLog.GetTitleForQuestID) == "function" then
-            title = _G.C_QuestLog.GetTitleForQuestID(questID)
-        elseif type(_G.GetQuestLogTitle) == "function" and type(_G.GetQuestLogIndexByID) == "function" then
-            local index = _G.GetQuestLogIndexByID(questID)
-            if index and index > 0 then title = _G.GetQuestLogTitle(index) end
-        end
-        Pass:RecordQuest(questID, title and ("Quest: " .. title) or nil)
-    elseif event == "ACHIEVEMENT_EARNED" then
-        local achievementID = ...
-        local name
-        if type(_G.GetAchievementInfo) == "function" then name = _G.GetAchievementInfo(achievementID) end
-        Pass:RecordAchievement(achievementID, name)
     end
 end)
