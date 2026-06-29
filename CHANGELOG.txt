@@ -1,3 +1,20 @@
+CreshChat v0.2.2 - Per-Character Combat Tracking and Class Achievement Key Migration (2026-06-30)
+
+- Added per-character combat tracking alongside account-aggregate tracking; CombatTracker
+  now maintains a separate characterCombat table per active character profile.
+- Added CHARACTER scope for class achievements; WoW class achievements now evaluate
+  against per-character stats via a new GetStatForScope() function.
+- Renamed internal class achievement keys from the global CLASS_*_NNN sequential
+  format to the stable per-class ACH_CLASS_*_NNN format (001-010 per class).
+- Added schema V78 migration in Core.lua to rename existing unlocked CLASS_* keys in
+  SavedVariables to the new ACH_CLASS_* format; migration is idempotent and preserves
+  all existing unlock timestamps and values.
+- Added CombatTracker:GetCharStats() for accessing the per-character stat table.
+- Added Achievements:GetStatForScope() for scope-aware stat reads (CHARACTER vs ACCOUNT_AGGREGATE).
+- Added test groups L21-L26 covering character identity, combat attribution,
+  achievement scopes, class key format, namespace isolation, and V78 migration.
+- Upgraded SavedVariables to schema 78 (existing account-wide progress fully preserved).
+
 CreshChat v0.2.1 - Version Correction (2026-06-29)
 
 - Corrected release version numbering from v0.2 to v0.2.1.

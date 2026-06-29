@@ -50,5 +50,8 @@ node_modules/
 quarantine/prompt_fragments/*
 !quarantine/prompt_fragments/README.txt
 
+# Accidental shell-script fragments captured as filenames
+Docs/Guides/commit
+
 # Miscellaneous
 *.lock

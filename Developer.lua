@@ -846,6 +846,205 @@ local function runMalformed(T)
     end
 end
 
+-- ── Test groups L21–L26 (Pass 9 — character identity, scopes, migration) ─────
+
+tests[21] = function(T)  -- L21: Character identity
+    local key = CC:GetCurrentCharacterProfileKey()
+    T.check("L21: profile key non-empty", type(key) == "string" and key ~= "")
+    T.check("L21: key contains ' - ' separator", type(key) == "string" and key:find(" - ", 1, true) ~= nil)
+    local profiles = CC:GetCharacterProfiles()
+    T.check("L21: GetCharacterProfiles returns table", type(profiles) == "table")
+    local profile = CC.currentProfile
+    T.check("L21: currentProfile is set", type(profile) == "table")
+    if profile then
+        T.check("L21: profile.name non-empty", type(profile.name) == "string" and profile.name ~= "")
+        T.check("L21: profile.realm non-empty", type(profile.realm) == "string" and profile.realm ~= "")
+    else
+        T.skip("L21: profile.name", "currentProfile nil")
+        T.skip("L21: profile.realm", "currentProfile nil")
+    end
+    local ct = CC.CombatTracker
+    if ct and ct.GetCharStats then
+        local c = ct:GetCharStats()
+        if c then
+            T.check("L21: charCombat.WOW_DAMAGE_DEALT exists", tonumber(c.WOW_DAMAGE_DEALT) ~= nil)
+            T.check("L21: charCombat separate from account stats",
+                c ~= (CC.Achievements and CC.Achievements:Ensure() and CC.Achievements:Ensure().stats))
+        else
+            T.skip("L21: charCombat fields", "charCombatRef nil (profile may not have loaded)")
+        end
+    else
+        T.skip("L21: charCombat fields", "CombatTracker not loaded")
+    end
+end
+
+tests[22] = function(T)  -- L22: Combat attribution (per-character vs account)
+    local ct = CC.CombatTracker
+    if not ct then T.skip("L22", "CombatTracker not loaded"); return end
+    local A = CC.Achievements
+    if not A then T.skip("L22", "Achievements not loaded"); return end
+    local save = A:Ensure()
+    if not save then T.skip("L22", "Achievements:Ensure nil"); return end
+    local acct = save.stats
+    local char = ct:GetCharStats()
+    if not acct then T.skip("L22", "account stats nil"); return end
+    -- Verify account stats have the WOW_* fields
+    T.check("L22: account WOW_DAMAGE_DEALT is number", tonumber(acct.WOW_DAMAGE_DEALT) ~= nil)
+    T.check("L22: account WOW_CRITS is number",         tonumber(acct.WOW_CRITS) ~= nil)
+    T.check("L22: account WOW_HEALING is number",       tonumber(acct.WOW_HEALING) ~= nil)
+    -- Simulate a stat write and verify both tables update independently
+    if char then
+        T.check("L22: char table distinct from account table", char ~= acct)
+        local prevAcct = acct.WOW_DAMAGE_DEALT
+        local prevChar = char.WOW_DAMAGE_DEALT
+        acct.WOW_DAMAGE_DEALT = prevAcct + 500
+        char.WOW_DAMAGE_DEALT = prevChar + 500
+        T.check("L22: account write independent", acct.WOW_DAMAGE_DEALT == prevAcct + 500)
+        T.check("L22: char write independent",    char.WOW_DAMAGE_DEALT == prevChar + 500)
+        -- Restore
+        acct.WOW_DAMAGE_DEALT = prevAcct
+        char.WOW_DAMAGE_DEALT = prevChar
+        T.check("L22: account restored", acct.WOW_DAMAGE_DEALT == prevAcct)
+        T.check("L22: char restored",    char.WOW_DAMAGE_DEALT == prevChar)
+    else
+        T.skip("L22: char table isolation", "charCombatRef nil")
+    end
+    -- Zero/negative guards (from safeAmt — tested via direct stat, not live combat)
+    T.skip("L22: live SWING_DAMAGE parsing", "requires real WoW combat events")
+end
+
+tests[23] = function(T)  -- L23: Achievement scopes
+    local A = CC.Achievements
+    if not A then T.skip("L23", "Achievements not loaded"); return end
+    A:BuildCatalog()
+    -- All ACH_WOW_* achievements should default to ACCOUNT_AGGREGATE
+    local damageAch = A.byKey["ACH_WOW_DAMAGE_DEALT_001"]
+    if damageAch then
+        T.check("L23: ACH_WOW_DAMAGE_DEALT_001 scope is ACCOUNT_AGGREGATE",
+            damageAch.scope == "ACCOUNT_AGGREGATE")
+    else
+        T.skip("L23: ACCOUNT_AGGREGATE scope check", "ACH_WOW_DAMAGE_DEALT_001 not in catalog")
+    end
+    -- Class achievements should be CHARACTER scope
+    local classAch = A.byKey["ACH_CLASS_DRUID_001"]
+    if classAch then
+        T.check("L23: ACH_CLASS_DRUID_001 scope is CHARACTER", classAch.scope == "CHARACTER")
+    else
+        T.skip("L23: CHARACTER scope on class ach", "ACH_CLASS_DRUID_001 not in catalog")
+    end
+    -- GetStatForScope with ACCOUNT_AGGREGATE should call through to GetStat
+    local statAcct = A:GetStatForScope("WOW_CRITS", "ACCOUNT_AGGREGATE")
+    local statDirect = A:GetStat("WOW_CRITS")
+    T.check("L23: GetStatForScope(ACCOUNT_AGGREGATE) == GetStat", statAcct == statDirect)
+    -- GetStatForScope with CHARACTER on a CLASS| stat falls through to account class tracking
+    local classStatChar = A:GetStatForScope("CLASS|DRUID|SHAPESHIFTS", "CHARACTER")
+    local classStatDirect = A:GetStat("CLASS|DRUID|SHAPESHIFTS")
+    T.check("L23: GetStatForScope(CHARACTER, CLASS|) == GetStat for class stats",
+        classStatChar == classStatDirect)
+    -- Unlock() stores scope in the unlock record
+    local save = A:Ensure()
+    if save and damageAch and not save.unlocked[damageAch.key] then
+        local prevStat = save.stats.WOW_DAMAGE_DEALT or 0
+        save.stats.WOW_DAMAGE_DEALT = damageAch.goal  -- force threshold
+        A:Unlock(damageAch, true)
+        local rec = save.unlocked[damageAch.key]
+        T.check("L23: unlock record has scope field", rec and type(rec.scope) == "string")
+        T.check("L23: unlock scope matches achievement scope",
+            rec and rec.scope == (damageAch.scope or "ACCOUNT_AGGREGATE"))
+        T.check("L23: unlock completedBy is string or nil",
+            rec and (rec.completedBy == nil or type(rec.completedBy) == "string"))
+        save.unlocked[damageAch.key] = nil   -- clean up
+        save.stats.WOW_DAMAGE_DEALT = prevStat
+    else
+        T.skip("L23: unlock scope/completedBy fields", "ach already unlocked or save nil")
+    end
+end
+
+tests[24] = function(T)  -- L24: Class achievement keys (ACH_CLASS_* format)
+    local A = CC.Achievements
+    if not A then T.skip("L24", "Achievements not loaded"); return end
+    A:BuildCatalog()
+    -- New stable keys present
+    T.check("L24: ACH_CLASS_DRUID_001 in byKey",   A.byKey["ACH_CLASS_DRUID_001"]   ~= nil)
+    T.check("L24: ACH_CLASS_WARRIOR_010 in byKey", A.byKey["ACH_CLASS_WARRIOR_010"] ~= nil)
+    T.check("L24: ACH_CLASS_DRUID_011 in byKey",   A.byKey["ACH_CLASS_DRUID_011"]   ~= nil)
+    T.check("L24: ACH_CLASS_SHAMAN_015 in byKey",  A.byKey["ACH_CLASS_SHAMAN_015"]  ~= nil)
+    -- Old keys must be absent (migration removed them; catalog never registers them)
+    T.check("L24: CLASS_DRUID_001 absent from byKey",   A.byKey["CLASS_DRUID_001"]   == nil)
+    T.check("L24: CLASS_WARRIOR_081 absent from byKey", A.byKey["CLASS_WARRIOR_081"] == nil)
+    -- Scope = CHARACTER on all class achievements
+    local classAch = A.byKey["ACH_CLASS_MAGE_001"]
+    T.check("L24: ACH_CLASS_MAGE_001 has scope CHARACTER",
+        classAch ~= nil and classAch.scope == "CHARACTER")
+end
+
+tests[25] = function(T)  -- L25: Dungeon Dwellers isolation (no WoW namespace bleed)
+    local DA = CC.DungeonAchievements
+    local A  = CC.Achievements
+    if not DA then T.skip("L25", "DungeonAchievements not loaded"); return end
+    if not A  then T.skip("L25", "Achievements not loaded"); return end
+    local ddSave  = DA:Ensure()
+    local wowSave = A:Ensure()
+    -- DD namespace exists and is separate from WoW namespace
+    T.check("L25: DD save table distinct from WoW save", ddSave ~= wowSave)
+    -- WoW stat keys not present in DD save.stats (DD uses DD_ prefix)
+    if ddSave and type(ddSave.activity) == "table" then
+        T.check("L25: DD activity has no WOW_DAMAGE_DEALT key",
+            ddSave.activity["WOW_DAMAGE_DEALT"] == nil)
+    else
+        T.skip("L25: DD activity isolation", "DD activity table missing")
+    end
+    -- charCombatRef does not write to DD save
+    local ct = CC.CombatTracker
+    if ct then
+        local charStats = ct:GetCharStats()
+        T.check("L25: charCombatRef distinct from DD activity",
+            charStats == nil or (ddSave and charStats ~= ddSave.activity))
+    else
+        T.skip("L25: charCombatRef vs DD", "CombatTracker not loaded")
+    end
+    -- DD:GetStat cannot read WOW_* stats
+    local ddWow = DA:GetStat("WOW_DAMAGE_DEALT")
+    T.check("L25: DA:GetStat(WOW_DAMAGE_DEALT) returns 0", ddWow == 0)
+end
+
+tests[26] = function(T)  -- L26: Schema migration V78 (CLASS_* → ACH_CLASS_*)
+    local shared = CreshChatDB and CreshChatDB.accountProgression
+    if not shared then T.skip("L26", "accountProgression not set"); return end
+    -- migratedSchema should now be >= 78
+    T.check("L26: migratedSchema >= 78", tonumber(shared.migratedSchema or 0) >= 78)
+    -- Unlocked table should have no old CLASS_* keys for any class
+    local unlocked = shared.gameProgression
+        and shared.gameProgression.achievements
+        and shared.gameProgression.achievements.unlocked or {}
+    T.check("L26: CLASS_DRUID_001 absent from unlocked",   unlocked["CLASS_DRUID_001"]   == nil)
+    T.check("L26: CLASS_HUNTER_011 absent from unlocked",  unlocked["CLASS_HUNTER_011"]  == nil)
+    T.check("L26: CLASS_WARRIOR_090 absent from unlocked", unlocked["CLASS_WARRIOR_090"] == nil)
+    -- V78 migration is idempotent: inject an old key, run migration, verify rename, run again
+    local testOldKey = "CLASS_DRUID_001"
+    local testNewKey = "ACH_CLASS_DRUID_001"
+    local hadNew = unlocked[testNewKey]
+    unlocked[testOldKey] = { at = 1, value = 100, sourceSystem = "TEST", sourceId = testOldKey, targetGame = "GLOBAL" }
+    unlocked[testNewKey] = nil   -- ensure new slot empty for clean test
+    -- Manually invoke migration logic by calling EnsureAccountProgressionStorage
+    -- (MigrateToV78 is local; we test indirectly via the schema guard being off)
+    -- Inject a lower schema value to force re-run
+    local origSchema = shared.migratedSchema
+    shared.migratedSchema = 77   -- roll back to trigger V78
+    CC:EnsureAccountProgressionStorage(false)
+    T.check("L26: migratedSchema bumped back to 78", tonumber(shared.migratedSchema or 0) >= 78)
+    T.check("L26: old key renamed after re-run",  unlocked[testOldKey] == nil)
+    T.check("L26: new key populated after re-run", unlocked[testNewKey] ~= nil)
+    -- Idempotency: run again with schema=78 already set — should not double-process
+    unlocked[testOldKey] = { at = 2, value = 50, sourceSystem = "TEST", sourceId = testOldKey, targetGame = "GLOBAL" }
+    CC:EnsureAccountProgressionStorage(false)
+    T.check("L26: old key NOT renamed on second run (idempotent)", unlocked[testOldKey] ~= nil)
+    -- Restore
+    unlocked[testOldKey] = nil
+    if hadNew then unlocked[testNewKey] = hadNew else unlocked[testNewKey] = nil end
+    shared.migratedSchema = origSchema
+end
+
 -- ── Public runner ─────────────────────────────────────────────────────────────
 
 function Developer:RunTestSuite(filter)
@@ -863,14 +1062,14 @@ function Developer:RunTestSuite(filter)
     local groups = {}
     if filter then
         local n = tonumber(filter)
-        if n and n >= 1 and n <= 20 and tests[n] then
+        if n and n >= 1 and n <= 26 and tests[n] then
             groups[1] = n
         else
-            if CC.Print then CC:Print("[TEST] unknown group: " .. tostring(filter) .. " (1-20)") end
+            if CC.Print then CC:Print("[TEST] unknown group: " .. tostring(filter) .. " (1-26)") end
             self:RestoreDB(); self:SnapshotDB(); return
         end
     else
-        for i = 1, 20 do groups[i] = i end
+        for i = 1, 26 do groups[i] = i end
     end
     for _, idx in ipairs(groups) do
         local ok, err = pcall(tests[idx], T)
@@ -925,8 +1124,8 @@ function Developer:HandleTestCommand(arg)
             if CC.Print then
                 CC:Print("[TEST] /cc test on        — enable test mode (snapshots DB)")
                 CC:Print("[TEST] /cc test off       — disable test mode (restores DB)")
-                CC:Print("[TEST] /cc test run       — run all 20 groups + malformed suite")
-                CC:Print("[TEST] /cc test run N     — run only group L[N] (1-20)")
+                CC:Print("[TEST] /cc test run       — run all 26 groups + malformed suite")
+                CC:Print("[TEST] /cc test run N     — run only group L[N] (1-26)")
                 CC:Print("[TEST] /cc test verbose   — toggle per-assertion output")
                 CC:Print("[TEST] /cc test status    — show mode/verbose/snapshot state")
             end

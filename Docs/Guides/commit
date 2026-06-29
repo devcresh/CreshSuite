@@ -1,7 +1,0 @@
-git status
-git add -A -- .
-git diff --cached --stat
-git commit -m "Describe the changes made"
-git pull origin main --rebase
-git push origin main
-git status

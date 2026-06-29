@@ -37,11 +37,12 @@ local floor, max = math.floor, math.max
 -- ── Upvalue cache (refreshed on each PLAYER_LOGIN / PLAYER_ENTERING_WORLD) ──
 -- Using upvalues avoids per-event global lookups and table traversals.
 
-local playerGUID = nil   -- set at login, never nil after that
-local statsRef   = nil   -- points directly to save.stats for zero-overhead writes
-local dirty      = false -- any stat changed since last EvaluateAll?
-local lastEval   = 0     -- GetTime() timestamp of last EvaluateAll call
-local EVAL_SECS  = 30    -- minimum seconds between mid-combat evaluations
+local playerGUID   = nil   -- set at login, never nil after that
+local statsRef     = nil   -- account-aggregate save.stats (all characters combined)
+local charCombatRef = nil  -- per-character profile.characterCombat (current char only)
+local dirty        = false -- any stat changed since last EvaluateAll?
+local lastEval     = 0     -- GetTime() timestamp of last EvaluateAll call
+local EVAL_SECS    = 30    -- minimum seconds between mid-combat evaluations
 
 -- Check for TBC-compatible combat log API once at load time.
 local CombatLogGet
@@ -104,6 +105,9 @@ local function onCombatLog()
     local isDst = dst == playerGUID
     if not isSrc and not isDst then return end
 
+    -- c_ is the per-character table; may be nil when profile not yet ready.
+    local c = charCombatRef
+
     if sub == "SWING_DAMAGE" then
         -- p1=amount, p7=critical
         if isSrc then
@@ -112,12 +116,18 @@ local function onCombatLog()
                 statsRef.WOW_DAMAGE_DEALT = statsRef.WOW_DAMAGE_DEALT + amt
                 if amt > statsRef.WOW_BEST_HIT then statsRef.WOW_BEST_HIT = amt end
                 if p7 then statsRef.WOW_CRITS = statsRef.WOW_CRITS + 1 end
+                if c then
+                    c.WOW_DAMAGE_DEALT = c.WOW_DAMAGE_DEALT + amt
+                    if amt > c.WOW_BEST_HIT then c.WOW_BEST_HIT = amt end
+                    if p7 then c.WOW_CRITS = c.WOW_CRITS + 1 end
+                end
                 dirty = true
             end
         elseif isDst then
             local amt = safeAmt(p1)
             if amt > 0 then
                 statsRef.WOW_DAMAGE_TAKEN = statsRef.WOW_DAMAGE_TAKEN + amt
+                if c then c.WOW_DAMAGE_TAKEN = c.WOW_DAMAGE_TAKEN + amt end
                 dirty = true
             end
         end
@@ -130,12 +140,18 @@ local function onCombatLog()
                 statsRef.WOW_DAMAGE_DEALT = statsRef.WOW_DAMAGE_DEALT + amt
                 if amt > statsRef.WOW_BEST_HIT then statsRef.WOW_BEST_HIT = amt end
                 if p10 then statsRef.WOW_CRITS = statsRef.WOW_CRITS + 1 end
+                if c then
+                    c.WOW_DAMAGE_DEALT = c.WOW_DAMAGE_DEALT + amt
+                    if amt > c.WOW_BEST_HIT then c.WOW_BEST_HIT = amt end
+                    if p10 then c.WOW_CRITS = c.WOW_CRITS + 1 end
+                end
                 dirty = true
             end
         elseif isDst then
             local amt = safeAmt(p4)
             if amt > 0 then
                 statsRef.WOW_DAMAGE_TAKEN = statsRef.WOW_DAMAGE_TAKEN + amt
+                if c then c.WOW_DAMAGE_TAKEN = c.WOW_DAMAGE_TAKEN + amt end
                 dirty = true
             end
         end
@@ -146,6 +162,7 @@ local function onCombatLog()
             local amt = safeAmt(p2)
             if amt > 0 then
                 statsRef.WOW_DAMAGE_TAKEN = statsRef.WOW_DAMAGE_TAKEN + amt
+                if c then c.WOW_DAMAGE_TAKEN = c.WOW_DAMAGE_TAKEN + amt end
                 dirty = true
             end
         end
@@ -153,33 +170,27 @@ local function onCombatLog()
     elseif sub == "SPELL_HEAL" or sub == "SPELL_PERIODIC_HEAL" then
         -- p4=amount (actual heal, excludes overheal), p7=critical
         -- Track outgoing healing only (player as caster).
-        -- Healing received from others is not tracked here.
         if isSrc then
             local amt = safeAmt(p4)
             if amt > 0 then
                 statsRef.WOW_HEALING   = statsRef.WOW_HEALING + amt
                 if amt > statsRef.WOW_BEST_HEAL then statsRef.WOW_BEST_HEAL = amt end
                 if p7 then statsRef.WOW_CRIT_HEALS = statsRef.WOW_CRIT_HEALS + 1 end
+                if c then
+                    c.WOW_HEALING = c.WOW_HEALING + amt
+                    if amt > c.WOW_BEST_HEAL then c.WOW_BEST_HEAL = amt end
+                    if p7 then c.WOW_CRIT_HEALS = c.WOW_CRIT_HEALS + 1 end
+                end
                 dirty = true
             end
         end
     end
+
 end
 
 -- ── Initialisation ────────────────────────────────────────────────────────────
 
-function CombatTracker:Init()
-    -- Cache player GUID.
-    local ok, guid = pcall(_G.UnitGUID, "player")
-    playerGUID            = (ok and type(guid) == "string" and guid ~= "") and guid or nil
-    CombatTracker.playerGUID = playerGUID
-
-    -- Cache reference to the inner stats table.
-    local ach = CC.Achievements and CC.Achievements:Ensure()
-    if not ach or type(ach.stats) ~= "table" then statsRef = nil; return end
-    local s = ach.stats
-
-    -- Initialize new fields with 0 if absent; leave existing values intact.
+local function initCombatFields(s)
     if not tonumber(s.WOW_DAMAGE_DEALT)  then s.WOW_DAMAGE_DEALT  = 0 end
     if not tonumber(s.WOW_DAMAGE_TAKEN)  then s.WOW_DAMAGE_TAKEN  = 0 end
     if not tonumber(s.WOW_BEST_HIT)      then s.WOW_BEST_HIT      = 0 end
@@ -187,11 +198,37 @@ function CombatTracker:Init()
     if not tonumber(s.WOW_BEST_HEAL)     then s.WOW_BEST_HEAL      = 0 end
     if not tonumber(s.WOW_CRITS)         then s.WOW_CRITS          = 0 end
     if not tonumber(s.WOW_CRIT_HEALS)    then s.WOW_CRIT_HEALS     = 0 end
-    statsRef = s
+end
+
+function CombatTracker:Init()
+    -- Cache player GUID.
+    local ok, guid = pcall(_G.UnitGUID, "player")
+    playerGUID            = (ok and type(guid) == "string" and guid ~= "") and guid or nil
+    CombatTracker.playerGUID = playerGUID
+
+    -- Cache reference to the account-aggregate stats table.
+    local ach = CC.Achievements and CC.Achievements:Ensure()
+    if not ach or type(ach.stats) ~= "table" then statsRef = nil; charCombatRef = nil; return end
+    initCombatFields(ach.stats)
+    statsRef = ach.stats
+
+    -- Cache per-character combat table from the active character profile.
+    -- CC.currentProfile is set by Core.lua:ActivateCharacterProfile() before PLAYER_LOGIN.
+    charCombatRef = nil
+    local profile = CC.currentProfile
+    if profile then
+        if type(profile.characterCombat) ~= "table" then profile.characterCombat = {} end
+        initCombatFields(profile.characterCombat)
+        charCombatRef = profile.characterCombat
+    end
 end
 
 function CombatTracker:GetStats()
     return statsRef
+end
+
+function CombatTracker:GetCharStats()
+    return charCombatRef
 end
 
 -- ── Event frame ───────────────────────────────────────────────────────────────

@@ -4,8 +4,8 @@ _G.CreshChat = CC
 
 CC.name = ADDON_NAME or "CreshChat"
 CC.BUILD = CC.BUILD or {
-    version = "0.2.1",
-    schema = 77,
+    version = "0.2.2",
+    schema = 78,
     interface = 20505,
     stage = "Alpha",
 }
@@ -588,6 +588,103 @@ local function MigrateToV77(shared)
     return migrated
 end
 
+-- Renames all CLASS_*_NNN achievement keys to the stable ACH_CLASS_*_NNN format
+-- and resequences hunter/mage/paladin/… offsets to per-class 001-010 numbers.
+-- Idempotent: skips when shared.migratedSchema >= 78.
+local ACHIEVEMENT_MIGRATION_V78 = {
+    -- DRUID (001-010, no resequence)
+    ["CLASS_DRUID_001"]="ACH_CLASS_DRUID_001", ["CLASS_DRUID_002"]="ACH_CLASS_DRUID_002",
+    ["CLASS_DRUID_003"]="ACH_CLASS_DRUID_003", ["CLASS_DRUID_004"]="ACH_CLASS_DRUID_004",
+    ["CLASS_DRUID_005"]="ACH_CLASS_DRUID_005", ["CLASS_DRUID_006"]="ACH_CLASS_DRUID_006",
+    ["CLASS_DRUID_007"]="ACH_CLASS_DRUID_007", ["CLASS_DRUID_008"]="ACH_CLASS_DRUID_008",
+    ["CLASS_DRUID_009"]="ACH_CLASS_DRUID_009", ["CLASS_DRUID_010"]="ACH_CLASS_DRUID_010",
+    -- HUNTER (011-020 → 001-010)
+    ["CLASS_HUNTER_011"]="ACH_CLASS_HUNTER_001", ["CLASS_HUNTER_012"]="ACH_CLASS_HUNTER_002",
+    ["CLASS_HUNTER_013"]="ACH_CLASS_HUNTER_003", ["CLASS_HUNTER_014"]="ACH_CLASS_HUNTER_004",
+    ["CLASS_HUNTER_015"]="ACH_CLASS_HUNTER_005", ["CLASS_HUNTER_016"]="ACH_CLASS_HUNTER_006",
+    ["CLASS_HUNTER_017"]="ACH_CLASS_HUNTER_007", ["CLASS_HUNTER_018"]="ACH_CLASS_HUNTER_008",
+    ["CLASS_HUNTER_019"]="ACH_CLASS_HUNTER_009", ["CLASS_HUNTER_020"]="ACH_CLASS_HUNTER_010",
+    -- MAGE (021-030 → 001-010)
+    ["CLASS_MAGE_021"]="ACH_CLASS_MAGE_001", ["CLASS_MAGE_022"]="ACH_CLASS_MAGE_002",
+    ["CLASS_MAGE_023"]="ACH_CLASS_MAGE_003", ["CLASS_MAGE_024"]="ACH_CLASS_MAGE_004",
+    ["CLASS_MAGE_025"]="ACH_CLASS_MAGE_005", ["CLASS_MAGE_026"]="ACH_CLASS_MAGE_006",
+    ["CLASS_MAGE_027"]="ACH_CLASS_MAGE_007", ["CLASS_MAGE_028"]="ACH_CLASS_MAGE_008",
+    ["CLASS_MAGE_029"]="ACH_CLASS_MAGE_009", ["CLASS_MAGE_030"]="ACH_CLASS_MAGE_010",
+    -- PALADIN (031-040 → 001-010)
+    ["CLASS_PALADIN_031"]="ACH_CLASS_PALADIN_001", ["CLASS_PALADIN_032"]="ACH_CLASS_PALADIN_002",
+    ["CLASS_PALADIN_033"]="ACH_CLASS_PALADIN_003", ["CLASS_PALADIN_034"]="ACH_CLASS_PALADIN_004",
+    ["CLASS_PALADIN_035"]="ACH_CLASS_PALADIN_005", ["CLASS_PALADIN_036"]="ACH_CLASS_PALADIN_006",
+    ["CLASS_PALADIN_037"]="ACH_CLASS_PALADIN_007", ["CLASS_PALADIN_038"]="ACH_CLASS_PALADIN_008",
+    ["CLASS_PALADIN_039"]="ACH_CLASS_PALADIN_009", ["CLASS_PALADIN_040"]="ACH_CLASS_PALADIN_010",
+    -- PRIEST (041-050 → 001-010)
+    ["CLASS_PRIEST_041"]="ACH_CLASS_PRIEST_001", ["CLASS_PRIEST_042"]="ACH_CLASS_PRIEST_002",
+    ["CLASS_PRIEST_043"]="ACH_CLASS_PRIEST_003", ["CLASS_PRIEST_044"]="ACH_CLASS_PRIEST_004",
+    ["CLASS_PRIEST_045"]="ACH_CLASS_PRIEST_005", ["CLASS_PRIEST_046"]="ACH_CLASS_PRIEST_006",
+    ["CLASS_PRIEST_047"]="ACH_CLASS_PRIEST_007", ["CLASS_PRIEST_048"]="ACH_CLASS_PRIEST_008",
+    ["CLASS_PRIEST_049"]="ACH_CLASS_PRIEST_009", ["CLASS_PRIEST_050"]="ACH_CLASS_PRIEST_010",
+    -- ROGUE (051-060 → 001-010)
+    ["CLASS_ROGUE_051"]="ACH_CLASS_ROGUE_001", ["CLASS_ROGUE_052"]="ACH_CLASS_ROGUE_002",
+    ["CLASS_ROGUE_053"]="ACH_CLASS_ROGUE_003", ["CLASS_ROGUE_054"]="ACH_CLASS_ROGUE_004",
+    ["CLASS_ROGUE_055"]="ACH_CLASS_ROGUE_005", ["CLASS_ROGUE_056"]="ACH_CLASS_ROGUE_006",
+    ["CLASS_ROGUE_057"]="ACH_CLASS_ROGUE_007", ["CLASS_ROGUE_058"]="ACH_CLASS_ROGUE_008",
+    ["CLASS_ROGUE_059"]="ACH_CLASS_ROGUE_009", ["CLASS_ROGUE_060"]="ACH_CLASS_ROGUE_010",
+    -- SHAMAN (061-070 → 001-010)
+    ["CLASS_SHAMAN_061"]="ACH_CLASS_SHAMAN_001", ["CLASS_SHAMAN_062"]="ACH_CLASS_SHAMAN_002",
+    ["CLASS_SHAMAN_063"]="ACH_CLASS_SHAMAN_003", ["CLASS_SHAMAN_064"]="ACH_CLASS_SHAMAN_004",
+    ["CLASS_SHAMAN_065"]="ACH_CLASS_SHAMAN_005", ["CLASS_SHAMAN_066"]="ACH_CLASS_SHAMAN_006",
+    ["CLASS_SHAMAN_067"]="ACH_CLASS_SHAMAN_007", ["CLASS_SHAMAN_068"]="ACH_CLASS_SHAMAN_008",
+    ["CLASS_SHAMAN_069"]="ACH_CLASS_SHAMAN_009", ["CLASS_SHAMAN_070"]="ACH_CLASS_SHAMAN_010",
+    -- WARLOCK (071-080 → 001-010)
+    ["CLASS_WARLOCK_071"]="ACH_CLASS_WARLOCK_001", ["CLASS_WARLOCK_072"]="ACH_CLASS_WARLOCK_002",
+    ["CLASS_WARLOCK_073"]="ACH_CLASS_WARLOCK_003", ["CLASS_WARLOCK_074"]="ACH_CLASS_WARLOCK_004",
+    ["CLASS_WARLOCK_075"]="ACH_CLASS_WARLOCK_005", ["CLASS_WARLOCK_076"]="ACH_CLASS_WARLOCK_006",
+    ["CLASS_WARLOCK_077"]="ACH_CLASS_WARLOCK_007", ["CLASS_WARLOCK_078"]="ACH_CLASS_WARLOCK_008",
+    ["CLASS_WARLOCK_079"]="ACH_CLASS_WARLOCK_009", ["CLASS_WARLOCK_080"]="ACH_CLASS_WARLOCK_010",
+    -- WARRIOR (081-090 → 001-010)
+    ["CLASS_WARRIOR_081"]="ACH_CLASS_WARRIOR_001", ["CLASS_WARRIOR_082"]="ACH_CLASS_WARRIOR_002",
+    ["CLASS_WARRIOR_083"]="ACH_CLASS_WARRIOR_003", ["CLASS_WARRIOR_084"]="ACH_CLASS_WARRIOR_004",
+    ["CLASS_WARRIOR_085"]="ACH_CLASS_WARRIOR_005", ["CLASS_WARRIOR_086"]="ACH_CLASS_WARRIOR_006",
+    ["CLASS_WARRIOR_087"]="ACH_CLASS_WARRIOR_007", ["CLASS_WARRIOR_088"]="ACH_CLASS_WARRIOR_008",
+    ["CLASS_WARRIOR_089"]="ACH_CLASS_WARRIOR_009", ["CLASS_WARRIOR_090"]="ACH_CLASS_WARRIOR_010",
+}
+
+local function MigrateToV78(shared)
+    if tonumber(shared.migratedSchema or 0) >= 78 then return 0 end
+    local gameProgression = type(shared.gameProgression) == "table" and shared.gameProgression or nil
+    if not gameProgression then shared.migratedSchema = 78; return 0 end
+    local achievements = type(gameProgression.achievements) == "table" and gameProgression.achievements or nil
+    if not achievements then shared.migratedSchema = 78; return 0 end
+    local unlocked = type(achievements.unlocked) == "table" and achievements.unlocked or nil
+    if not unlocked then shared.migratedSchema = 78; return 0 end
+
+    local migrated = 0
+    for oldKey, newKey in pairs(ACHIEVEMENT_MIGRATION_V78) do
+        local oldRecord = unlocked[oldKey]
+        if oldRecord then
+            local newRecord = unlocked[newKey]
+            if not newRecord then
+                if type(oldRecord) == "table" then oldRecord.sourceId = newKey end
+                unlocked[newKey] = oldRecord
+            else
+                if type(oldRecord) == "table" and type(newRecord) == "table" then
+                    local oldAt = tonumber(oldRecord.at) or 0
+                    local newAt = tonumber(newRecord.at) or 0
+                    if oldAt > 0 and (newAt == 0 or oldAt < newAt) then newRecord.at = oldAt end
+                    local oldVal = tonumber(oldRecord.value) or 0
+                    local newVal = tonumber(newRecord.value) or 0
+                    if oldVal > newVal then newRecord.value = oldVal end
+                end
+            end
+            unlocked[oldKey] = nil
+            migrated = migrated + 1
+        end
+    end
+
+    shared.migratedSchema = 78
+    if migrated > 0 then shared._v78MigrationCount = migrated end
+    return migrated
+end
+
 function CC:EnsureAccountProgressionStorage(forceMigration)
     CreshChatDB = CreshChatDB or {}
     CreshChatDB.accountProgression = type(CreshChatDB.accountProgression) == "table" and CreshChatDB.accountProgression or {}
@@ -614,6 +711,7 @@ function CC:EnsureAccountProgressionStorage(forceMigration)
         end
     end
     MigrateToV77(shared)
+    MigrateToV78(shared)
     return shared
 end
 

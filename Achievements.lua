@@ -47,7 +47,7 @@ local function rewardFor(index, weight)
     return floor(coins), floor(xp)
 end
 
-function Achievements:Add(category, stat, goal, title, description, index, weight, stableKey)
+function Achievements:Add(category, stat, goal, title, description, index, weight, stableKey, scope)
     local coins, xp = rewardFor(index, weight)
     local legacyKey = upper(category .. "_" .. stat .. "_" .. tostring(goal))
     local key = stableKey or legacyKey
@@ -62,17 +62,40 @@ function Achievements:Add(category, stat, goal, title, description, index, weigh
         coins = coins,
         xp = xp,
         tier = index,
+        scope = scope or "ACCOUNT_AGGREGATE",
     }
     self.catalog[#self.catalog + 1] = achievement
     self.byKey[key] = achievement
     if achievement.legacyKey then self.byKey[achievement.legacyKey] = achievement end
 end
 
-local function addSeries(self, category, stat, goals, titles, description, weight, stableKeys)
+local function addSeries(self, category, stat, goals, titles, description, weight, stableKeys, scope)
     for index, goal in ipairs(goals) do
         local title = titles[index] or ((self.categoryNames[category] or category) .. " " .. tostring(index))
-        self:Add(category, stat, goal, title, description(goal, index), index, weight, stableKeys and stableKeys[index])
+        self:Add(category, stat, goal, title, description(goal, index), index, weight, stableKeys and stableKeys[index], scope)
     end
+end
+
+-- Returns the current value of `stat` for the given scope.
+-- CHARACTER: reads per-character combat table from CombatTracker (WOW_* stats)
+--   or falls through to account class stats for CLASS| stats.
+-- ACCOUNT_AGGREGATE (default): existing behaviour via GetStat().
+function Achievements:GetStatForScope(stat, scope)
+    if scope == "CHARACTER" then
+        local s = tostring(stat or "")
+        -- CLASS| stats are stored per-class (not per-character) — use account class tracking.
+        if s:sub(1, 6) == "CLASS|" then return self:GetStat(stat) end
+        -- WOW_* combat stats: read from per-character table if available.
+        local ct = CC.CombatTracker
+        if ct then
+            local charStats = ct:GetCharStats()
+            if charStats and tonumber(charStats[s]) then
+                return floor(max(0, tonumber(charStats[s]) or 0))
+            end
+        end
+        return 0
+    end
+    return self:GetStat(stat)
 end
 
 function Achievements:BuildCatalog()
@@ -404,13 +427,22 @@ function Achievements:Unlock(achievement, silent)
     local save = self:Ensure()
     if not save or not achievement or save.unlocked[achievement.key] then return false end
     local R = CC.ProgressRouter
+    local charKey, charClass
+    if CC.currentProfile then
+        charKey   = CC.currentProfile.key
+        charClass = CC.currentProfile.class
+    end
     save.unlocked[achievement.key] = {
         at           = now(),
-        value        = self:GetStat(achievement.stat),
+        value        = self:GetStatForScope(achievement.stat, achievement.scope),
         -- F1: reward routing metadata
         sourceSystem = R and R.SYSTEMS.WOW_ACHIEVEMENTS or "WOW_ACHIEVEMENTS",
         sourceId     = achievement.key,
         targetGame   = R and R.GAMES.GLOBAL or "GLOBAL",
+        -- Part 4: account-wide completion metadata
+        scope        = achievement.scope or "ACCOUNT_AGGREGATE",
+        completedBy  = charKey,
+        completedByClass = charClass,
     }
     save.totalCoins = save.totalCoins + achievement.coins
     save.totalPassXP = save.totalPassXP + achievement.xp
@@ -440,7 +472,8 @@ function Achievements:EvaluateAll(silent)
     if silent then self.silentRewardBatch = { coins = 0, xp = 0 } end
     local unlocked = 0
     for _, achievement in ipairs(self.catalog) do
-        if not save.unlocked[achievement.key] and self:GetStat(achievement.stat) >= achievement.goal then
+        if not save.unlocked[achievement.key]
+            and self:GetStatForScope(achievement.stat, achievement.scope) >= achievement.goal then
             if self:Unlock(achievement, silent) then unlocked = unlocked + 1 end
         end
     end
