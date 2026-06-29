@@ -1,4 +1,4 @@
-CreshChat v0.2 file manifest
+CreshChat v0.2.1 file manifest
 Generated: 2026-06-27
 Format: SHA-256  bytes  relative path
 

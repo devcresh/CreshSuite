@@ -1,4 +1,4 @@
-CreshChat 0.2-final-audit
+CreshChat 0.2.1-final-audit
 
 - Public version reset to 0.2; SavedVariables schema advanced to 75 without progression reset.
 - Responsive header layout verified for normal, Friends and Whisper control sets.

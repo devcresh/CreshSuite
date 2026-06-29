@@ -1,0 +1,55 @@
+CreshChat v0.2.1 — CurseForge Upload Checklist
+===============================================
+
+FILE TO UPLOAD
+  release/CreshChat-v0.2.1-TBC-Anniversary.zip
+  SHA-256: 82B3B459275FC4A294A428C784A6B4F6A21A73E435082529FA800EA4A4D69594
+
+  [ ] Upload ONLY the above ZIP file.
+  [ ] Do NOT upload the RELEASE_AUDIT report as the addon file.
+  [ ] Do NOT upload any GitHub source archive or repository ZIP.
+  [ ] Do NOT upload SavedVariables or WTF folder contents.
+  [ ] Do NOT upload any old version ZIP inside the new ZIP.
+
+CURSEFORGE PROJECT SETTINGS
+  [ ] Game: World of Warcraft
+  [ ] Game version: Burning Crusade Classic Anniversary Edition (2.5.5 / Interface 20505)
+  [ ] Release type: Alpha
+  [ ] Displayed version: 0.2.1
+  [ ] File is NOT marked as "Contains executable"
+  [ ] File is NOT marked as "Contains library/dependency"
+
+CHANGELOG
+  Paste the contents of: release/CURSEFORGE_CHANGELOG_v0.2.1.txt
+  [ ] Changelog is pasted accurately into the CurseForge release notes field.
+  [ ] Changelog does not contain internal development notes or unshipped claims.
+
+PROJECT DESCRIPTION
+  [ ] CurseForge project description accurately explains current addon functionality.
+  [ ] No promotional, donation, or payment information appears in the description.
+  [ ] No Patreon, Ko-fi, PayPal, or subscription links appear in-game or in the description.
+  [ ] Screenshots represent the actual running addon.
+
+CREDITS AND LICENSES
+  [ ] The addon has no third-party library code requiring attribution.
+  [ ] No third-party license file is required inside the ZIP.
+  [ ] NOTE: The addon has no LICENSE file — consider adding one before the next release.
+  [ ] If CurseForge asks about AI-generated assets: artwork in Media/ was created using
+      an AI-assisted pipeline; original prompt files are in ArtSource/ (not in the ZIP).
+
+POST-UPLOAD VERIFICATION
+  [ ] The CurseForge page shows version 0.2.1.
+  [ ] The CurseForge page shows game version: Burning Crusade Classic (2.5.5).
+  [ ] The CurseForge page shows release type: Alpha.
+  [ ] Download the uploaded ZIP from CurseForge and confirm it is the correct file.
+  [ ] Extract the downloaded ZIP and confirm the top-level folder is CreshChat/.
+  [ ] Confirm CreshChat/CreshChat.toc is present in the extracted folder.
+  [ ] Copy the extracted CreshChat/ folder to:
+        World of Warcraft/_anniversary_/Interface/AddOns/
+      and test in-game using the manual test checklist in RELEASE_AUDIT_v0.2.1.md.
+
+DO NOT
+  - Push a Git commit or tag as part of this upload step unless separately requested.
+  - Force-push or reset the repository.
+  - Upload a second time without regenerating the ZIP from the build script.
+  - Upload to Retail or Classic Era game versions.

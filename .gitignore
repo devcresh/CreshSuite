@@ -1,20 +1,54 @@
 ﻿# Windows
 Thumbs.db
 Desktop.ini
+desktop.ini
 
-# Temporary files
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Temporary and editor files
 *.tmp
 *.temp
 *.bak
 *.old
 *.log
+*.swp
+*.swo
+*~
+\#*\#
+.\#*
 
-# Release packages
-*.zip
+# Editor settings (local only)
+.vscode/*.local.*
+.idea/
+.agents/
 
 # Local AI configuration
 CLAUDE.local.md
 .claude/settings.local.json
 
+# Release packages and generated build artifacts
+*.zip
+*.rar
+*.7z
+_staging_/
+release/build_stats.txt
+
+# WoW runtime files that must never be committed
+WTF/
+SavedVariables/
+*.lua.old
+
+# Python / Node caches
+__pycache__/
+*.pyc
+node_modules/
+
+# Quarantined accidental files (content preserved locally, not in git)
+quarantine/prompt_fragments/*
+!quarantine/prompt_fragments/README.txt
+
 # Miscellaneous
-.DS_Store
+*.lock

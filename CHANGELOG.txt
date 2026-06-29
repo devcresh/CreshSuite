@@ -1,6 +1,12 @@
+CreshChat v0.2.1 - Version Correction (2026-06-29)
+
+- Corrected release version numbering from v0.2 to v0.2.1.
+- No SavedVariables schema change (schema 76 unchanged).
+- No functional changes; packaging and release metadata only.
+
 CreshChat v0.2 - Final Compatibility and UI Audit
 
-- Reset the public addon version to v0.2 while retaining SavedVariables schema 75 so existing account-wide progress is preserved.
+- Reset the public addon version to v0.2 while retaining SavedVariables schema 76 so existing account-wide progress is preserved.
 - Added responsive main-header layout; hidden whisper controls no longer reserve space or crush the title at narrow console widths.
 - Added missing live settings for default composer destination, roster collapse, history limits, build badge, compact notification sizing, card accent thickness and dock-whisper preview sizing/timing.
 - Added a one-click social-roster refresh diagnostic.

@@ -4,7 +4,7 @@ _G.CreshChat = CC
 
 CC.name = ADDON_NAME or "CreshChat"
 CC.BUILD = CC.BUILD or {
-    version = "0.2",
+    version = "0.2.1",
     schema = 76,
     interface = 20505,
     stage = "Alpha",

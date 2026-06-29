@@ -1,4 +1,4 @@
-CreshChat v0.2 — Final Compatibility and UI Audit
+CreshChat v0.2.1 — Final Compatibility and UI Audit
 
 - Repairs direct and backup live chat capture for Whisper, Guild, Officer, public channels, Party, Raid and Instance tabs.
 - Refreshes the visible CreshChat conversation immediately when a live CHAT_MSG event arrives.

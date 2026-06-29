@@ -1,0 +1,27 @@
+CreshChat v0.2 — Final Compatibility and UI Audit
+Target: World of Warcraft TBC Anniversary (Interface 20505)
+Release type: Alpha
+
+Fixed
+- Repaired live chat capture registration and retry behaviour across Whisper, Guild, Officer, public channels, Party, Raid and Instance tabs.
+- Fixed the late-load bridge bug where Blizzard chat hooks could be marked installed before their functions existed.
+- Added immediate visible-chat refresh so roster or settings refreshes cannot delay live text.
+- Added a localized system-message filter for unavailable whisper targets; CreshChat keeps the attempted row and marks it failed without showing the Blizzard system prompt.
+- Hardened right-click Whisper routing from player, target, party and raid unit menus.
+- Restored Blizzard chat automatically after repeated processing errors, with a user-visible notice.
+
+Changed
+- Reset the public addon version to 0.2 (all prior 0.3.x builds were internal development snapshots).
+- Added responsive main-header layout; hidden whisper controls no longer reserve space or crush the title at narrow console widths.
+- Added missing live settings for default composer destination, roster collapse, history limits, build badge, compact notification sizing, card accent thickness and dock-whisper preview sizing/timing.
+- Added a one-click social-roster refresh diagnostic.
+- Reduced addon-message traffic: peer discovery is limited, paced and cooldown-protected; login no longer probes the full social roster; live game snapshots update at safer rates.
+
+Compatibility
+- Interface: 20505 (Burning Crusade Classic Anniversary Edition).
+- SavedVariables upgraded to schema 76; all existing achievements, Battle Pass, Cresh Coins, game saves, social rosters, notification settings and unlocks are preserved without reset.
+- Schema 76 prunes oversized playerCache tables to prevent unbounded SavedVariables growth over time.
+
+Preserved
+- All 531 account-wide achievements, Battle Pass progression, Cresh Coins, game saves, card decks, themes, Dungeon Dwellers collections and unlock ownership.
+- Chat history, social rosters, custom notification controls and per-character UI profiles.
