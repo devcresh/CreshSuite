@@ -267,6 +267,16 @@ function Achievements:Ensure()
     save.stats.dungeonMobs = floor(max(0, tonumber(save.stats.dungeonMobs) or 0))
     save.stats.bosses = floor(max(0, tonumber(save.stats.bosses) or 0))
     save.stats.dungeons = floor(max(0, tonumber(save.stats.dungeons) or 0))
+    -- Combat stats tracked by CombatTracker.lua (COMBAT_LOG_EVENT_UNFILTERED).
+    -- Keys match achievement stat names so GetStat()'s fallback reads them directly.
+    local s = save.stats
+    if not tonumber(s.WOW_DAMAGE_DEALT) then s.WOW_DAMAGE_DEALT = 0 end
+    if not tonumber(s.WOW_DAMAGE_TAKEN) then s.WOW_DAMAGE_TAKEN = 0 end
+    if not tonumber(s.WOW_BEST_HIT)     then s.WOW_BEST_HIT     = 0 end
+    if not tonumber(s.WOW_HEALING)      then s.WOW_HEALING       = 0 end
+    if not tonumber(s.WOW_BEST_HEAL)    then s.WOW_BEST_HEAL     = 0 end
+    if not tonumber(s.WOW_CRITS)        then s.WOW_CRITS         = 0 end
+    if not tonumber(s.WOW_CRIT_HEALS)   then s.WOW_CRIT_HEALS    = 0 end
     return save
 end
 

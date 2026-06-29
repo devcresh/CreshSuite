@@ -392,7 +392,7 @@ function Pass:SelectRequirement(level)
         else CC.UI:SetGameDrawerMode("BATTLEPASS") end
         CC.UI:RefreshGameDrawer(true)
         local drawer = CC.UI.gameDrawer
-        if drawer and drawer.scroll then drawer.scroll:SetVerticalScroll(0) end
+        if drawer then self:ScrollToPassLevel(drawer, level) end
         local requirement = self:GetRequirement(level)
         if CC.UI.SetGameDrawerStatus then
             CC.UI:SetGameDrawerStatus(requirement.reached and ("Level " .. level .. " requirement complete - unlock the reward.")
@@ -686,6 +686,137 @@ local function setButtonEnabled(button, enabled)
     if enabled then button:Enable() else button:Disable() end
 end
 
+-- ── Virtual row pool ───────────────────────────────────────────────────────────
+local ROWS_TOP   = 396   -- pixels from passPanel top to first row
+local ROW_HEIGHT = 55    -- pixels per row slot (49px row + 6px gap)
+local POOL_SIZE  = 14    -- recycled frames: covers viewport at all supported scales
+
+-- Builds drawer.passLevelList — the ordered array of level numbers that pass
+-- the active filter. Returns the list.
+function Pass:BuildPassLevelList(drawer)
+    local filter = drawer.passFilter or "ALL"
+    local list = {}
+    for level = 1, self.maxLevel do
+        local reached = self:IsLevelReached(level)
+        local claimed = self:IsRewardClaimed(level)
+        local visible = filter == "ALL"
+            or (filter == "READY"   and reached and not claimed)
+            or (filter == "CLAIMED" and claimed)
+            or (filter == "LOCKED"  and not reached)
+        if visible then list[#list + 1] = level end
+    end
+    drawer.passLevelList = list
+    return list
+end
+
+-- Writes fresh data into one recycled pool frame for the given level.
+function Pass:PopulatePassRow(row, level, save, api)
+    local colors       = api.colors
+    local applyBackdrop = api.applyBackdrop
+    local darken       = api.darken
+    local setAccent    = api.setAccent
+
+    local reward    = self:GetReward(level)
+    local reached   = self:IsLevelReached(level)
+    local claimed   = self:IsRewardClaimed(level)
+    local selected  = (level == self.selectedLevel)
+    local milestone = level % 5 == 0
+
+    applyBackdrop(row.badge,
+        milestone and darken(colors.blue, 0.32) or colors.panelRaised,
+        milestone and colors.blue or colors.border)
+    row.badgeText:SetText(tostring(level))
+    local textColor = milestone and colors.text or colors.muted
+    row.badgeText:SetTextColor(textColor[1], textColor[2], textColor[3], 1)
+
+    row.title:SetText(reward.title .. "  ·  +" .. reward.coins .. " coins"
+        .. (reward.themeName       and ("  ·  THEME: "  .. reward.themeName)       or "")
+        .. (reward.deckName        and ("  ·  DECK: "   .. reward.deckName)         or "")
+        .. (reward.tetrisThemeName and ("  ·  TETRIS: " .. reward.tetrisThemeName)  or ""))
+
+    local borderColor = selected and (colors.quest or colors.blue) or colors.border
+    if claimed then
+        row.detail:SetText(selected and "Unlocked · selected" or "Unlocked")
+        row.button.label:SetText("OWNED")
+        setButtonEnabled(row.button, false)
+        applyBackdrop(row, darken(colors.green, 0.72),
+            selected and (colors.quest or colors.blue) or colors.green)
+    elseif reached then
+        row.detail:SetText(selected and "Ready to unlock · selected" or "Ready to unlock")
+        row.button.label:SetText("UNLOCK NOW")
+        setButtonEnabled(row.button, true)
+        if setAccent then setAccent(row.button, colors.green) end
+        applyBackdrop(row, darken(colors.green, 0.82),
+            selected and (colors.quest or colors.blue) or colors.green)
+    else
+        local need = max(0, self:GetCumulativeXP(level) - save.passXP)
+        row.detail:SetText(formatNumber(need) .. " points required"
+            .. (selected and " · selected" or ""))
+        row.button.label:SetText("VIEW GOAL")
+        setButtonEnabled(row.button, true)
+        if setAccent then setAccent(row.button, colors.quest or colors.blue) end
+        local base = milestone and darken(colors.blue, 0.62) or colors.panelSoft
+        local edge = selected and (colors.quest or colors.blue)
+            or (milestone and colors.blue or borderColor)
+        applyBackdrop(row, base, edge)
+    end
+end
+
+-- Positions and (conditionally) repopulates pool frames to cover the viewport.
+-- forceRepopulate=true re-applies content even when the frame's assigned level
+-- has not changed — needed after filter/theme/selection changes.
+function Pass:UpdatePassPool(drawer, forceRepopulate)
+    local list = drawer.passLevelList
+    local pool = drawer.passPool
+    local api  = drawer.passApi
+    if not list or not pool or not api then return end
+
+    local save = self:Ensure()
+    if not save then return end
+
+    local scrollY  = drawer.scroll and (drawer.scroll:GetVerticalScroll() or 0) or 0
+    local firstIdx = max(0, floor((scrollY - ROWS_TOP) / ROW_HEIGHT) - 1)
+    firstIdx = min(firstIdx, max(0, #list - POOL_SIZE))
+
+    for poolI = 1, POOL_SIZE do
+        local listIdx = firstIdx + poolI - 1
+        local level   = list[listIdx + 1]
+        local frame   = pool[poolI]
+        if level then
+            local absY = -(ROWS_TOP + listIdx * ROW_HEIGHT)
+            frame:ClearAllPoints()
+            frame:SetPoint("TOPLEFT",  drawer.passPanel, "TOPLEFT",  0, absY)
+            frame:SetPoint("TOPRIGHT", drawer.passPanel, "TOPRIGHT", 0, absY)
+            if forceRepopulate or frame.assignedLevel ~= level then
+                frame.assignedLevel = level
+                self:PopulatePassRow(frame, level, save, api)
+            end
+            frame:Show()
+        else
+            frame.assignedLevel = nil
+            frame:Hide()
+        end
+    end
+end
+
+-- Scrolls the drawer so the row for the given level is centered in the viewport.
+function Pass:ScrollToPassLevel(drawer, level)
+    if not drawer or not drawer.passLevelList or not drawer.scroll then return end
+    local targetIdx = nil
+    for i, l in ipairs(drawer.passLevelList) do
+        if l == level then targetIdx = i - 1; break end
+    end
+    if not targetIdx then return end
+    local viewportH = drawer.scroll:GetHeight() or 400
+    local rowY      = ROWS_TOP + targetIdx * ROW_HEIGHT
+    local scrollTo  = max(0, rowY - floor(viewportH / 2) + floor(ROW_HEIGHT / 2))
+    if CC.UI and CC.UI.SetGameDrawerScroll then
+        CC.UI:SetGameDrawerScroll(scrollTo)
+    else
+        drawer.scroll:SetVerticalScroll(scrollTo)
+    end
+end
+
 function Pass:BuildDrawerPanels(drawer, api)
     if not drawer or not api or drawer.passPanel then return end
     local createButton = api.createButton
@@ -809,33 +940,31 @@ function Pass:BuildDrawerPanels(drawer, api)
     drawer.passSummary:SetPoint("TOPLEFT", drawer.passPanel, "TOPLEFT", 2, -364)
     drawer.passSummary:SetPoint("RIGHT", drawer.passClaimAll, "LEFT", -8, 0)
 
-    drawer.passRows = {}
-    local firstY = -396
-    for level = 1, self.maxLevel do
-        local rewardLevel = level
+    -- Create a small recycled pool (POOL_SIZE frames) instead of 200 static rows.
+    drawer.passPool = {}
+    drawer.passApi  = api
+    for i = 1, POOL_SIZE do
         local row = CreateFrame("Button", nil, drawer.passPanel, templateName())
-        row:SetPoint("TOPLEFT", drawer.passPanel, "TOPLEFT", 0, firstY - ((level - 1) * 55))
-        row:SetPoint("TOPRIGHT", drawer.passPanel, "TOPRIGHT", 0, firstY - ((level - 1) * 55))
         row:SetHeight(49)
-        local milestone = level % 5 == 0
-        applyBackdrop(row, milestone and darken(colors.blue, 0.62) or colors.panelSoft, milestone and colors.blue or colors.border)
-        row.level = rewardLevel
+        row.assignedLevel = nil
         row.badge = CreateFrame("Frame", nil, row, templateName())
         row.badge:SetSize(38, 34)
         row.badge:SetPoint("LEFT", row, "LEFT", 7, 0)
-        applyBackdrop(row.badge, milestone and darken(colors.blue, 0.32) or colors.panelRaised, milestone and colors.blue or colors.border)
-        row.badgeText = createFont(row.badge, 11, milestone and colors.text or colors.muted, "CENTER")
+        row.badgeText = createFont(row.badge, 11, colors.muted, "CENTER")
         row.badgeText:SetAllPoints()
-        row.badgeText:SetText(tostring(rewardLevel))
         row.title = createFont(row, 10, colors.text, "LEFT")
         row.title:SetPoint("TOPLEFT", row, "TOPLEFT", 53, -8)
         row.title:SetPoint("RIGHT", row, "RIGHT", -98, 0)
         row.detail = createFont(row, 8, colors.muted, "LEFT")
         row.detail:SetPoint("TOPLEFT", row.title, "BOTTOMLEFT", 0, -3)
         row.detail:SetPoint("RIGHT", row, "RIGHT", -98, 0)
-        row.button = createButton(row, "LOCKED", 82, 26, function() Pass:HandleRewardClick(rewardLevel) end)
+        row.button = createButton(row, "LOCKED", 82, 26, function()
+            if row.assignedLevel then Pass:HandleRewardClick(row.assignedLevel) end
+        end)
         row.button:SetPoint("RIGHT", row, "RIGHT", -7, 0)
-        row:SetScript("OnClick", function() Pass:SelectRequirement(rewardLevel) end)
+        row:SetScript("OnClick", function()
+            if row.assignedLevel then Pass:SelectRequirement(row.assignedLevel) end
+        end)
         row:SetScript("OnEnter", function(selfRow)
             if selfRow.SetBackdropBorderColor then
                 local accent = colors.quest or colors.blue
@@ -843,8 +972,13 @@ function Pass:BuildDrawerPanels(drawer, api)
             end
         end)
         row:SetScript("OnLeave", function() Pass:RefreshDrawer() end)
-        drawer.passRows[rewardLevel] = row
+        row:Hide()
+        drawer.passPool[i] = row
     end
+    -- Reposition pool frames when the scroll position changes.
+    drawer.scroll:SetScript("OnVerticalScroll", function()
+        if drawer.mode == "BATTLEPASS" then Pass:UpdatePassPool(drawer, false) end
+    end)
 
     drawer.themesPanel = CreateFrame("Frame", nil, drawer.content)
     drawer.themesPanel:SetPoint("TOPLEFT", drawer.content, "TOPLEFT", 0, 0)
@@ -978,51 +1112,12 @@ function Pass:RefreshDrawerPanel(drawer, api)
         if setAccent then setAccent(filterButton, active and (colors.quest or colors.blue) or colors.border, active) end
     end
 
-    local visibleRewardIndex = 0
-    for rewardLevel, row in ipairs(drawer.passRows or {}) do
-        local reward = self:GetReward(rewardLevel)
-        local reached = self:IsLevelReached(rewardLevel)
-        local claimed = self:IsRewardClaimed(rewardLevel)
-        local selected = rewardLevel == self.selectedLevel
-        local filter = drawer.passFilter or "ALL"
-        local visible = filter == "ALL" or (filter == "READY" and reached and not claimed) or
-            (filter == "CLAIMED" and claimed) or (filter == "LOCKED" and not reached)
-        if visible then
-            row:ClearAllPoints()
-            row:SetPoint("TOPLEFT", drawer.passPanel, "TOPLEFT", 0, -396 - (visibleRewardIndex * 55))
-            row:SetPoint("TOPRIGHT", drawer.passPanel, "TOPRIGHT", 0, -396 - (visibleRewardIndex * 55))
-            visibleRewardIndex = visibleRewardIndex + 1
-            row:Show()
-        else
-            row:Hide()
-        end
-        local borderColor = selected and (colors.quest or colors.blue) or colors.border
-        row.title:SetText(reward.title .. "  ·  +" .. reward.coins .. " coins" .. (reward.themeName and ("  ·  THEME: " .. reward.themeName) or "") .. (reward.deckName and ("  ·  DECK: " .. reward.deckName) or "") .. (reward.tetrisThemeName and ("  ·  TETRIS: " .. reward.tetrisThemeName) or ""))
-        if claimed then
-            row.detail:SetText(selected and "Unlocked · selected" or "Unlocked")
-            row.button.label:SetText("OWNED")
-            setButtonEnabled(row.button, false)
-            applyBackdrop(row, darken(colors.green, 0.72), selected and (colors.quest or colors.blue) or colors.green)
-        elseif reached then
-            row.detail:SetText(selected and "Ready to unlock · selected" or "Ready to unlock")
-            row.button.label:SetText("UNLOCK NOW")
-            setButtonEnabled(row.button, true)
-            if setAccent then setAccent(row.button, colors.green) end
-            applyBackdrop(row, darken(colors.green, 0.82), selected and (colors.quest or colors.blue) or colors.green)
-        else
-            local need = max(0, self:GetCumulativeXP(rewardLevel) - save.passXP)
-            row.detail:SetText(formatNumber(need) .. " points required" .. (selected and " · selected" or ""))
-            row.button.label:SetText("VIEW GOAL")
-            setButtonEnabled(row.button, true)
-            if setAccent then setAccent(row.button, colors.quest or colors.blue) end
-            local base = rewardLevel % 5 == 0 and darken(colors.blue, 0.62) or colors.panelSoft
-            local edge = selected and (colors.quest or colors.blue) or (rewardLevel % 5 == 0 and colors.blue or borderColor)
-            applyBackdrop(row, base, edge)
-        end
-    end
-    local filteredPassHeight = max(446, 446 + (visibleRewardIndex * 55))
+    drawer.passApi = api
+    self:BuildPassLevelList(drawer)
+    local filteredPassHeight = max(446, 446 + (#drawer.passLevelList * ROW_HEIGHT))
     drawer.passPanel:SetHeight(filteredPassHeight)
     if drawer.mode == "BATTLEPASS" and drawer.content then drawer.content:SetHeight(filteredPassHeight) end
+    self:UpdatePassPool(drawer, true)
 
     drawer.themeHero.wallet:SetText(self:GetWalletText() .. " COINS AVAILABLE")
     drawer.themeHero.earned:SetText("LIFETIME " .. self:GetLifetimeText() .. "  ·  GAMES " .. formatNumber(save.gameCoins) .. "  ·  EXPLORE/GOALS " .. formatNumber(save.explorationCoins))

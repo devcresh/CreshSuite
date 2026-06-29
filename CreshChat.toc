@@ -28,6 +28,7 @@ Achievements.lua
 AchievementExpansion.lua
 ClassAchievements.lua
 DungeonAchievements.lua
+CombatTracker.lua
 GameAudio.lua
 Quality.lua
 Developer.lua

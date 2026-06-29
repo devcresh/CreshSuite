@@ -9,7 +9,7 @@ local Developer = {
         "Tetris", "Games", "SoloGames", "BattlePass", "GameProgression", "GameAudio",
         "Voice", "Quality", "Settings", "Developer",
         "Achievements", "AchievementExpansion", "ClassAchievements", "DungeonAchievements",
-        "DungeonContent", "DungeonDwellersPass",
+        "CombatTracker", "DungeonContent", "DungeonDwellersPass",
     },
 }
 CC.Developer = Developer
@@ -271,6 +271,669 @@ function Developer:RunProgressRouterTests()
     R:EnableDevMode(wasDevMode)
 end
 
+function Developer:PrintCombatStats()
+    if not CC.Print then return end
+    local tracker = CC.CombatTracker
+    if not tracker then
+        CC:Print("[CombatTracker] module not loaded")
+        return
+    end
+    local stats = tracker:GetStats()
+    if not stats then
+        CC:Print("[CombatTracker] not initialised yet — log in first")
+        return
+    end
+    CC:Print("[CombatTracker] Player GUID: " .. tostring(tracker.playerGUID or "not cached"))
+    CC:Print("[CombatTracker] Damage dealt: " .. tostring(stats.WOW_DAMAGE_DEALT or 0)
+        .. "  |  best hit: " .. tostring(stats.WOW_BEST_HIT or 0)
+        .. "  |  crits: " .. tostring(stats.WOW_CRITS or 0))
+    CC:Print("[CombatTracker] Damage taken: " .. tostring(stats.WOW_DAMAGE_TAKEN or 0))
+    CC:Print("[CombatTracker] Healing cast: " .. tostring(stats.WOW_HEALING or 0)
+        .. "  |  best heal: " .. tostring(stats.WOW_BEST_HEAL or 0)
+        .. "  |  crit heals: " .. tostring(stats.WOW_CRIT_HEALS or 0))
+    -- Count combat achievements.
+    local ach = CC.Achievements
+    if ach then
+        local COMBAT_STATS = {
+            WOW_DAMAGE_DEALT = true, WOW_DAMAGE_TAKEN = true, WOW_BEST_HIT = true,
+            WOW_HEALING      = true, WOW_BEST_HEAL    = true,
+            WOW_CRITS        = true, WOW_CRIT_HEALS   = true,
+        }
+        local save = ach:Ensure()
+        local unlocked, total = 0, 0
+        for _, entry in ipairs(ach.catalog or {}) do
+            if COMBAT_STATS[entry.stat] then
+                total = total + 1
+                if save and save.unlocked[entry.key] then unlocked = unlocked + 1 end
+            end
+        end
+        CC:Print("[CombatTracker] Combat achievements: " .. tostring(unlocked) .. "/" .. tostring(total))
+    end
+end
+
+-- ── Pass 8: Developer Test Suite ─────────────────────────────────────────────
+-- Gated behind an explicit test-mode flag (/cc test on).
+-- Player data is snapshot-restored before and after every run.
+-- Never writes real progress while test mode is active.
+
+Developer.testMode    = false
+Developer.testVerbose = false
+Developer.snapshot    = nil
+
+local function deepCopy(orig)
+    if type(orig) ~= "table" then return orig end
+    local copy = {}
+    for k, v in pairs(orig) do copy[k] = deepCopy(v) end
+    return copy
+end
+
+local function copyInto(dest, src)
+    for k in pairs(dest) do if src[k] == nil then dest[k] = nil end end
+    for k, v in pairs(src) do
+        if type(v) == "table" and type(dest[k]) == "table" then
+            copyInto(dest[k], v)
+        else
+            dest[k] = deepCopy(v)
+        end
+    end
+end
+
+function Developer:SnapshotDB()
+    if not CC.db then return false end
+    self.snapshot = {
+        arcadeRewards   = deepCopy(CC.db.arcadeRewards),
+        gameProgression = deepCopy(CC.db.gameProgression),
+        dungeonSave     = CC.db.soloGames and deepCopy(CC.db.soloGames.dungeon) or nil,
+    }
+    return true
+end
+
+function Developer:RestoreDB()
+    if not self.snapshot or not CC.db then return false end
+    if self.snapshot.arcadeRewards and CC.db.arcadeRewards then
+        copyInto(CC.db.arcadeRewards, self.snapshot.arcadeRewards)
+    end
+    if self.snapshot.gameProgression and CC.db.gameProgression then
+        copyInto(CC.db.gameProgression, self.snapshot.gameProgression)
+    end
+    if self.snapshot.dungeonSave and CC.db.soloGames then
+        CC.db.soloGames.dungeon = CC.db.soloGames.dungeon or {}
+        copyInto(CC.db.soloGames.dungeon, self.snapshot.dungeonSave)
+    end
+    self.snapshot = nil
+    return true
+end
+
+function Developer:EnableTestMode()
+    if self.testMode then
+        if CC.Print then CC:Print("[TEST] already ON") end; return
+    end
+    if not CC.db then
+        if CC.Print then CC:Print("[TEST] database not ready — log in first") end; return
+    end
+    if not self:SnapshotDB() then
+        if CC.Print then CC:Print("[TEST] snapshot failed") end; return
+    end
+    self.testMode = true
+    if CC.Print then CC:Print("[TEST] mode ON — DB snapshot saved. '/cc test off' restores data.") end
+end
+
+function Developer:DisableTestMode()
+    if not self.testMode then
+        if CC.Print then CC:Print("[TEST] test mode is not enabled") end; return
+    end
+    local ok = self:RestoreDB()
+    self.testMode = false
+    if CC.Print then
+        CC:Print(ok and "[TEST] mode OFF — DB restored." or "[TEST] mode OFF — no snapshot (data unchanged).")
+    end
+end
+
+-- ── Runner ────────────────────────────────────────────────────────────────────
+
+local function makeRunner(verbose)
+    local passed, failed = 0, 0
+    local function check(label, cond, detail)
+        if cond then
+            passed = passed + 1
+            if verbose and CC.Print then CC:Print("[TEST] PASS " .. label) end
+        else
+            failed = failed + 1
+            if CC.Print then CC:Print("[TEST] FAIL " .. label .. (detail and (" — " .. tostring(detail)) or "")) end
+        end
+    end
+    local function skip(label, reason)
+        if CC.Print then CC:Print("[TEST] SKIP " .. label .. " — " .. (reason or "n/a")) end
+    end
+    return { check = check, skip = skip,
+             passed = function() return passed end,
+             failed = function() return failed end }
+end
+
+-- ── Test groups L1–L20 ────────────────────────────────────────────────────────
+
+local tests = {}
+
+tests[1] = function(T)  -- Main BP XP award
+    local Pass = CC.BattlePass
+    if not Pass then T.skip("L1", "BattlePass not loaded"); return end
+    local save = Pass:Ensure(); if not save then T.skip("L1", "Ensure nil"); return end
+    local before = save.passXP
+    Pass:AddPassXP(100,  "TEST", true)
+    T.check("L1: AddPassXP(100) increases passXP by 100",      save.passXP == before + 100)
+    Pass:AddPassXP(0,    "TEST", true)
+    T.check("L1: AddPassXP(0) is a no-op",                     save.passXP == before + 100)
+    Pass:AddPassXP(-50,  "TEST", true)
+    T.check("L1: AddPassXP(negative) is a no-op",              save.passXP == before + 100)
+    Pass:AddPassXP(nil,  "TEST", true)
+    T.check("L1: AddPassXP(nil) is a no-op",                   save.passXP == before + 100)
+    Pass:AddPassXP("abc","TEST", true)
+    T.check("L1: AddPassXP(string) is a no-op",                save.passXP == before + 100)
+end
+
+tests[2] = function(T)  -- Level boundary calculation
+    local Pass = CC.BattlePass
+    if not Pass then T.skip("L2", "BattlePass not loaded"); return end
+    T.check("L2: GetCumulativeXP(1)==0",   Pass:GetCumulativeXP(1) == 0)
+    T.check("L2: GetCumulativeXP(2)==50",  Pass:GetCumulativeXP(2) == 50)
+    T.check("L2: GetCumulativeXP(3)==105", Pass:GetCumulativeXP(3) == 105)
+    T.check("L2: GetNextLevelCost(1)==50", Pass:GetNextLevelCost(1) == 50)
+    T.check("L2: GetNextLevelCost(2)==55", Pass:GetNextLevelCost(2) == 55)
+    T.check("L2: GetNextLevelCost(10)==95",Pass:GetNextLevelCost(10) == 95)
+    for lvl = 1, 5 do
+        local xp = Pass:GetCumulativeXP(lvl)
+        T.check("L2: round-trip level " .. lvl, Pass:GetLevelFromXP(xp) == lvl)
+        if lvl > 1 then
+            T.check("L2: one-below level " .. lvl, Pass:GetLevelFromXP(xp - 1) == lvl - 1)
+        end
+    end
+end
+
+tests[3] = function(T)  -- Levels 99–101 boundaries
+    local Pass = CC.BattlePass
+    if not Pass then T.skip("L3", "BattlePass not loaded"); return end
+    local x99  = Pass:GetCumulativeXP(99)
+    local x100 = Pass:GetCumulativeXP(100)
+    local x101 = Pass:GetCumulativeXP(101)
+    T.check("L3: xp99 < xp100 < xp101",      x99 < x100 and x100 < x101)
+    T.check("L3: lvlFromXP(x99)==99",         Pass:GetLevelFromXP(x99)    == 99)
+    T.check("L3: lvlFromXP(x100-1)==99",      Pass:GetLevelFromXP(x100-1) == 99)
+    T.check("L3: lvlFromXP(x100)==100",       Pass:GetLevelFromXP(x100)   == 100)
+    T.check("L3: lvlFromXP(x101-1)==100",     Pass:GetLevelFromXP(x101-1) == 100)
+    T.check("L3: lvlFromXP(x101)==101",       Pass:GetLevelFromXP(x101)   == 101)
+end
+
+tests[4] = function(T)  -- Levels 199–200 boundaries
+    local Pass = CC.BattlePass
+    if not Pass then T.skip("L4", "BattlePass not loaded"); return end
+    local x199 = Pass:GetCumulativeXP(199)
+    local x200 = Pass:GetCumulativeXP(200)
+    T.check("L4: x199 < x200",                x199 < x200)
+    T.check("L4: lvlFromXP(x199)==199",        Pass:GetLevelFromXP(x199)   == 199)
+    T.check("L4: lvlFromXP(x200-1)==199",      Pass:GetLevelFromXP(x200-1) == 199)
+    T.check("L4: lvlFromXP(x200)==200",        Pass:GetLevelFromXP(x200)   == 200)
+end
+
+tests[5] = function(T)  -- Excess XP at level 200
+    local Pass = CC.BattlePass
+    if not Pass then T.skip("L5", "BattlePass not loaded"); return end
+    local x200 = Pass:GetCumulativeXP(200)
+    T.check("L5: GetLevelFromXP(x200+1000000)==200 (capped)",
+        Pass:GetLevelFromXP(x200 + 1000000) == 200)
+    local save = Pass:Ensure()
+    if save then
+        save.passXP = x200
+        Pass:AddPassXP(99999, "TEST", true)
+        T.check("L5: level stays 200 after AddPassXP beyond cap",
+            Pass:GetLevelFromXP(save.passXP) == 200)
+    end
+end
+
+tests[6] = function(T)  -- Reward claim
+    local Pass = CC.BattlePass
+    if not Pass then T.skip("L6", "BattlePass not loaded"); return end
+    local save = Pass:Ensure(); if not save then T.skip("L6", "Ensure nil"); return end
+    save.passXP   = Pass:GetCumulativeXP(4)
+    save.claimed["4"] = nil
+    local coinsBefore = save.coins
+    local ok = Pass:ClaimReward(4, true)
+    T.check("L6: ClaimReward(4) returns true",          ok == true)
+    T.check("L6: claimed['4'] set to true",             save.claimed["4"] == true)
+    local reward = Pass:GetReward(4)
+    T.check("L6: coins increased by reward.coins",
+        save.coins == coinsBefore + (reward and reward.coins or 0))
+end
+
+tests[7] = function(T)  -- Duplicate claim prevention
+    local Pass = CC.BattlePass
+    if not Pass then T.skip("L7", "BattlePass not loaded"); return end
+    local save = Pass:Ensure(); if not save then T.skip("L7", "Ensure nil"); return end
+    save.passXP    = Pass:GetCumulativeXP(7)
+    save.claimed["7"] = nil
+    Pass:ClaimReward(7, true)
+    local coinsAfterFirst = save.coins
+    local ok2 = Pass:ClaimReward(7, true)
+    T.check("L7: second ClaimReward(7) returns false",  ok2 == false)
+    T.check("L7: coins unchanged on duplicate claim",   save.coins == coinsAfterFirst)
+end
+
+tests[8] = function(T)  -- Achievement progress below threshold
+    local Ach = CC.Achievements
+    if not Ach then T.skip("L8", "Achievements not loaded"); return end
+    local save = Ach:Ensure(); if not save then T.skip("L8", "Ensure nil"); return end
+    local prev = save.stats.WOW_DAMAGE_DEALT
+    save.stats.WOW_DAMAGE_DEALT = 9999
+    save.unlocked["ACH_WOW_DAMAGE_DEALT_001"] = nil
+    Ach:EvaluateAll(true)
+    T.check("L8: ACH_WOW_DAMAGE_DEALT_001 NOT unlocked at 9999 (goal 10000)",
+        save.unlocked["ACH_WOW_DAMAGE_DEALT_001"] == nil)
+    save.stats.WOW_DAMAGE_DEALT = prev
+end
+
+tests[9] = function(T)  -- Achievement completion at threshold
+    local Ach = CC.Achievements
+    if not Ach then T.skip("L9", "Achievements not loaded"); return end
+    local save = Ach:Ensure(); if not save then T.skip("L9", "Ensure nil"); return end
+    save.stats.WOW_DAMAGE_DEALT = 10000
+    save.unlocked["ACH_WOW_DAMAGE_DEALT_001"] = nil
+    Ach:EvaluateAll(true)
+    T.check("L9: ACH_WOW_DAMAGE_DEALT_001 unlocked at exactly 10000",
+        save.unlocked["ACH_WOW_DAMAGE_DEALT_001"] ~= nil)
+end
+
+tests[10] = function(T)  -- Duplicate completion prevention
+    local Ach  = CC.Achievements
+    local Pass = CC.BattlePass
+    if not Ach or not Pass then T.skip("L10", "module missing"); return end
+    local achSave = Ach:Ensure();  if not achSave then T.skip("L10", "Ach Ensure nil"); return end
+    local bpSave  = Pass:Ensure(); if not bpSave  then T.skip("L10", "BP Ensure nil"); return end
+    achSave.stats.WOW_CRITS = 10
+    achSave.unlocked["ACH_WOW_CRITS_001"] = nil
+    local xpBefore = bpSave.passXP
+    Ach:EvaluateAll(true)
+    local xpAfterFirst = bpSave.passXP
+    T.check("L10: first EvaluateAll awards XP", xpAfterFirst > xpBefore)
+    Ach:EvaluateAll(true)
+    T.check("L10: second EvaluateAll does not re-award XP", bpSave.passXP == xpAfterFirst)
+end
+
+tests[11] = function(T)  -- Old-key alias resolution (legacy ID → stable ACH_WOW_*)
+    local Ach = CC.Achievements
+    if not Ach then T.skip("L11", "Achievements not loaded"); return end
+    Ach:BuildCatalog()
+    -- Legacy auto-generated key: COMBAT_KILLS_10 → ACH_WOW_KILLS_001
+    local byLegacy = Ach.byKey["COMBAT_KILLS_10"]
+    local byStable = Ach.byKey["ACH_WOW_KILLS_001"]
+    T.check("L11: legacy key 'COMBAT_KILLS_10' resolves in byKey",       byLegacy ~= nil)
+    T.check("L11: legacy and stable keys resolve to same catalog entry",  byLegacy == byStable)
+    -- GAMES category example
+    local byLeg2 = Ach.byKey["GAMES_GAME_WINS_1"]
+    local byStb2 = Ach.byKey["ACH_WOW_GAME_WINS_001"]
+    T.check("L11: legacy 'GAMES_GAME_WINS_1' resolves in byKey",         byLeg2 ~= nil)
+    T.check("L11: GAMES legacy and stable keys match",                   byLeg2 == byStb2)
+    -- IsUnlocked accepts stable key
+    local save = Ach:Ensure()
+    if save then
+        local wasUnlocked = save.unlocked["ACH_WOW_KILLS_001"]
+        save.unlocked["ACH_WOW_KILLS_001"] = { at = 1, value = 10 }
+        T.check("L11: IsUnlocked(stable key) == true", Ach:IsUnlocked("ACH_WOW_KILLS_001"))
+        save.unlocked["ACH_WOW_KILLS_001"] = wasUnlocked
+    end
+end
+
+tests[12] = function(T)  -- GetStat fallback reads combat stat keys directly
+    local Ach = CC.Achievements
+    if not Ach then T.skip("L12", "Achievements not loaded"); return end
+    local save = Ach:Ensure(); if not save then T.skip("L12", "Ensure nil"); return end
+    local prev = save.stats.WOW_BEST_HIT
+    save.stats.WOW_BEST_HIT = 7654
+    T.check("L12: GetStat('WOW_BEST_HIT') reads from save.stats",   Ach:GetStat("WOW_BEST_HIT") == 7654)
+    save.stats.WOW_BEST_HIT = 0
+    T.check("L12: GetStat('WOW_BEST_HIT') == 0 after clearing",     Ach:GetStat("WOW_BEST_HIT") == 0)
+    save.stats.WOW_BEST_HIT = prev
+    -- Unknown stat returns 0 cleanly
+    T.check("L12: GetStat('NONEXISTENT') returns 0 safely",          Ach:GetStat("NONEXISTENT_STAT_XYZ") == 0)
+end
+
+tests[13] = function(T)  -- DD MigrateFromWoW idempotence
+    local DD  = CC.DungeonAchievements
+    local Ach = CC.Achievements
+    if not DD or not Ach then T.skip("L13", "module missing"); return end
+    local ddSave  = DD:Ensure();  if not ddSave  then T.skip("L13", "DD Ensure nil"); return end
+    local achSave = Ach:Ensure(); if not achSave then T.skip("L13", "Ach Ensure nil"); return end
+    local testKey = "ACH_DD_KILLS_001"
+    local prevDD  = ddSave.unlocked[testKey]
+    local prevWoW = achSave.unlocked[testKey]
+    local wasFlag = ddSave.migratedFromWoW
+    -- Plant record in WoW table, reset migration flag
+    achSave.unlocked[testKey] = { at = 1, value = 5 }
+    ddSave.unlocked[testKey]  = nil
+    ddSave.migratedFromWoW    = false
+    -- First migration
+    local moved1 = DD:MigrateFromWoW()
+    T.check("L13: first MigrateFromWoW reports move(s)",    moved1 > 0)
+    T.check("L13: key moved to DD namespace",               ddSave.unlocked[testKey] ~= nil)
+    T.check("L13: key removed from WoW namespace",          achSave.unlocked[testKey] == nil)
+    T.check("L13: migratedFromWoW flag now set",            ddSave.migratedFromWoW == true)
+    -- Second migration must be a no-op
+    local moved2 = DD:MigrateFromWoW()
+    T.check("L13: second MigrateFromWoW returns 0 (idempotent)", moved2 == 0)
+    -- Restore local plantings (RestoreDB handles the rest)
+    ddSave.unlocked[testKey]  = prevDD
+    achSave.unlocked[testKey] = prevWoW
+    ddSave.migratedFromWoW    = wasFlag
+end
+
+tests[14] = function(T)  -- Dungeon Dwellers isolation: unlocks go to DD save, not WoW save
+    local DD  = CC.DungeonAchievements
+    local Ach = CC.Achievements
+    if not DD or not Ach then T.skip("L14", "module missing"); return end
+    local ddSave  = DD:Ensure();  if not ddSave  then T.skip("L14", "DD Ensure nil"); return end
+    local achSave = Ach:Ensure(); if not achSave then T.skip("L14", "Ach Ensure nil"); return end
+    local dungeon = CC.db and CC.db.soloGames and CC.db.soloGames.dungeon
+    if not dungeon then T.skip("L14", "soloGames.dungeon missing"); return end
+    local firstDD = DD.catalog and DD.catalog[1]
+    if not firstDD then T.skip("L14", "DD catalog empty"); return end
+    -- Force the stat above threshold
+    local prevKills  = dungeon.kills
+    local prevUnlock = ddSave.unlocked[firstDD.key]
+    dungeon.kills = math.max(dungeon.kills or 0, firstDD.goal)
+    ddSave.unlocked[firstDD.key] = nil
+    DD:EvaluateAll(true)
+    T.check("L14: DD achievement written to DD namespace",   ddSave.unlocked[firstDD.key] ~= nil)
+    T.check("L14: DD achievement absent from WoW namespace", achSave.unlocked[firstDD.key] == nil)
+    -- Restore within-test state
+    dungeon.kills = prevKills
+    ddSave.unlocked[firstDD.key] = prevUnlock
+end
+
+tests[15] = function(T)  -- Dungeon Crawler isolation: routing rules enforced
+    local R = CC.ProgressRouter
+    if not R then T.skip("L15", "ProgressRouter not loaded"); return end
+    -- DD events must be rejected when routed to WOW namespace
+    local e1 = R:BuildProgressEvent({
+        sourceSystem = R.SYSTEMS.DUNGEON_DWELLER_BATTLE_PASS, sourceGame = R.GAMES.DUNGEON_DWELLER,
+        progressNamespace = R.GAMES.WOW, objectiveType = R.OBJECTIVES.DD_ENEMY_KILL, amount = 1,
+    })
+    T.check("L15: DD->WOW route rejected", R:RouteProgressEvent(e1) == false)
+    -- WOW events must be rejected when routed to DUNGEON_DWELLER namespace
+    local e2 = R:BuildProgressEvent({
+        sourceSystem = R.SYSTEMS.WOW_BATTLE_PASS, sourceGame = R.GAMES.WOW,
+        progressNamespace = R.GAMES.DUNGEON_DWELLER, objectiveType = R.OBJECTIVES.MOB_KILL, amount = 1,
+    })
+    T.check("L15: WOW->DD route rejected", R:RouteProgressEvent(e2) == false)
+    -- A valid DD event in DD namespace is accepted
+    local e3 = R:BuildProgressEvent({
+        sourceSystem = R.SYSTEMS.DUNGEON_DWELLER_BATTLE_PASS, sourceGame = R.GAMES.DUNGEON_DWELLER,
+        progressNamespace = R.GAMES.DUNGEON_DWELLER, objectiveType = R.OBJECTIVES.DD_ENEMY_KILL, amount = 1,
+    })
+    local ok3 = R:RouteProgressEvent(e3)
+    T.check("L15: valid DD event accepted in DD namespace", ok3 == true)
+end
+
+tests[16] = function(T)  -- FarmFinder isolation (unregistered game cannot pollute any namespace)
+    local R = CC.ProgressRouter
+    if not R then T.skip("L16", "ProgressRouter not loaded"); return end
+    -- FARMFINDER is not a registered source system — must be rejected
+    local e1 = R:BuildProgressEvent({
+        sourceSystem = "FARMFINDER", sourceGame = "FARMFINDER",
+        progressNamespace = R.GAMES.WOW, objectiveType = R.OBJECTIVES.MOB_KILL, amount = 1,
+    })
+    T.check("L16: FARMFINDER->WOW rejected (unknown sourceSystem)", R:RouteProgressEvent(e1) == false)
+    local e2 = R:BuildProgressEvent({
+        sourceSystem = "FARMFINDER", sourceGame = "FARMFINDER",
+        progressNamespace = R.GAMES.DUNGEON_DWELLER, objectiveType = R.OBJECTIVES.MOB_KILL, amount = 1,
+    })
+    T.check("L16: FARMFINDER->DD rejected", R:RouteProgressEvent(e2) == false)
+    -- WoW and DD save tables must be untouched
+    local achSave = CC.Achievements and CC.Achievements:Ensure()
+    local ddSave  = CC.DungeonAchievements and CC.DungeonAchievements:Ensure()
+    T.check("L16: WoW achievement save still accessible after rejected events", achSave ~= nil)
+    T.check("L16: DD achievement save still accessible after rejected events",  ddSave  ~= nil)
+    T.skip("L16 FarmFinder module test", "FarmFinder game not yet implemented")
+end
+
+tests[17] = function(T)  -- Outgoing damage stat accumulation
+    local Ach = CC.Achievements
+    if not Ach then T.skip("L17", "Achievements not loaded"); return end
+    local save = Ach:Ensure(); if not save then T.skip("L17", "Ensure nil"); return end
+    save.stats.WOW_DAMAGE_DEALT = 0
+    save.stats.WOW_BEST_HIT     = 0
+    -- Simulate the arithmetic CombatTracker performs for SWING_DAMAGE events
+    local hits = { 600, 400, 1200 }
+    for _, amt in ipairs(hits) do
+        save.stats.WOW_DAMAGE_DEALT = save.stats.WOW_DAMAGE_DEALT + amt
+        if amt > save.stats.WOW_BEST_HIT then save.stats.WOW_BEST_HIT = amt end
+    end
+    T.check("L17: WOW_DAMAGE_DEALT accumulates to 2200",    save.stats.WOW_DAMAGE_DEALT == 2200)
+    T.check("L17: WOW_BEST_HIT tracks peak strike (1200)",  save.stats.WOW_BEST_HIT == 1200)
+    T.check("L17: GetStat reads WOW_DAMAGE_DEALT",          Ach:GetStat("WOW_DAMAGE_DEALT") == 2200)
+    T.check("L17: GetStat reads WOW_BEST_HIT",              Ach:GetStat("WOW_BEST_HIT") == 1200)
+    local CT = CC.CombatTracker
+    if CT then
+        T.check("L17: CombatTracker module loaded", CT ~= nil)
+    else
+        T.skip("L17 CombatTracker check", "CombatTracker not loaded")
+    end
+    T.skip("L17 live SWING_DAMAGE", "requires real WoW combat log events")
+end
+
+tests[18] = function(T)  -- Incoming damage and healing stat accumulation
+    local Ach = CC.Achievements
+    if not Ach then T.skip("L18", "Achievements not loaded"); return end
+    local save = Ach:Ensure(); if not save then T.skip("L18", "Ensure nil"); return end
+    save.stats.WOW_DAMAGE_TAKEN = 0
+    save.stats.WOW_HEALING      = 0
+    save.stats.WOW_BEST_HEAL    = 0
+    -- Simulate incoming damage events
+    local dmg = { 500, 1200, 300 }
+    for _, amt in ipairs(dmg) do save.stats.WOW_DAMAGE_TAKEN = save.stats.WOW_DAMAGE_TAKEN + amt end
+    -- Simulate heal events (SPELL_HEAL: p4=amount, p7=critical)
+    local heals = { 800, 1500, 600 }
+    for _, amt in ipairs(heals) do
+        save.stats.WOW_HEALING = save.stats.WOW_HEALING + amt
+        if amt > save.stats.WOW_BEST_HEAL then save.stats.WOW_BEST_HEAL = amt end
+    end
+    T.check("L18: WOW_DAMAGE_TAKEN == 2000",    save.stats.WOW_DAMAGE_TAKEN == 2000)
+    T.check("L18: WOW_HEALING == 2900",         save.stats.WOW_HEALING == 2900)
+    T.check("L18: WOW_BEST_HEAL == 1500",       save.stats.WOW_BEST_HEAL == 1500)
+    T.check("L18: GetStat reads WOW_DAMAGE_TAKEN", Ach:GetStat("WOW_DAMAGE_TAKEN") == 2000)
+    T.check("L18: GetStat reads WOW_HEALING",      Ach:GetStat("WOW_HEALING") == 2900)
+    T.skip("L18 live SPELL_HEAL events", "requires real WoW combat log events")
+end
+
+tests[19] = function(T)  -- Critical event stat accumulation + achievement unlock
+    local Ach = CC.Achievements
+    if not Ach then T.skip("L19", "Achievements not loaded"); return end
+    local save = Ach:Ensure(); if not save then T.skip("L19", "Ensure nil"); return end
+    save.stats.WOW_CRITS      = 0
+    save.stats.WOW_CRIT_HEALS = 0
+    save.unlocked["ACH_WOW_CRITS_001"] = nil
+    -- Simulate crit counters (CombatTracker increments by 1 per crit flag)
+    for _ = 1, 12 do save.stats.WOW_CRITS      = save.stats.WOW_CRITS      + 1 end
+    for _ = 1, 3  do save.stats.WOW_CRIT_HEALS = save.stats.WOW_CRIT_HEALS + 1 end
+    T.check("L19: WOW_CRITS == 12",         save.stats.WOW_CRITS      == 12)
+    T.check("L19: WOW_CRIT_HEALS == 3",     save.stats.WOW_CRIT_HEALS == 3)
+    T.check("L19: GetStat reads WOW_CRITS", Ach:GetStat("WOW_CRITS") == 12)
+    -- At 12 crits, ACH_WOW_CRITS_001 (goal=10) should unlock
+    Ach:EvaluateAll(true)
+    T.check("L19: ACH_WOW_CRITS_001 unlocked at 12 crits (goal=10)",
+        save.unlocked["ACH_WOW_CRITS_001"] ~= nil)
+    -- ACH_WOW_CRITS_002 (goal=50) must NOT be unlocked at 12
+    T.check("L19: ACH_WOW_CRITS_002 not unlocked at 12 (goal=50)",
+        save.unlocked["ACH_WOW_CRITS_002"] == nil)
+    T.skip("L19 live crit-flag parsing", "requires real WoW combat log events")
+end
+
+tests[20] = function(T)  -- Reload/save consistency (testable portion only)
+    local Pass = CC.BattlePass
+    if not Pass then T.skip("L20", "BattlePass not loaded"); return end
+    local save = Pass:Ensure(); if not save then T.skip("L20", "Ensure nil"); return end
+    -- Verify the live table IS the SavedVariables root
+    T.check("L20: CC.db is the CreshChatDB root",
+        CC.db ~= nil and _G.CreshChatDB ~= nil and CC.db == _G.CreshChatDB)
+    -- Sentinel survives a second Ensure() call (same table returned)
+    local mark = "CRESHTEST_" .. tostring(math.floor(math.max(0, (GetTime and GetTime() or 0) * 100)))
+    save._testMark = mark
+    local save2 = Pass:Ensure()
+    T.check("L20: Ensure() returns same table on repeated calls",
+        save2 ~= nil and save2._testMark == mark)
+    save._testMark = nil
+    -- Snapshot/restore round-trip integrity
+    local bp = save.passXP
+    local snap = deepCopy(CC.db.arcadeRewards)
+    snap.passXP = bp + 12345  -- modify the copy
+    copyInto(CC.db.arcadeRewards, snap)
+    T.check("L20: copyInto modifies live table",  save.passXP == bp + 12345)
+    snap.passXP = bp
+    copyInto(CC.db.arcadeRewards, snap)
+    T.check("L20: copyInto restores live table",  save.passXP == bp)
+    T.skip("L20 /reload test", "requires /reload — set XP, reload, open BP, confirm level persists")
+end
+
+-- ── Malformed-input / rejected-event suite ────────────────────────────────────
+
+local function runMalformed(T)
+    local Pass = CC.BattlePass
+    local R    = CC.ProgressRouter
+    if Pass then
+        local save = Pass:Ensure()
+        if save then
+            local before = save.passXP
+            Pass:AddPassXP("not_a_number", "TEST", true)
+            T.check("MALFORM: AddPassXP(string) safe, passXP unchanged", save.passXP == before)
+        end
+        -- ClaimReward for unreached level
+        if save then
+            local savedXP = save.passXP
+            save.passXP = 0
+            save.claimed["100"] = nil
+            local okUnreached = Pass:ClaimReward(100, true)
+            T.check("MALFORM: ClaimReward for unreached level 100 returns false",
+                okUnreached == false)
+            save.passXP = savedXP
+        end
+    end
+    if R then
+        local wasDevMode = R:IsDevMode()
+        R:EnableDevMode(true); R:ClearDevLog()
+        local function routeOk(e)
+            local ok, result = pcall(R.RouteProgressEvent, R, e)
+            return ok and result or false
+        end
+        -- Zero amount
+        local e0 = R:BuildProgressEvent({
+            sourceSystem = R.SYSTEMS.WOW_BATTLE_PASS, sourceGame = R.GAMES.WOW,
+            progressNamespace = R.GAMES.WOW, objectiveType = R.OBJECTIVES.MOB_KILL, amount = 0,
+        })
+        T.check("MALFORM: amount=0 rejected",          routeOk(e0) == false)
+        -- Negative amount
+        local eN = R:BuildProgressEvent({
+            sourceSystem = R.SYSTEMS.WOW_BATTLE_PASS, sourceGame = R.GAMES.WOW,
+            progressNamespace = R.GAMES.WOW, objectiveType = R.OBJECTIVES.MOB_KILL, amount = -1,
+        })
+        T.check("MALFORM: amount=-1 rejected",         routeOk(eN) == false)
+        -- Missing sourceSystem
+        local eM = R:BuildProgressEvent({
+            sourceGame = R.GAMES.WOW, progressNamespace = R.GAMES.WOW,
+            objectiveType = R.OBJECTIVES.MOB_KILL, amount = 1,
+        })
+        T.check("MALFORM: missing sourceSystem rejected", routeOk(eM) == false)
+        -- nil event
+        local okNil = routeOk(nil)
+        T.check("MALFORM: nil event safe (returns false or errors cleanly)", okNil == false)
+        R:EnableDevMode(wasDevMode)
+    end
+end
+
+-- ── Public runner ─────────────────────────────────────────────────────────────
+
+function Developer:RunTestSuite(filter)
+    if not self.testMode then
+        if CC.Print then CC:Print("[TEST] ERROR: '/cc test on' required before running tests.") end
+        return
+    end
+    if not self:SnapshotDB() then
+        if CC.Print then CC:Print("[TEST] ERROR: snapshot failed — aborting") end
+        return
+    end
+    local displayName = filter and ("L" .. filter) or "all"
+    if CC.Print then CC:Print("[TEST] ── CreshChat suite (" .. displayName .. ") ──────────────") end
+    local T = makeRunner(self.testVerbose)
+    local groups = {}
+    if filter then
+        local n = tonumber(filter)
+        if n and n >= 1 and n <= 20 and tests[n] then
+            groups[1] = n
+        else
+            if CC.Print then CC:Print("[TEST] unknown group: " .. tostring(filter) .. " (1-20)") end
+            self:RestoreDB(); self:SnapshotDB(); return
+        end
+    else
+        for i = 1, 20 do groups[i] = i end
+    end
+    for _, idx in ipairs(groups) do
+        local ok, err = pcall(tests[idx], T)
+        if not ok and CC.Print then CC:Print("[TEST] ERROR in L" .. idx .. ": " .. tostring(err)) end
+    end
+    local mPassed, mFailed = 0, 0
+    if not filter then
+        local mT = makeRunner(self.testVerbose)
+        local ok, err = pcall(runMalformed, mT)
+        if not ok and CC.Print then CC:Print("[TEST] ERROR in malformed suite: " .. tostring(err)) end
+        mPassed, mFailed = mT.passed(), mT.failed()
+        if CC.Print then
+            CC:Print(string.format("[TEST] MALFORMED suite: %d passed, %d failed", mPassed, mFailed))
+        end
+    end
+    local total   = T.passed() + mPassed
+    local totalFail = T.failed() + mFailed
+    if CC.Print then
+        CC:Print(string.format("[TEST] ── TOTAL: %d passed  %d failed ──────────────────",
+            total, totalFail))
+        if totalFail == 0 then
+            CC:Print("[TEST] All tests passed. Run '/cc test off' to restore data.")
+        else
+            CC:Print("[TEST] " .. totalFail .. " failure(s). Run '/cc test off' to restore data.")
+        end
+    end
+    -- Restore after every run so the character is always in a clean state.
+    self:RestoreDB()
+    self:SnapshotDB()   -- fresh snapshot ready for next run
+end
+
+function Developer:HandleTestCommand(arg)
+    if     arg == "on"      then self:EnableTestMode()
+    elseif arg == "off"     then self:DisableTestMode()
+    elseif arg == "verbose" then
+        self.testVerbose = not self.testVerbose
+        if CC.Print then CC:Print("[TEST] verbose " .. (self.testVerbose and "ON" or "OFF")) end
+    elseif arg == "status"  then
+        if CC.Print then
+            CC:Print("[TEST] mode=" .. (self.testMode and "ON" or "OFF")
+                .. "  verbose=" .. (self.testVerbose and "ON" or "OFF")
+                .. "  snapshot=" .. (self.snapshot and "saved" or "none"))
+        end
+    elseif arg == "run" or arg == "all" or arg == "" then
+        self:RunTestSuite(nil)
+    else
+        local runArg = string.match(tostring(arg), "^run%s+(%S+)$") or arg
+        local n = tonumber(runArg)
+        if n then
+            self:RunTestSuite(tostring(math.floor(n)))
+        else
+            if CC.Print then
+                CC:Print("[TEST] /cc test on        — enable test mode (snapshots DB)")
+                CC:Print("[TEST] /cc test off       — disable test mode (restores DB)")
+                CC:Print("[TEST] /cc test run       — run all 20 groups + malformed suite")
+                CC:Print("[TEST] /cc test run N     — run only group L[N] (1-20)")
+                CC:Print("[TEST] /cc test verbose   — toggle per-assertion output")
+                CC:Print("[TEST] /cc test status    — show mode/verbose/snapshot state")
+            end
+        end
+    end
+end
+
 local originalHandleSlashCommand = CC.HandleSlashCommand
 function CC:HandleSlashCommand(input)
     local command = string.lower(string.match(tostring(input or ""), "^(%S*)") or "")
@@ -287,6 +950,13 @@ function CC:HandleSlashCommand(input)
         local arg = string.lower(string.match(tostring(input or ""), "^%S+%s+(%S*)") or "")
         Developer:HandleProgressCommand(arg)
         return
+    elseif command == "combat" then
+        Developer:PrintCombatStats()
+        return
+    elseif command == "test" then
+        local arg = string.lower(string.match(tostring(input or ""), "^%S+%s+(.+)$") or "")
+        Developer:HandleTestCommand(arg)
+        return
     end
     return originalHandleSlashCommand(self, input)
 end
@@ -298,4 +968,6 @@ function CC:ShowHelp()
     self:Print("/cc modules - list loaded CreshChat modules")
     self:Print("/cc assets - report registered themes and media libraries")
     self:Print("/cc progress [test|log|clear|on|off] - ProgressRouter diagnostics")
+    self:Print("/cc combat - print combat tracker stats and achievement counts")
+    self:Print("/cc test on/off/run/verbose/status - developer test suite (L1-L20)")
 end
