@@ -1,0 +1,8 @@
+{
+  "build": "0.3.79-account-achievements",
+  "luaFiles": 23,
+  "functions": 1665,
+  "achievementDefinitions": 108,
+  "schema": 70,
+  "interface": 20505
+}

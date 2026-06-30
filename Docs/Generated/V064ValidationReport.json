@@ -1,0 +1,58 @@
+{
+  "build": "0.3.64-tetris-zone-reveal",
+  "schema": 60,
+  "passed": true,
+  "lua": {
+    "files": 21,
+    "parser": "luaparser",
+    "compiler": "Lua load() via lupa",
+    "errors": []
+  },
+  "tetris": {
+    "theme_sets": 100,
+    "background_theme_sets": 70,
+    "new_zone_backgrounds": 50,
+    "zone_theme_keys": 50,
+    "zone_texture_files": 50,
+    "missing_zone_textures": [],
+    "speed_levels": 1000,
+    "lines_per_speed_level": 10,
+    "start_drop_interval_seconds": 0.9,
+    "final_drop_interval_seconds": 0.1,
+    "speed_curve_basis": "Tetris Worlds / Guideline relative gravity table, logarithmically interpolated and stretched to 1,000 levels",
+    "reveal_lines_per_segment": 10,
+    "reveal_segments_per_image": 10,
+    "completion_lines_per_image": 100,
+    "reveal_modes": [
+      "solo timed endless",
+      "solo vs CPU timed endless",
+      "solo vs CPU endless attack",
+      "multiplayer timed endless",
+      "multiplayer endless attack"
+    ],
+    "multiplayer_protocol": 5,
+    "remote_reveal_state_shared": true
+  },
+  "assets": {
+    "all_tga_files": 782,
+    "all_ogg_files": 144,
+    "tetris_background_tga_files": 70,
+    "zone_tga_files": 50,
+    "tetris_background_dimensions": {
+      "256x256": 70
+    },
+    "tetris_background_uncompressed_32_bit": 70,
+    "errors": []
+  },
+  "runtime_tests": {
+    "theme_count": 100,
+    "background_count": 70,
+    "first_reveal_theme": "KARAZHAN_CHECKER",
+    "ten_lines_reveals_first_segment": true,
+    "one_hundred_lines_unlocks_and_rotates": true,
+    "level_1_interval": 0.9,
+    "level_100_interval": 0.777972,
+    "level_500_interval": 0.37043,
+    "level_1000_interval": 0.1
+  }
+}

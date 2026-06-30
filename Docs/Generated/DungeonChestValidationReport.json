@@ -1,0 +1,47 @@
+{
+  "build": "0.3.56-dungeon-texture-pack",
+  "schema": 55,
+  "crate_types": 4,
+  "popup_constructed": true,
+  "stages": [
+    "CLOSED",
+    "THREE_CHOICES"
+  ],
+  "choices_per_chest": 3,
+  "selection_methods": [
+    "MOUSE",
+    "KEY_1",
+    "KEY_2",
+    "KEY_3"
+  ],
+  "open_methods": [
+    "MOUSE",
+    "SPACE",
+    "ENTER"
+  ],
+  "reward_types": [
+    "COINS",
+    "DAMAGE",
+    "SHARDS",
+    "ARMOUR",
+    "PORTRAIT",
+    "FULLBODY"
+  ],
+  "multiple_drop_queue": true,
+  "persistent_pending_drops": true,
+  "crate_history_reward_fields": [
+    "reward",
+    "rewardLabel"
+  ],
+  "mock_runtime_tests": {
+    "level_10_drop": true,
+    "coin_claim": true,
+    "multiple_queue": true,
+    "persistent_restore": true,
+    "fullbody_choice": true,
+    "armour_choice": true,
+    "all_20_boss_mechanics_regression": true,
+    "armour_combat_regression": true
+  },
+  "saved_variables_migration": "soloGames.dungeon.pendingCrates"
+}

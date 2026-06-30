@@ -1,0 +1,57 @@
+CreshChat Dungeon Dweller Art and Class Guide
+=============================================
+
+LOAD ORDER
+- DungeonDwellersAssetSets.lua loads before SoloGames.lua.
+- All image paths are registered in CreshChatDungeonDwellersSets.
+
+COMBAT-STAGE LAYOUT
+- Left: selected Dungeon class portrait, health bar, full-body hero, combat stats and two minion portrait slots.
+- Centre: room status, dice information and all action, upgrade and class controls.
+- Right: active enemy portrait, health bar, full-body render, combat stats and up to three target selectors.
+- Bottom: combat feed.
+
+CLASS SELECTION
+- Press CLASS below the hero portrait or press C while Dungeon Dweller is active.
+- Eight classes are available: Paladin, Warrior, Rogue, Ranger, Mage, Priest, Warlock and Defender.
+- Each class points to a supplied player portrait and full-body texture.
+- Changing class begins a fresh run and saves the class for the next session.
+- If no class has been selected, CreshChat suggests one based on the player's WoW class.
+
+CLASS BALANCE
+- Classes define baseHP, baseAttack, healthGain, healthHeal, attackGain and attackDie.
+- Optional mechanics include block, flat armour, evasion, critical strikes, arcane burst, life steal, room healing, crowd damage, boss damage and minion bonuses.
+- Class selection cards and tooltips display each class's explicit strength and weakness.
+
+BOSSES AND RELICS
+- Milestone bosses occur at levels 10, 20, 30 and every ten levels thereafter.
+- Each boss deposits scaling Cresh Coins into the existing Cresh Coin bank.
+- Each boss also awards class-specific Max Health and Attack for the current run.
+- Some classes receive an additional full heal, partial heal or minion-power bonus.
+- A defeated boss carries a per-enemy reward flag to prevent duplicate coin or relic collection.
+
+MOTION
+- RegisterBreath stores a fixed anchor plus amplitude, speed and phase.
+- Dungeon view OnUpdate applies a small sine-wave vertical offset.
+- Motion only runs while the Dungeon Dweller frame is visible.
+
+OPAQUE IMAGE RENDERING
+- Portraits and full-body actors use duplicate BLEND layers at full alpha.
+- Full-body renders sit over an opaque dark backing plate with a visible border.
+- The breathing animation moves only the actor holder; the backing plate remains fixed and opaque.
+- This preserves intended transparent edges while preventing the character from looking faded against the game world.
+
+ASSET SIZES
+- Portraits: 128x128 TGA.
+- Full body: 256x512 TGA.
+- Full-body display holders preserve the 1:2 aspect ratio at 116x232.
+
+FALLBACK
+- A missing texture uses INV_Misc_QuestionMark so the game remains playable.
+
+
+MILESTONE BOSS ART
+- Icons: 256 x 256, 32-bit uncompressed TGA.
+- Full body: 256 x 512, 32-bit uncompressed TGA.
+- Stable paths: Bosses/Icons/<AssetKey>.tga and Bosses/FullBody/<AssetKey>.tga.
+- Replace placeholders in place; do not rename the files or change the Lua asset keys.

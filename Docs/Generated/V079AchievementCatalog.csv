@@ -1,0 +1,109 @@
+Key,Category,Tier,Title,Stat,Goal,CreshCoins,BattlePassXP,Description
+EXPLORATION_STEPS_1000,EXPLORATION,1,First Thousand,STEPS,1000,8,7,"Travel 1,000 estimated steps on foot or mount."
+EXPLORATION_STEPS_2000,EXPLORATION,2,Road Tested,STEPS,2000,12,10,"Travel 2,000 estimated steps on foot or mount."
+EXPLORATION_STEPS_5000,EXPLORATION,3,Trail Seeker,STEPS,5000,16,13,"Travel 5,000 estimated steps on foot or mount."
+EXPLORATION_STEPS_10000,EXPLORATION,4,Ten Thousand Steps,STEPS,10000,20,16,"Travel 10,000 estimated steps on foot or mount."
+EXPLORATION_STEPS_25000,EXPLORATION,5,Azeroth Rambler,STEPS,25000,24,19,"Travel 25,000 estimated steps on foot or mount."
+EXPLORATION_STEPS_50000,EXPLORATION,6,Long-Haul Adventurer,STEPS,50000,36,28,"Travel 50,000 estimated steps on foot or mount."
+EXPLORATION_STEPS_100000,EXPLORATION,7,World Walker,STEPS,100000,48,37,"Travel 100,000 estimated steps on foot or mount."
+EXPLORATION_STEPS_250000,EXPLORATION,8,Continental Trekker,STEPS,250000,60,46,"Travel 250,000 estimated steps on foot or mount."
+EXPLORATION_STEPS_500000,EXPLORATION,9,Half-Million Hero,STEPS,500000,72,55,"Travel 500,000 estimated steps on foot or mount."
+EXPLORATION_STEPS_1000000,EXPLORATION,10,One Million Steps,STEPS,1000000,84,64,"Travel 1,000,000 estimated steps on foot or mount."
+EXPLORATION_ZONES_1,EXPLORATION,1,New Horizon,ZONES,1,8,7,Discover 1 different zones.
+EXPLORATION_ZONES_5,EXPLORATION,2,Local Explorer,ZONES,5,12,10,Discover 5 different zones.
+EXPLORATION_ZONES_10,EXPLORATION,3,Border Crosser,ZONES,10,16,13,Discover 10 different zones.
+EXPLORATION_ZONES_25,EXPLORATION,4,Map Maker,ZONES,25,20,16,Discover 25 different zones.
+EXPLORATION_ZONES_50,EXPLORATION,5,World Traveller,ZONES,50,24,19,Discover 50 different zones.
+EXPLORATION_ZONES_75,EXPLORATION,6,Azeroth Cartographer,ZONES,75,36,28,Discover 75 different zones.
+EXPLORATION_ZONES_100,EXPLORATION,7,Every Road Leads Somewhere,ZONES,100,48,37,Discover 100 different zones.
+EXPLORATION_FLIGHTS_1,EXPLORATION,1,First Flight,FLIGHTS,1,8,7,Complete 1 flight-path journeys.
+EXPLORATION_FLIGHTS_5,EXPLORATION,2,Frequent Flier,FLIGHTS,5,12,10,Complete 5 flight-path journeys.
+EXPLORATION_FLIGHTS_10,EXPLORATION,3,Wind Rider,FLIGHTS,10,16,13,Complete 10 flight-path journeys.
+EXPLORATION_FLIGHTS_25,EXPLORATION,4,Flight Master Regular,FLIGHTS,25,20,16,Complete 25 flight-path journeys.
+EXPLORATION_FLIGHTS_50,EXPLORATION,5,Aerial Commuter,FLIGHTS,50,24,19,Complete 50 flight-path journeys.
+EXPLORATION_FLIGHTS_100,EXPLORATION,6,Sky Route Veteran,FLIGHTS,100,36,28,Complete 100 flight-path journeys.
+EXPLORATION_FLIGHTS_250,EXPLORATION,7,Master of the Airways,FLIGHTS,250,48,37,Complete 250 flight-path journeys.
+COMBAT_KILLS_10,COMBAT,1,First Hunt,KILLS,10,8,7,Defeat 10 creatures.
+COMBAT_KILLS_25,COMBAT,2,Threat Cleaner,KILLS,25,12,10,Defeat 25 creatures.
+COMBAT_KILLS_50,COMBAT,3,Field Fighter,KILLS,50,16,13,Defeat 50 creatures.
+COMBAT_KILLS_100,COMBAT,4,Centurion,KILLS,100,20,16,Defeat 100 creatures.
+COMBAT_KILLS_250,COMBAT,5,Mob Breaker,KILLS,250,24,19,Defeat 250 creatures.
+COMBAT_KILLS_500,COMBAT,6,Battle Hardened,KILLS,500,36,28,Defeat 500 creatures.
+COMBAT_KILLS_1000,COMBAT,7,Azeroth Defender,KILLS,1000,48,37,"Defeat 1,000 creatures."
+COMBAT_KILLS_2500,COMBAT,8,Relentless,KILLS,2500,60,46,"Defeat 2,500 creatures."
+COMBAT_KILLS_5000,COMBAT,9,Enemy Reaper,KILLS,5000,72,55,"Defeat 5,000 creatures."
+COMBAT_KILLS_10000,COMBAT,10,Ten Thousand Victories,KILLS,10000,84,64,"Defeat 10,000 creatures."
+COMBAT_DEATHS_1,COMBAT,1,That Hurt,DEATHS,1,8,7,Return from defeat 1 times.
+COMBAT_DEATHS_5,COMBAT,2,Walk It Off,DEATHS,5,12,10,Return from defeat 5 times.
+COMBAT_DEATHS_10,COMBAT,3,Spirit Healer Regular,DEATHS,10,16,13,Return from defeat 10 times.
+COMBAT_DEATHS_25,COMBAT,4,Hard Lessons,DEATHS,25,20,16,Return from defeat 25 times.
+COMBAT_DEATHS_50,COMBAT,5,Too Stubborn to Stay Down,DEATHS,50,24,19,Return from defeat 50 times.
+COMBAT_DEATHS_100,COMBAT,6,Immortal in Spirit,DEATHS,100,36,28,Return from defeat 100 times.
+DUNGEONS_DUNGEON_MOBS_10,DUNGEONS,1,Dungeon Initiate,DUNGEON_MOBS,10,12,10,Defeat 10 dungeon enemies in WoW instances or Dungeon Dwellers.
+DUNGEONS_DUNGEON_MOBS_25,DUNGEONS,2,Hallway Cleaner,DUNGEON_MOBS,25,20,16,Defeat 25 dungeon enemies in WoW instances or Dungeon Dwellers.
+DUNGEONS_DUNGEON_MOBS_50,DUNGEONS,3,Pack Breaker,DUNGEON_MOBS,50,28,22,Defeat 50 dungeon enemies in WoW instances or Dungeon Dwellers.
+DUNGEONS_DUNGEON_MOBS_100,DUNGEONS,4,Dungeon Centurion,DUNGEON_MOBS,100,36,28,Defeat 100 dungeon enemies in WoW instances or Dungeon Dwellers.
+DUNGEONS_DUNGEON_MOBS_250,DUNGEONS,5,Elite Sweeper,DUNGEON_MOBS,250,44,34,Defeat 250 dungeon enemies in WoW instances or Dungeon Dwellers.
+DUNGEONS_DUNGEON_MOBS_500,DUNGEONS,6,Delver Veteran,DUNGEON_MOBS,500,68,52,Defeat 500 dungeon enemies in WoW instances or Dungeon Dwellers.
+DUNGEONS_DUNGEON_MOBS_1000,DUNGEONS,7,Thousand Below,DUNGEON_MOBS,1000,92,70,"Defeat 1,000 dungeon enemies in WoW instances or Dungeon Dwellers."
+DUNGEONS_DUNGEON_MOBS_2500,DUNGEONS,8,Deep-Crawl Destroyer,DUNGEON_MOBS,2500,116,88,"Defeat 2,500 dungeon enemies in WoW instances or Dungeon Dwellers."
+DUNGEONS_DUNGEON_MOBS_5000,DUNGEONS,9,Dungeon Exterminator,DUNGEON_MOBS,5000,140,106,"Defeat 5,000 dungeon enemies in WoW instances or Dungeon Dwellers."
+DUNGEONS_DUNGEON_MOBS_10000,DUNGEONS,10,Ten Thousand in the Dark,DUNGEON_MOBS,10000,164,124,"Defeat 10,000 dungeon enemies in WoW instances or Dungeon Dwellers."
+DUNGEONS_BOSSES_1,DUNGEONS,1,Boss Breaker,BOSSES,1,12,10,Defeat 1 dungeon or encounter bosses.
+DUNGEONS_BOSSES_3,DUNGEONS,2,Triple Threat,BOSSES,3,20,16,Defeat 3 dungeon or encounter bosses.
+DUNGEONS_BOSSES_5,DUNGEONS,3,Guardian Hunter,BOSSES,5,28,22,Defeat 5 dungeon or encounter bosses.
+DUNGEONS_BOSSES_10,DUNGEONS,4,Ten Bosses Down,BOSSES,10,36,28,Defeat 10 dungeon or encounter bosses.
+DUNGEONS_BOSSES_25,DUNGEONS,5,Raid on the Rulers,BOSSES,25,44,34,Defeat 25 dungeon or encounter bosses.
+DUNGEONS_BOSSES_50,DUNGEONS,6,Dungeon Nemesis,BOSSES,50,68,52,Defeat 50 dungeon or encounter bosses.
+DUNGEONS_BOSSES_100,DUNGEONS,7,Century of Bosses,BOSSES,100,92,70,Defeat 100 dungeon or encounter bosses.
+DUNGEONS_BOSSES_250,DUNGEONS,8,Legendary Slayer,BOSSES,250,116,88,Defeat 250 dungeon or encounter bosses.
+DUNGEONS_BOSSES_500,DUNGEONS,9,Five Hundred Crowns,BOSSES,500,140,106,Defeat 500 dungeon or encounter bosses.
+DUNGEONS_UNIQUE_BOSSES_1,DUNGEONS,1,New Name on the List,UNIQUE_BOSSES,1,12,10,Defeat 1 different bosses.
+DUNGEONS_UNIQUE_BOSSES_5,DUNGEONS,2,Boss Collector,UNIQUE_BOSSES,5,20,16,Defeat 5 different bosses.
+DUNGEONS_UNIQUE_BOSSES_10,DUNGEONS,3,Ten Different Tyrants,UNIQUE_BOSSES,10,28,22,Defeat 10 different bosses.
+DUNGEONS_UNIQUE_BOSSES_25,DUNGEONS,4,Known Enemy,UNIQUE_BOSSES,25,36,28,Defeat 25 different bosses.
+DUNGEONS_UNIQUE_BOSSES_50,DUNGEONS,5,Boss Encyclopaedia,UNIQUE_BOSSES,50,44,34,Defeat 50 different bosses.
+DUNGEONS_UNIQUE_BOSSES_75,DUNGEONS,6,Master Hunter,UNIQUE_BOSSES,75,68,52,Defeat 75 different bosses.
+DUNGEONS_UNIQUE_BOSSES_100,DUNGEONS,7,Hundred Unique Bosses,UNIQUE_BOSSES,100,92,70,Defeat 100 different bosses.
+DUNGEONS_DUNGEONS_1,DUNGEONS,1,Into the Instance,DUNGEONS,1,12,10,Complete or enter 1 dungeon expeditions.
+DUNGEONS_DUNGEONS_5,DUNGEONS,2,Dungeon Tourist,DUNGEONS,5,20,16,Complete or enter 5 dungeon expeditions.
+DUNGEONS_DUNGEONS_10,DUNGEONS,3,Ten Expeditions,DUNGEONS,10,28,22,Complete or enter 10 dungeon expeditions.
+DUNGEONS_DUNGEONS_25,DUNGEONS,4,Reliable Delver,DUNGEONS,25,36,28,Complete or enter 25 dungeon expeditions.
+DUNGEONS_DUNGEONS_50,DUNGEONS,5,Dungeon Regular,DUNGEONS,50,44,34,Complete or enter 50 dungeon expeditions.
+DUNGEONS_DUNGEONS_100,DUNGEONS,6,Instance Veteran,DUNGEONS,100,68,52,Complete or enter 100 dungeon expeditions.
+DUNGEONS_DUNGEONS_250,DUNGEONS,7,Endless Expedition,DUNGEONS,250,92,70,Complete or enter 250 dungeon expeditions.
+PROFESSIONS_PROFESSION_RANK_75,PROFESSIONS,1,Apprentice Hands,PROFESSION_RANK,75,12,10,Reach skill 75 in any profession.
+PROFESSIONS_PROFESSION_RANK_150,PROFESSIONS,2,Journeyman Hands,PROFESSION_RANK,150,20,16,Reach skill 150 in any profession.
+PROFESSIONS_PROFESSION_RANK_225,PROFESSIONS,3,Expert Hands,PROFESSION_RANK,225,28,22,Reach skill 225 in any profession.
+PROFESSIONS_PROFESSION_RANK_300,PROFESSIONS,4,Master Artisan,PROFESSION_RANK,300,36,28,Reach skill 300 in any profession.
+PROFESSIONS_PROFESSION_COUNT_1,PROFESSIONS,1,Learn a Trade,PROFESSION_COUNT,1,8,7,Learn or advance 1 different professions.
+PROFESSIONS_PROFESSION_COUNT_2,PROFESSIONS,2,Working Pair,PROFESSION_COUNT,2,12,10,Learn or advance 2 different professions.
+PROFESSIONS_PROFESSION_COUNT_4,PROFESSIONS,3,Many Talents,PROFESSION_COUNT,4,16,13,Learn or advance 4 different professions.
+PROFESSIONS_PROFESSION_COUNT_6,PROFESSIONS,4,Renaissance Crafter,PROFESSION_COUNT,6,20,16,Learn or advance 6 different professions.
+PROFESSIONS_MASTER_PROFESSIONS_1,PROFESSIONS,1,One Mastery,MASTER_PROFESSIONS,1,12,10,Reach 300 skill in 1 professions.
+PROFESSIONS_MASTER_PROFESSIONS_2,PROFESSIONS,2,Dual Mastery,MASTER_PROFESSIONS,2,20,16,Reach 300 skill in 2 professions.
+PROFESSIONS_MASTER_PROFESSIONS_4,PROFESSIONS,3,Master of Four,MASTER_PROFESSIONS,4,28,22,Reach 300 skill in 4 professions.
+PROFESSIONS_MASTER_PROFESSIONS_6,PROFESSIONS,4,Trade Grandmaster,MASTER_PROFESSIONS,6,36,28,Reach 300 skill in 6 professions.
+GAMES_GAME_PLAYS_1,GAMES,1,Game On,GAME_PLAYS,1,8,7,Complete or start 1 Cresh game sessions.
+GAMES_GAME_PLAYS_10,GAMES,2,Arcade Regular,GAME_PLAYS,10,12,10,Complete or start 10 Cresh game sessions.
+GAMES_GAME_PLAYS_25,GAMES,3,Twenty-Five Plays,GAME_PLAYS,25,16,13,Complete or start 25 Cresh game sessions.
+GAMES_GAME_PLAYS_50,GAMES,4,Game Night,GAME_PLAYS,50,20,16,Complete or start 50 Cresh game sessions.
+GAMES_GAME_PLAYS_100,GAMES,5,Arcade Veteran,GAME_PLAYS,100,24,19,Complete or start 100 Cresh game sessions.
+GAMES_GAME_PLAYS_250,GAMES,6,Cresh Games Loyalist,GAME_PLAYS,250,36,28,Complete or start 250 Cresh game sessions.
+GAMES_GAME_WINS_1,GAMES,1,First Win,GAME_WINS,1,12,10,Win 1 Cresh games.
+GAMES_GAME_WINS_10,GAMES,2,Winning Habit,GAME_WINS,10,20,16,Win 10 Cresh games.
+GAMES_GAME_WINS_25,GAMES,3,Arcade Champion,GAME_WINS,25,28,22,Win 25 Cresh games.
+GAMES_GAME_WINS_50,GAMES,4,Fifty Victories,GAME_WINS,50,36,28,Win 50 Cresh games.
+GAMES_GAME_WINS_100,GAMES,5,Century Champion,GAME_WINS,100,44,34,Win 100 Cresh games.
+GAMES_GAME_LEVELS_5,GAMES,1,Level Collector,GAME_LEVELS,5,8,7,Reach 5 combined levels across Cresh games.
+GAMES_GAME_LEVELS_10,GAMES,2,Double Digits,GAME_LEVELS,10,12,10,Reach 10 combined levels across Cresh games.
+GAMES_GAME_LEVELS_25,GAMES,3,Growing Arcade,GAME_LEVELS,25,16,13,Reach 25 combined levels across Cresh games.
+GAMES_GAME_LEVELS_50,GAMES,4,Fifty Combined Levels,GAME_LEVELS,50,20,16,Reach 50 combined levels across Cresh games.
+GAMES_GAME_LEVELS_100,GAMES,5,Century of Levels,GAME_LEVELS,100,24,19,Reach 100 combined levels across Cresh games.
+GAMES_GAME_LEVELS_250,GAMES,6,Account Arcade Master,GAME_LEVELS,250,36,28,Reach 250 combined levels across Cresh games.
+GAMES_UNLOCKS_1,GAMES,1,First Unlock,UNLOCKS,1,12,10,"Own 1 themes, decks, armour sets, minions or game cosmetics."
+GAMES_UNLOCKS_5,GAMES,2,Collection Started,UNLOCKS,5,20,16,"Own 5 themes, decks, armour sets, minions or game cosmetics."
+GAMES_UNLOCKS_10,GAMES,3,Ten Treasures,UNLOCKS,10,28,22,"Own 10 themes, decks, armour sets, minions or game cosmetics."
+GAMES_UNLOCKS_25,GAMES,4,Unlock Hunter,UNLOCKS,25,36,28,"Own 25 themes, decks, armour sets, minions or game cosmetics."
+GAMES_UNLOCKS_50,GAMES,5,Collection Curator,UNLOCKS,50,44,34,"Own 50 themes, decks, armour sets, minions or game cosmetics."
+GAMES_UNLOCKS_100,GAMES,6,Vault Keeper,UNLOCKS,100,68,52,"Own 100 themes, decks, armour sets, minions or game cosmetics."

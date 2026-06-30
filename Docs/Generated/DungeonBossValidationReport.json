@@ -1,0 +1,33 @@
+{
+  "build": "0.3.56-dungeon-texture-pack",
+  "schema": 55,
+  "bossCount": 20,
+  "crateCount": 4,
+  "bossIconCount": 20,
+  "bossFullBodyCount": 20,
+  "crateTextureCount": 4,
+  "milestoneLevels": [
+    10,
+    20,
+    30,
+    40,
+    50,
+    60,
+    70,
+    80,
+    90,
+    100,
+    110,
+    120,
+    130,
+    140,
+    150,
+    160,
+    170,
+    180,
+    190,
+    200
+  ],
+  "issues": [],
+  "valid": true
+}

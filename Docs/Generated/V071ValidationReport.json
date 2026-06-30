@@ -1,0 +1,35 @@
+{
+  "build": "0.3.71-chat-foundation-repair",
+  "schema": 65,
+  "interface": 20505,
+  "result": "PASS",
+  "checks": {
+    "luaModulesCompiled": 22,
+    "compileErrors": 0,
+    "directChatEventsRegistered": true,
+    "backupFiltersNonSuppressing": true,
+    "storageSelfRepair": true,
+    "uiErrorIsolation": true,
+    "nativeSafetyFallback": true,
+    "outgoingImmediateRows": true,
+    "outgoingConfirmationNoDuplicates": true,
+    "characterAndBattleNetChatsSeparated": true,
+    "accountFriendSyncWithoutFriendsUI": true,
+    "crossAltFriendPersistence": true,
+    "friendRemovalTombstones": true,
+    "battleNetCachedIdentity": true,
+    "staleBattleNetRouteReuse": false,
+    "partyInviteFixPreserved": true,
+    "partyChatRoutingPreserved": true,
+    "tocComplete": true,
+    "allTgaValid": true,
+    "tetrisBackgroundsPresent": true
+  },
+  "mockRuntime": {
+    "result": "PASS",
+    "chatFamiliesTested": 13,
+    "outgoingDestinationsTested": 12,
+    "profileSwitchesTested": 2,
+    "expectedLimitation": "Existing character-only friends must be observed once on the alt that owns them."
+  }
+}

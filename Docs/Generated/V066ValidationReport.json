@@ -1,0 +1,96 @@
+{
+  "version": "0.3.66-tetris-reveal-ui",
+  "schema": 62,
+  "checks": [
+    {
+      "name": "lua_parse",
+      "files": 22,
+      "passed": true
+    },
+    {
+      "name": "lua_compile",
+      "files": 22,
+      "errors": [],
+      "passed": true
+    },
+    {
+      "name": "tetris_runtime",
+      "backgrounds": 70,
+      "initial_unlocked": 0,
+      "states": [
+        [
+          "start",
+          "KARAZHAN_CHECKER",
+          0,
+          0,
+          10,
+          100,
+          true
+        ],
+        [
+          "9",
+          "KARAZHAN_CHECKER",
+          9,
+          0,
+          1,
+          91,
+          true
+        ],
+        [
+          "10",
+          "KARAZHAN_CHECKER",
+          10,
+          1,
+          10,
+          90,
+          true
+        ],
+        [
+          "99",
+          "KARAZHAN_CHECKER",
+          99,
+          9,
+          1,
+          1,
+          true
+        ],
+        [
+          "100-next",
+          "SHATTRATH_TERRACE",
+          0,
+          0,
+          10,
+          100,
+          true
+        ]
+      ],
+      "passed": true
+    },
+    {
+      "name": "tga_assets",
+      "files": 70,
+      "invalid": 0,
+      "passed": true
+    },
+    {
+      "name": "static_ui",
+      "assertions": {
+        "solo_reveal_layer": true,
+        "multi_reveal_layer": true,
+        "background_gallery": true,
+        "locked_filters": true,
+        "next_row_solo": true,
+        "next_row_multi": true,
+        "controls_solo": true,
+        "controls_multi": true,
+        "graphical_solo": true,
+        "graphical_multi": true,
+        "version_match": true,
+        "schema_62": true
+      },
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "passed": true
+}

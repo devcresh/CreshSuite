@@ -1,0 +1,5 @@
+CreshChat v0.3.46 Sound Library
+
+24 subtle notification sounds are packaged as mono 44.1 kHz OGG files. Every sound has 25%, 50% and 75% gain variants used by the six per-channel volume sliders. Four game music loops and six game effects are packaged as mono 22.05 kHz OGG files with the same gain variants.
+
+Settings > Cards + Sound controls notification choices/volumes and game music/effects. All listed CreshChat files were decoded and path-checked before packaging.

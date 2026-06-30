@@ -1,0 +1,264 @@
+{
+  "assets": [
+    {
+      "boss": "King Candlewick",
+      "asset_key": "KingCandlewick",
+      "source": "/mnt/data/reptilian_monarch_with_candle_crown.png",
+      "icon_path": "Media/Games/DungeonDwellers/Bosses/Icons/KingCandlewick.tga",
+      "fullbody_path": "Media/Games/DungeonDwellers/Bosses/FullBody/KingCandlewick.tga",
+      "source_size": [
+        1672,
+        941
+      ],
+      "icon_crop": [
+        1003,
+        207,
+        518,
+        518
+      ],
+      "full_crop": [
+        0,
+        0,
+        969,
+        941
+      ]
+    },
+    {
+      "boss": "Gnarlfang the Packlord",
+      "asset_key": "GnarlfangPacklord",
+      "source": "/mnt/data/savage_warrior_hyena_with_brutal_gear.png",
+      "icon_path": "Media/Games/DungeonDwellers/Bosses/Icons/GnarlfangPacklord.tga",
+      "fullbody_path": "Media/Games/DungeonDwellers/Bosses/FullBody/GnarlfangPacklord.tga",
+      "source_size": [
+        1672,
+        941
+      ],
+      "icon_crop": [
+        1003,
+        207,
+        518,
+        518
+      ],
+      "full_crop": [
+        0,
+        0,
+        969,
+        941
+      ]
+    },
+    {
+      "boss": "Murkfin Tide King",
+      "asset_key": "MurkfinTideKing",
+      "source": "/mnt/data/aquatic_king_of_the_seas.png",
+      "icon_path": "Media/Games/DungeonDwellers/Bosses/Icons/MurkfinTideKing.tga",
+      "fullbody_path": "Media/Games/DungeonDwellers/Bosses/FullBody/MurkfinTideKing.tga",
+      "source_size": [
+        1672,
+        941
+      ],
+      "icon_crop": [
+        1003,
+        207,
+        518,
+        518
+      ],
+      "full_crop": [
+        0,
+        0,
+        969,
+        941
+      ]
+    },
+    {
+      "boss": "Zariss the Coil Queen",
+      "asset_key": "ZarissCoilQueen",
+      "source": "/mnt/data/sea_queen_sorceress_with_glowing_magic.png",
+      "icon_path": "Media/Games/DungeonDwellers/Bosses/Icons/ZarissCoilQueen.tga",
+      "fullbody_path": "Media/Games/DungeonDwellers/Bosses/FullBody/ZarissCoilQueen.tga",
+      "source_size": [
+        1672,
+        941
+      ],
+      "icon_crop": [
+        1003,
+        207,
+        518,
+        518
+      ],
+      "full_crop": [
+        0,
+        0,
+        969,
+        941
+      ]
+    },
+    {
+      "boss": "Grumbar Earthbreaker",
+      "asset_key": "GrumbarEarthbreaker",
+      "source": "/mnt/data/molten_warrior_of_the_stone_realms.png",
+      "icon_path": "Media/Games/DungeonDwellers/Bosses/Icons/GrumbarEarthbreaker.tga",
+      "fullbody_path": "Media/Games/DungeonDwellers/Bosses/FullBody/GrumbarEarthbreaker.tga",
+      "source_size": [
+        1672,
+        941
+      ],
+      "icon_crop": [
+        1003,
+        207,
+        518,
+        518
+      ],
+      "full_crop": [
+        0,
+        0,
+        969,
+        941
+      ]
+    },
+    {
+      "boss": "Stormtalon Matriarch",
+      "asset_key": "StormtalonMatriarch",
+      "source": "/mnt/data/storm_wrought_avian_warrior_queen.png",
+      "icon_path": "Media/Games/DungeonDwellers/Bosses/Icons/StormtalonMatriarch.tga",
+      "fullbody_path": "Media/Games/DungeonDwellers/Bosses/FullBody/StormtalonMatriarch.tga",
+      "source_size": [
+        1672,
+        941
+      ],
+      "icon_crop": [
+        1003,
+        207,
+        518,
+        518
+      ],
+      "full_crop": [
+        0,
+        0,
+        969,
+        941
+      ]
+    },
+    {
+      "boss": "Xavros Felwhisper",
+      "asset_key": "XavrosFelwhisper",
+      "source": "/mnt/data/sinister_demon_lord_with_fel_energy.png",
+      "icon_path": "Media/Games/DungeonDwellers/Bosses/Icons/XavrosFelwhisper.tga",
+      "fullbody_path": "Media/Games/DungeonDwellers/Bosses/FullBody/XavrosFelwhisper.tga",
+      "source_size": [
+        1672,
+        941
+      ],
+      "icon_crop": [
+        1003,
+        207,
+        518,
+        518
+      ],
+      "full_crop": [
+        0,
+        0,
+        969,
+        941
+      ]
+    },
+    {
+      "boss": "Azarak the Web Tyrant",
+      "asset_key": "AzarakWebTyrant",
+      "source": "/mnt/data/arachnid_lich_boss_in_dark_armour.png",
+      "icon_path": "Media/Games/DungeonDwellers/Bosses/Icons/AzarakWebTyrant.tga",
+      "fullbody_path": "Media/Games/DungeonDwellers/Bosses/FullBody/AzarakWebTyrant.tga",
+      "source_size": [
+        1672,
+        941
+      ],
+      "icon_crop": [
+        1003,
+        207,
+        518,
+        518
+      ],
+      "full_crop": [
+        0,
+        0,
+        969,
+        941
+      ]
+    },
+    {
+      "boss": "Lord Coldgrave",
+      "asset_key": "LordColdgrave",
+      "source": "/mnt/data/icy_king_of_the_undead.png",
+      "icon_path": "Media/Games/DungeonDwellers/Bosses/Icons/LordColdgrave.tga",
+      "fullbody_path": "Media/Games/DungeonDwellers/Bosses/FullBody/LordColdgrave.tga",
+      "source_size": [
+        1672,
+        941
+      ],
+      "icon_crop": [
+        1003,
+        207,
+        518,
+        518
+      ],
+      "full_crop": [
+        0,
+        0,
+        969,
+        941
+      ]
+    },
+    {
+      "boss": "Emperor Blackfuse",
+      "asset_key": "EmperorBlackfuse",
+      "source": "/mnt/data/stoic_dwarven_engineer_with_fiery_arsenal.png",
+      "icon_path": "Media/Games/DungeonDwellers/Bosses/Icons/EmperorBlackfuse.tga",
+      "fullbody_path": "Media/Games/DungeonDwellers/Bosses/FullBody/EmperorBlackfuse.tga",
+      "source_size": [
+        1672,
+        941
+      ],
+      "icon_crop": [
+        1003,
+        207,
+        518,
+        518
+      ],
+      "full_crop": [
+        0,
+        0,
+        969,
+        941
+      ]
+    }
+  ],
+  "status": {
+    "integrated_bosses": [
+      "King Candlewick",
+      "Gnarlfang the Packlord",
+      "Murkfin Tide King",
+      "Zariss the Coil Queen",
+      "Grumbar Earthbreaker",
+      "Stormtalon Matriarch",
+      "Xavros Felwhisper",
+      "Azarak the Web Tyrant",
+      "Lord Coldgrave",
+      "Emperor Blackfuse"
+    ],
+    "integrated_texture_files": 20,
+    "remaining_placeholder_bosses": [
+      "Nexus Lord Vaelrix",
+      "High Seer Skyrend",
+      "Akoru the Soulkeeper",
+      "Sunblade Grand Magister",
+      "Gorvak the Unchained",
+      "The Drowned Ancient",
+      "Astralax the Devourer",
+      "Prototype Omega-Reaver",
+      "ZLR Arena Overlord",
+      "CATS, Master of the Base"
+    ],
+    "remaining_boss_texture_files": 20,
+    "remaining_druid_shaman_texture_files": 20,
+    "remaining_confirmed_placeholder_files": 40
+  }
+}

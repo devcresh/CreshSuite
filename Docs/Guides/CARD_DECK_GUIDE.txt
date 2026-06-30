@@ -1,0 +1,21 @@
+CreshChat Card Deck Guide
+
+Starter decks
+- Classic 8-Bit is always unlocked.
+- One of Alliance Vanguard, Horde Warband, Fel Crusade, Shattrath Light, Netherstorm Arcana or Dark Portal is selected as the account/profile random starter deck.
+
+Battle Pass
+- Remaining decks are awarded when their configured Battle Pass tier is claimed.
+- If the random starter matches a tier reward, that tier retains its normal coins/theme reward and does not award a duplicate deck.
+
+Changing decks
+- Open Texas Hold'em, Blackjack or Higher or Lower.
+- Left-click DECK to move forward through unlocked decks.
+- Right-click DECK to move backward.
+- Hold'em selection is shared between solo and multiplayer.
+- Blackjack and Higher or Lower store their own selected deck.
+
+Files
+- CardDeckLibrary.lua contains texture paths and metadata.
+- CardDecks.lua manages ownership, Battle Pass backfill, selection and card rendering.
+- Media/Games/Cards contains all faces, backs and deck icons.

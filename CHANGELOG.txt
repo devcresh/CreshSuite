@@ -1,0 +1,407 @@
+CreshChat v0.2.2 - Per-Character Combat Tracking and Class Achievement Key Migration (2026-06-30)
+
+- Added per-character combat tracking alongside account-aggregate tracking; CombatTracker
+  now maintains a separate characterCombat table per active character profile.
+- Added CHARACTER scope for class achievements; WoW class achievements now evaluate
+  against per-character stats via a new GetStatForScope() function.
+- Renamed internal class achievement keys from the global CLASS_*_NNN sequential
+  format to the stable per-class ACH_CLASS_*_NNN format (001-010 per class).
+- Added schema V78 migration in Core.lua to rename existing unlocked CLASS_* keys in
+  SavedVariables to the new ACH_CLASS_* format; migration is idempotent and preserves
+  all existing unlock timestamps and values.
+- Added CombatTracker:GetCharStats() for accessing the per-character stat table.
+- Added Achievements:GetStatForScope() for scope-aware stat reads (CHARACTER vs ACCOUNT_AGGREGATE).
+- Added test groups L21-L26 covering character identity, combat attribution,
+  achievement scopes, class key format, namespace isolation, and V78 migration.
+- Upgraded SavedVariables to schema 78 (existing account-wide progress fully preserved).
+
+CreshChat v0.2.1 - Version Correction (2026-06-29)
+
+- Corrected release version numbering from v0.2 to v0.2.1.
+- No SavedVariables schema change (schema 76 unchanged).
+- No functional changes; packaging and release metadata only.
+
+CreshChat v0.2 - Final Compatibility and UI Audit
+
+- Reset the public addon version to v0.2 while retaining SavedVariables schema 76 so existing account-wide progress is preserved.
+- Added responsive main-header layout; hidden whisper controls no longer reserve space or crush the title at narrow console widths.
+- Added missing live settings for default composer destination, roster collapse, history limits, build badge, compact notification sizing, card accent thickness and dock-whisper preview sizing/timing.
+- Added a one-click social-roster refresh diagnostic.
+- Reduced addon-message traffic: peer discovery is limited, paced and cooldown-protected; login no longer probes the full social roster; live game snapshots update at safer rates.
+- Completed static API, frame, network and Blizzard add-on policy review. No external executables, web requests, code obfuscation, advertisements, donation prompts, combat automation or client modification were found.
+- Preserved all 531 achievements, account-wide Battle Pass/Coins/games/unlocks, chat repairs, social rosters and notification controls.
+
+CreshChat v0.3.84 - Live Chat and Unit-Frame Whisper Repair
+
+- Reworked live chat capture registration and retry behaviour across Whisper, Guild, Officer, channels, Party, Raid and Instance events.
+- Fixed the late-load bridge bug where Blizzard chat hooks could be marked installed before their functions existed.
+- Added immediate visible-chat refresh so roster or settings refreshes cannot delay live text.
+- Added a localized system-message filter for unavailable whisper targets; CreshChat keeps the attempted row and marks it failed without showing the Blizzard system prompt.
+- Hardened right-click Whisper routing from player, target, party and raid unit menus by caching unit/name context and resolving full cross-realm names.
+- Added a Notifications > System switch for the unavailable-player line.
+- Upgraded SavedVariables to schema 74 without resetting achievements, Battle Pass, Coins, games, friends or chat settings.
+
+CreshChat v0.3.83 - Class Achievements and Dungeon Split
+
+- Added 90 class-only achievements: 10 each for all nine TBC classes.
+- Added Class Mastery category and individual class filters.
+- Added live class ability, utility, interrupt, dispel, resurrection, class mount and signature-action tracking.
+- Split real WoW dungeon achievements from Dungeon Dwellers achievements at the counter level.
+- Moved Dungeon Dwellers runs, enemies, bosses and unique-boss achievements into Cresh Games.
+- Preserved all account-wide progression and upgraded SavedVariables to schema 73.
+
+CreshChat v0.3.82 - TBC Achievement Expansion
+
+- Added all 300 approved TBC Anniversary achievements, bringing the account-wide total to 408.
+- Added All / In Progress / Completed filtering to the Achievement browser.
+- Added All / Ready / Claimed / Locked filtering to Battle Pass reward rows.
+- Added quest, daily, zone-area, flight-point, Dark Portal, flying-distance, Hearthstone, inn, dungeon, raid, combat-type, interrupt, resurrection, profession activity, reputation, PvP and community tracking.
+- Moved Friend, Battle.net and Guild online/offline roster-card switches to Settings > Windows.
+- Corrected legacy Battle.net game-account tuple parsing and merged modern/legacy records for reliable online character, level and class display.
+- Added session-safe roster caching during temporary Blizzard friend/guild API zero-count refreshes.
+- SavedVariables schema 72 preserves all existing account progression, rewards, unlocks and social settings.
+
+CreshChat v0.3.81 - Roster Visibility Controls
+- Added independent online/offline visibility toggles for Game Friends.
+- Added independent online/offline visibility toggles for Battle.net Friends.
+- Added independent online/offline visibility toggles for Guild members.
+- Friends remain sourced only from Blizzard friend APIs; guild members never leak into Friends.
+- Added clearer empty-state messages when a whole roster category is intentionally hidden.
+- SavedVariables schema 71 migration preserves existing settings and defaults all new controls to visible.
+
+CreshChat v0.3.80 - Battle.net Friend Tabs
+
+- Fixed online TBC Anniversary Battle.net friends being filtered out when the Classic client omitted wowProjectID from the modern account record.
+- Combined modern C_BattleNet and legacy BN game-account routes, using the active client project ID when available.
+- Added Game Friends and Battle.net sub-tabs inside Friends.
+- Battle.net remains filtered to TBC Anniversary/same-client game accounts.
+- Online Battle.net rows can add the active TBC character to Blizzard's ordinary in-game friends list with ADD.
+- Kept Battle.net message, character whisper, party invite and voice-call actions.
+
+CreshChat v0.3.79-account-achievements
+
+ACCOUNT-WIDE PROGRESSION AND ACHIEVEMENTS
+- Moved the main Battle Pass, Cresh Coins, every game save, game XP/levels, scores, card decks, themes, Dungeon collections and unlock ownership into one account-wide progression store.
+- Migrates existing character profiles by retaining the strongest numeric progress and unioning owned collections, avoiding duplicated legacy balances.
+- Added 108 tiered achievements for steps, zones, flights, kills, deaths, dungeon mobs, bosses, unique bosses, dungeon expeditions, professions, game play/wins/levels and collectible unlocks.
+- Added increasing Cresh Coin and Battle Pass XP rewards at higher achievement tiers, plus improved walking, area, zone, dungeon and boss rewards.
+- Added an ACH unlocked/total button beside Battle Pass with a searchable, category-filtered slide-out achievement list.
+- Added account-wide tracking hooks for deaths, taxi flights, dungeon entries, actual dungeon mobs/bosses, Dungeon Dwellers, game results and profession ranks.
+- Migrated SavedVariables to schema 70 without clearing chat, interface profiles, friends or notification settings.
+
+CreshChat v0.3.78-guild-chat-roster-collapse
+
+- Repaired Guild chat so roster/UI refresh failures cannot stop message text from rendering.
+- Chat-event deduplication now commits only after a successful capture, allowing backup capture routes to recover failed Guild events.
+- Friends now lists only real Battle.net and WoW character friends; guild members and previous-whisper-only contacts are excluded.
+- Added character level and class beneath names in Friends, Guild, Party, Raid, Instance and local-player rosters.
+- Added a persistent collapse button for the left roster/conversation rail so chat can use the full console width.
+- Preserved TBC Anniversary Battle.net filtering, social actions, notifications and custom party invitations.
+CreshChat v0.3.77-social-roster-sections
+
+SOCIAL ROSTER SECTIONS AND PARTY ISOLATION
+- Party is no longer treated as a General/local `/who` roster. The Party tab now lists only the current player and `party1`–`party4`.
+- Party members are split into ONLINE and OFFLINE using the live group-unit connection state. Raid members are deliberately excluded from Party.
+- Raid and Instance tabs now use their current group rosters rather than nearby-player `/who` results, with ONLINE and OFFLINE sections.
+- Friends is split into BATTLE.NET ONLINE, GAME FRIENDS ONLINE, BATTLE.NET OFFLINE, GAME FRIENDS OFFLINE and PREVIOUS WHISPERS.
+- Character friends are no longer removed merely because the same person also exists as a Battle.net friend.
+- A Battle.net alt being online no longer falsely marks the saved character friend as online; each source keeps its own status.
+- Group-roster rows do not offer a redundant Party Invite button to members already in the group.
+- General/public tabs retain the current-area ONLINE and OFFLINE / LEFT AREA roster, while Guild retains ONLINE and OFFLINE guild members.
+- SavedVariables schema remains 68; no chat, friend, notification, profile, game or progression data is reset.
+
+CreshChat v0.3.76-tbc-friend-actions
+
+TBC BATTLE.NET FILTER AND SOCIAL ACTIONS
+- Battle.net Friends now includes only accounts verified for the Burning Crusade Classic project ID.
+- Online TBC Anniversary characters remain online; previously verified TBC accounts can remain visible offline from the account cache.
+- Retail, Battle.net App, other Blizzard games and other WoW Classic project IDs are excluded from the Friends list.
+- Added explicit B.NET message and /W active-character actions for online Battle.net friends.
+- Party Invite and CreshChat voice-call actions use the active TBC Anniversary character route.
+- General-area /who requests now run in background-only mode and no longer open Blizzard's Who/Friends panel.
+- The selected Friends console tab now uses the active theme accent for its fill, border and text state.
+- SavedVariables schema remains 68; no chat, social, notification, profile, game or progression data is reset.
+
+CreshChat v0.3.75 - Notification Control Centre
+
+- Consolidated all card-popup controls into one Notifications settings page.
+- Added per-category popup visibility, Critical/High/Normal/Low priority, sound and volume; card visibility and sound are independently controlled.
+- Added global card animation selection and animation-speed controls.
+- Added notification sounds for public mentions, friend presence and game/reward cards.
+- Moved game music/effects controls to General and removed duplicate notification controls from Console, Guild and Advanced.
+- Public mentions and party/group messages now use the configured card-popup categories.
+- Preserved v0.3.74 social roster, Battle.net identity and custom party-invite repairs.
+
+CreshChat v0.3.74-social-roster-actions
+
+SOCIAL ROSTERS AND WHISPER ACTIONS
+- Added clear ADD and PARTY buttons to active whisper headers.
+- Added row-level Add Friend and Party Invite actions for previous whispers, guild members and local players.
+- Reorganised Friends into FRIENDS and PREVIOUS WHISPERS sections, with online friends sorted first.
+- Battle.net rows now use the account name as the primary label and show the active WoW character on a coloured second line while preserving account online status.
+- Added a complete Guild roster rail with live ONLINE and OFFLINE sections, rank, class, level and zone data.
+- Added a throttled current-area roster to General using guarded modern and legacy /who APIs. Missing cached names are shown as OFFLINE / LEFT AREA because WoW cannot distinguish those states for non-guild players.
+- Increased roster-rail width and strengthened action-button backgrounds, borders and labels.
+- SavedVariables schema remains 67; no chat, friend, profile, game or progression data is reset.
+
+CreshChat v0.3.73-custom-party-invite-repair
+
+PARTY INVITE DISPLAY AND ACCEPTANCE
+- CreshChat's invite card is now the only visible party invitation UI by default.
+- Blizzard PARTY_INVITE popup frames are intercepted after creation and made transparent and non-interactive before rendering.
+- ACCEPT uses AcceptGroup or C_PartyInfo.AcceptInvite directly from the CreshChat button click.
+- The hidden Blizzard frame is not dismissed until GROUP_ROSTER_UPDATE confirms the join, preventing the Classic instant-decline race.
+- Declines and cancelled invitations clean up the hidden frame without exposing it.
+- Existing profiles are migrated to the custom-party-invite setting.
+- SavedVariables schema increased from 66 to 67; no chat, social, profile, game or progression data is reset.
+
+CreshChat v0.3.72-messaging-friends-invite-repair
+
+- Routes /w, /r, /g, /o, /p, /raid, /rw, /i, /bg, /s, /y, /e and numbered chat channels directly through guarded WoW chat APIs.
+- Adds global and C_ChatInfo fallback send paths plus Battle.net whisper API fallback.
+- Repairs Friends tab click priority, forces live WoW/Battle.net roster refreshes, and preserves explicit online/offline sections.
+- Uses both legacy and modern friend-count APIs instead of trusting an empty modern result.
+- Keeps an informative empty-state while the roster is refreshing.
+- Makes party invite acceptance use Blizzard's own popup action when possible and avoids clearing the invite during the Classic acceptance race.
+- Defaults to the Blizzard-safe party popup path so guild and other StaticPopup invitations remain untouched.
+
+CreshChat v0.3.71-chat-foundation-repair
+
+CHAT FOUNDATION AND ACCOUNT FRIENDS
+- Rebuilt chat capture around direct registered WoW events, with Blizzard message-handler and non-suppressing chat filters retained as duplicate-safe backup paths.
+- Added storage self-repair before every capture/send route so malformed history, conversation or route tables cannot disable all messages.
+- Added protected UI notification dispatch; UI errors are recorded and cannot prevent message storage.
+- Added a safety fallback that restores Blizzard chat after three consecutive chat-processing errors.
+- Expanded capture coverage for character/Battle.net whispers, Guild/Officer, Party/leader, Raid/leader/warning, Instance/leader, Battleground/leader, Say, Yell, Emotes, public channels, NPC/boss messages, loot, money, XP, honor, reputation, skill/profession and battleground-system feeds.
+- Outgoing whisper, Battle.net, Guild, Officer, Party, Raid, Instance, Battleground, Say, Yell, Emote and named-channel messages now appear immediately, reconcile with the client confirmation event and avoid duplicates.
+- Failed outgoing rows remain visible with a failed state instead of disappearing.
+- Character and Battle.net conversations remain separate even when an account display name matches a character name.
+- Character friends now synchronise on login, world entry and every FRIENDLIST_UPDATE without requiring the Friends screen to be opened.
+- Added resilient migration of legacy top-level account-friend/social tables into accountChat.
+- Added cached Battle.net roster display for temporary API outages while preventing stale numeric account IDs from being reused as send routes after relogging.
+- Added /cc chatcheck and expanded /cc health diagnostics.
+- Migrated SavedVariables from schema 64 to 65 without resetting conversations, friends, profiles, games, Tetris, Dungeon Dwellers or Battle Pass progress.
+
+CreshChat v0.3.70-party-invite-chat-fix
+
+PARTY INVITES AND PARTY CHAT
+- Replaced StaticPopup_Hide party-invite suppression with non-destructive visual suppression, preventing the Classic client from treating CreshChat's popup replacement as a decline.
+- Accept now calls only C_PartyInfo.AcceptInvite or AcceptGroup; Decline calls only C_PartyInfo.DeclineInvite or DeclineGroup.
+- The custom invite remains actionable until Blizzard sends PARTY_INVITE_CANCEL or GROUP_ROSTER_UPDATE.
+- Protected pending invite cards from normal notification expiry and slide-card capacity trimming.
+- Restores Blizzard popup frame state after the invitation resolves, preserving fallback behaviour.
+- Added compatibility group detection across IsInGroup, GetNumGroupMembers and GetNumPartyMembers.
+- The Party console tab is automatically visible while grouped, even when the optional tab is disabled outside groups.
+- Incoming and outgoing CHAT_MSG_PARTY / CHAT_MSG_PARTY_LEADER messages continue to appear in Party and the combined General feed.
+- SavedVariables schema remains 64.
+
+CreshChat v0.3.69-tetris-image-reveal-fix
+
+- Replaced tinted/green empty-cell reveal placeholders with the actual selected zone image.
+- The complete image now sits behind the board as a very dark silhouette during an active reveal.
+- Every 10 cumulative cleared lines brightens one correctly cropped image band; 100 lines displays the full image.
+- Moved reveal image layers above legacy TBC frame backdrops and below tetrominoes/grid lines.
+- Empty board cells use an almost transparent neutral shade so block-theme colours cannot cover or tint the image.
+- Applied the same reveal renderer to solo Timed Endless, VS CPU Timed Endless, VS CPU Endless Attack, multiplayer Timed Endless and multiplayer Endless Attack.
+- SavedVariables schema remains 64 and multiplayer protocol remains 5.
+
+CreshChat v0.3.68-tetris-theme-background-separation
+
+TETRIS BLOCK THEMES, IMAGE BACKGROUNDS AND UI AUDIT
+- Split Tetris cosmetics into two independent catalogues: 50 block themes and 50 image backgrounds.
+- Block themes now control only tetromino colours, highlights, guides and solid board tint; they can no longer replace reveal artwork.
+- The 20 former block-texture backgrounds were retired as images while their matching colour palettes remain available as block themes.
+- Added a full-size background preview overlay for every locked, revealing, unlocked and equipped image.
+- Preserved All, Unlocked and Locked gallery filters and added separate selected-background SavedVariables.
+- Added explicit 10x20 grid lines above image backgrounds and empty-cell shading in solo, CPU and multiplayer boards.
+- Preserved ten-row reveal progression at 10 cumulative lines per image row and 100 lines per permanent unlock.
+- Preserved partial reveal progress when migrating from a retired block-texture background to the next valid zone image.
+- Updated solo Timed Endless, VS CPU Timed Endless, VS CPU Endless Attack, multiplayer Timed Endless and multiplayer Endless Attack to use the same image, grid, controls, metric, reveal and versus systems.
+- Reflowed the VS centre panel and bottom controls to remove overlap between garbage/status text, controls help and movement buttons.
+- SavedVariables schema increased from 63 to 64; multiplayer protocol remains 5.
+- Validated all 22 Lua modules, 50 image registrations, 50 256x256 32-bit TGA files, reveal boundaries, migration and VS layout bounds.
+
+CreshChat v0.3.67-account-friends-alt-chat
+
+FRIENDS, WHISPERS AND ALT CHAT
+- Outgoing character and Battle.net whispers are inserted into the conversation immediately when sent.
+- Blizzard's outgoing whisper events reconcile the pending row instead of creating a duplicate.
+- Added an account-wide CreshChat character-friend directory shared by every player profile/alt.
+- Friends discovered on any character are mirrored into the account directory and remain visible on other alts.
+- Added a + button in the Friends header for character names or BattleTags.
+- Removing a character friend now removes the account entry and creates an account-level removal marker so another alt cannot silently re-import it.
+- Battle.net friends retain Blizzard's account-wide add/remove behaviour.
+- Battle.net presence now records known character identities and the currently active WoW character.
+- Character-friend rows display an ALT badge when a known friend is online on a different linked character; hover shows the alt name.
+- Linked direct conversations gain right-side B.NET, MAIN and ALT route tabs.
+- Battle.net account chat, main-character whispers and alt-character whispers remain separate histories.
+- Improved Battle.net outgoing event account resolution for TBC-era and table-based APIs.
+- SavedVariables schema increased from 62 to 63 without resetting chats, friends, games, Tetris backgrounds, Dungeon Dwellers or Battle Pass progress.
+
+CreshChat v0.3.66-tetris-reveal-ui
+
+- Fixed the ten-row Tetris background renderer so the first image row appears at exactly 10 cumulative cleared lines.
+- Moved reveal strips above the board backdrop while retaining pieces and cells above the artwork.
+- Added a BACKGROUNDS collection tab showing all 70 reveal images with All, Unlocked and Locked filters.
+- Added current-image progress, next-row line requirement and full-image line requirement to solo, CPU and multiplayer Tetris.
+- Added compact controls help to the bottom of local and multiplayer Tetris interfaces.
+- Replaced plain score/line text with graphical metric cards, comparison bars, reveal bars and versus/garbage panels across Timed Endless and Endless Attack.
+- Migrated SavedVariables to schema 62 without resetting reveal progress or background ownership.
+
+CreshChat v0.3.65-dungeon-collection-pass
+- Added a unified Dungeon Dwellers archive with Collection, Statistics and Dungeon Dwellers Battle Pass tabs.
+- Added collection filters for all/minions/classes/armour/items, unlocked/locked state and class.
+- Collection rows use the live Dungeon minion variants, playable classes, armour records, crates, milestone chests and reward-item definitions.
+- Added persistent per-class statistics for runs, maximum room, kills, bosses, best score and deaths, with migration of existing aggregate run data.
+- Added a dedicated 100-level Dungeon Dwellers Battle Pass.
+- Added Dungeon Pass XP from WoW mob kills, Dungeon enemy/boss kills, quest turn-ins, first-time zone discovery and WoW achievement events.
+- The same supported activities also grant main CreshChat Battle Pass XP; zone discovery retains the existing main-pass reward without double awarding it.
+- Added claimable Cresh Coin rewards and permanent Dungeon boons for Max HP, Attack, minion power, room/turn regeneration, boss damage, bonus-die chance and Dungeon coin bonuses.
+- Added dedicated Dungeon Pass slide-out notifications; clicking one opens the Dungeon directly on its Pass tab without resetting an existing run.
+- Applied claimed boons to new runs and safely updated relevant live-run values when rewards are claimed mid-run.
+- Added persistent minion archetype/skin discovery and recruitment counts.
+- Added Escape dismissal for the Dungeon archive, class picker and armour picker.
+- Migrated SavedVariables to schema 61 while preserving all existing progression and collections.
+- Validated all 22 Lua modules, pass progression/rewards, schema migration, activity routing, collection filters and ZIP integrity.
+
+CreshChat v0.3.64-tetris-zone-reveal
+- Rebalanced Tetris automatic drop speed around the standard Tetris Worlds / Guideline gravity percentages, stretched smoothly across 1,000 speed levels.
+- Tetris speed now advances once per 10 cleared lines, beginning at 0.90 seconds per row and reaching the safe 0.10-second cap only at level 1,000.
+- Replaced alpha-only background progression with ten visible image sections: every 10 cumulative cleared lines reveals another strip and 100 lines completes/unlocks the image.
+- Enabled the same reveal progression in solo Timed Endless, VS CPU Timed Endless, VS CPU Endless Attack, multiplayer Timed Endless and multiplayer Endless Attack.
+- Multiplayer protocol 5 now sends each player's reveal-background key and current 0–10 reveal stage so both boards display the correct progress.
+- Added 50 original pixel-art WoW-zone-themed 256x256 RGBA TGA backgrounds, raising the collection to 100 Tetris themes and 70 reveal backgrounds.
+- Added schema-60 migration preserving scores, passes, selected themes, existing background progress, account-wide friends and conversations.
+- Added a 1,000-row generated speed-curve reference and a 50-image zone-background asset manifest.
+- Validated all 21 Lua modules, 50 zone theme registrations, 50 TGA files, 70 total reveal backgrounds, 100 themes and ZIP-ready archive content.
+
+CreshChat v0.3.63-account-friends
+- Added Battle.net friends to the Friends panel on every character, separated into Battle.net Online and Battle.net Offline sections.
+- Added compatibility for both table-based C_BattleNet APIs and the legacy TBC BNGetFriendInfo field layout.
+- Battle.net rows show account identity, online state, current WoW character, level, class, zone and rich presence when the client provides them.
+- Clicking a Battle.net friend opens an account conversation; party, game and voice actions use the active WoW character only when one is available.
+- Moved normal player-whisper and Battle.net conversation history into one account-wide SavedVariables store so direct chats carry between alts.
+- Kept Guild, General, Combat and quest feeds session-only, preserving the existing clean-login behaviour for public/local chat.
+- Added stable Battle.net conversation keys based on BattleTag/account identity, while refreshing the temporary numeric sending route whenever the roster or a message supplies a new account ID.
+- Added Battle.net whisper capture and sending through CHAT_MSG_BN_WHISPER, CHAT_MSG_BN_WHISPER_INFORM and BNSendWhisper.
+- Added schema-59 migration that merges existing whisper logs from all character profiles, de-duplicates messages and preserves progression, layouts and unlocks.
+- Validated cross-alt persistence, schema-58 migration, modern Battle.net roster data, legacy TBC Battle.net fields and refreshed sending routes in mocked Lua runtimes.
+
+CreshChat v0.3.62-notification-hub
+- Rebuilt popup notifications as one coordinated hub with a full-size main slot and a directional slide-out lane.
+- Whisper, Guild, friend-presence, party-invite and Battle Pass notifications now slide from the hub and stack without overlapping.
+- Added top, bottom, left and right slide-out direction choices under Settings > Notification Hub and Sounds.
+- When no normal system notice is active, the newest slide-out is promoted into the full-size main slot; it demotes and moves smoothly when a normal notice arrives.
+- Replaced the old side accent with a thin notification-colour line across the top of every rectangular card.
+- Added one Overall popup size slider that scales the full notification hub together, plus updated width, height, spacing and visible-card limits.
+- Added Battle Pass slide-outs for milestone goals, level-ups, reward claims, claim-all summaries and purchased theme unlocks; clicking one opens the Battle Pass drawer.
+- Added Escape-to-close support for the complete console, including the focused composer and open Games/Battle Pass drawer.
+- Added schema-58 migration that preserves existing popup scale and safely upgrades character UI profiles.
+- Validated all 21 Lua modules and tested promotion, demotion, all four directions, stacking, scaling and screen-edge clamping in a mocked Lua runtime.
+
+CreshChat v0.3.61-tetris-reveal-dungeon-ui
+- Removed Race 10 from solo and multiplayer Tetris; the supported formats are now Timed Endless and Endless Attack.
+- Added 5, 10, 15, 30, 45 and 60 minute Timed Endless sessions to solo, CPU and multiplayer play.
+- Fixed Endless Attack garbage processing so incoming rows are applied after the locked piece is cleared from the active-piece state, preventing false immediate top-outs.
+- Replaced segmented landing markers with thin, lighter translucent guide lines from each active-piece column to its landing position.
+- Added generated line-clear and background-reveal audio with 25%, 50%, 75% and full-volume OGG variants.
+- Added solo Tetris background-reveal progression for all 20 textured themes: every 10 cleared lines increases image visibility; completing 100 lines unlocks that background theme, plays the reveal sound, briefly shows the completed image and advances to the next background. Tetris Pass claims can still unlock matching sets early.
+- Multiplayer boards now use each player’s selected theme/background at a washed-out opacity for clear piece visibility.
+- Reworked Dungeon Dweller dice into equal-size, centred cards with subtle rolling shake, distinct party/enemy presentation and a persistent attack control.
+- Kept the Dungeon attack button visible and mouse-enabled at all times, with clear state labels for chest, upgrade, rolling, cleared-room and defeated states; guarded clicks cannot start an invalid extra roll.
+- Migrated SavedVariables to schema 57 and multiplayer protocol 4 while preserving scores, themes, pass progression, armour and boss records.
+
+CreshChat v0.3.60-dungeon-dice-tetris-expanded
+
+Dungeon interface and dice presentation
+- Audited the Dungeon Dweller stage and corrected full-body panel overlaps with the class/armour controls and lower statistics rows.
+- Reduced and re-anchored both hero and enemy full-body plates, constrained tier labels, widened armour-state spacing and improved long stat summaries.
+- Added eight custom 128x128 WoW TBC-ready dice faces plus a webbed-die texture.
+- Replaced text-only attack rolls with live dice icons for hero, bonus-die, minion and enemy rolls.
+- Added a short decaying shake/face-roll animation while preserving the final rolled value and preventing duplicate attack clicks during the animation.
+
+Multiplayer Tetris
+- Upgraded the Tetris protocol to version 3 and separated Race 10, timed Endless and Endless Attack.
+- Added selectable timed Endless durations of 5, 10, 15, 30, 45 and 60 minutes.
+- Timed Endless now resets a topped-out board, applies a score penalty and continues until time expires; score, lines and reset count determine the result.
+- Fixed Endless Attack garbage application so a received row no longer collides with the piece that was just locked and incorrectly ends the match.
+- Preserved genuine top-outs when garbage actually pushes occupied cells above the board.
+
+Tetris themes and backgrounds
+- Added 20 collectible piece palettes with matching 256x256 TGA board backgrounds, expanding the collection from 30 to 50 sets.
+- Added ten game-level unlocks and ten additional rewards across the 100-level Tetris Pass.
+- Added background thumbnails to the theme list and full background previews to the theme inspection board.
+- Added live board backgrounds to Solo, CPU and multiplayer Tetris while keeping cells readable through controlled transparency.
+- Migrated SavedVariables to schema 56 while preserving profiles, progression, coins, existing themes, Dungeon rewards and boss records.
+
+CreshChat v0.3.59-boss-art-pack-2
+- Converted the remaining 10 generated milestone boss images into WoW TBC-ready textures.
+- Added matching 256x256 icons and 256x512 full-body art for Nexus Lord Vaelrix, High Seer Skyrend, Akoru the Soulkeeper, Sunblade Grand Magister, Gorvak the Unchained, The Drowned Ancient, Astralax the Devourer, Prototype Omega-Reaver, ZLR Arena Overlord and CATS, Master of the Base.
+- Replaced all remaining milestone boss placeholders with final art while keeping the existing boss asset keys and Lua texture paths unchanged.
+- The milestone boss roster is now visually complete; only the reserved Druid and Shaman armour sets remain on placeholders.
+- SavedVariables schema remains 55; no progression reset or migration is required.
+
+CreshChat v0.3.58-zlr-arena-overlord-art
+- Replaced the ZLR Arena Overlord placeholder with the selected Quake-inspired arena boss artwork.
+- Added a WoW TBC-ready 256x256 portrait icon and 256x512 full-body texture.
+- Kept the existing ZLRArenaOverlord asset key and Lua paths unchanged, so the artwork loads automatically.
+- SavedVariables schema remains 55; no progression migration or reset is required.
+
+CreshChat v0.3.57-boss-art-pack-1
+- Converted the first 10 generated milestone boss composites into WoW TBC-ready texture files.
+- Added matching 256x256 boss icons and 256x512 boss full-body textures for King Candlewick through Emperor Blackfuse.
+- Replaced the first 10 milestone boss placeholders with the new artwork while keeping existing asset keys and Lua paths unchanged.
+- Left the last 10 bosses, Druid/Shaman armour sets and custom profile cosmetics on placeholders until final artwork is available.
+- SavedVariables schema remains 55; no progression reset or migration is required.
+
+CreshChat v0.3.56-dungeon-texture-pack
+- Integrated Dungeon Crawler texture pack v4.0.
+- Replaced all 20 expansion-enemy placeholders with final TBC-ready icons and full-body art.
+- Replaced all 40 active-class armour placeholders with final icons and full-body art.
+- Added five progressive milestone chest displays and icons to the chest popup.
+- Added reward artwork for coins, damage relics, armour/shards, portrait tokens and full-body tokens.
+- Boss and future Druid/Shaman artwork remains on the existing safe placeholders because those files were not included in the supplied pack.
+- SavedVariables schema remains 55; no progression reset or migration is required.
+
+CreshChat v0.3.55-dungeon-chest-choice
+
+Dungeon chest reveal and reward selection
+- Replaced automatic background crate opening with a blocking themed chest popup.
+- Chest popups show the actual crate art, rarity, drop source, description and configured reward percentages.
+- Added a two-stage interaction: open the chest, then choose one of three generated reward cards.
+- Added mouse selection and keyboard shortcuts: Space/Enter opens; 1, 2 or 3 claims a reward.
+- Added generated Wealth, Power and Collection choices using the crate's existing coin, damage, armour and cosmetic odds.
+- Added multi-crate queueing so guaranteed and first-kill crates display one after another.
+- Added persistent unopened crate drops so rewards survive reloads and fresh runs.
+- Crate history now records the selected reward type and label.
+- Migrated SavedVariables to schema 55 without resetting profiles, coins, bosses, armour, Tetris data or previous crate history.
+
+CreshChat v0.3.54-dungeon-balance
+
+Dungeon Dweller level scaling rebalance
+- Replaced the shallow linear enemy curve with a nonlinear level-based health and damage model.
+- Normal enemy health now combines linear, quadratic and post-level-100 growth, keeping later rooms durable against upgraded heroes, armour dice and minions.
+- Enemy Attack now grows progressively through the full run and gains an additional late-game ramp after level 120.
+- Bosses inherit the new level curve before their individual health multipliers and Attack bonuses are applied.
+- Added controlled per-enemy stat variance so encounters differ slightly without creating extreme rolls.
+- Added stable balance configuration and `GetScaledEnemyStats` to DungeonCrawlerContent.lua for future tuning.
+- Enemy cards now display their exact dungeon level alongside Attack and creature type.
+- SavedVariables remain schema 54; profiles, armour, boss kills, crates, coins and progression are unchanged.
+
+CreshChat v0.3.53-dungeon-armour-stats
+
+Dungeon Dweller armour loadouts
+- Converted all 50 class armour skins from cosmetic records into distinct gameplay loadouts.
+- Added armour bonuses for Max HP, Attack, fixed extra dice, chance-based bonus dice, double damage, bleed, turn regeneration, room healing, block, evasion, boss damage and minion damage.
+- Added a five-card armour selection window for the active Dungeon class, including final placeholder artwork, ownership state, stat comparison and one-click equip.
+- Added an ARMOUR button beside CLASS and the V keyboard shortcut.
+- Equipping or removing armour starts a fresh run so combat statistics cannot be changed during a boss attempt.
+- Equipped armour now replaces the hero icon/full-body artwork and is shown in the hero status panel.
+- Extra armour dice roll independently; secondary dice use the set's listed power scaling.
+- Bleed effects persist on enemies and tick before their next attack.
+- Health regeneration activates after enemy turns and/or cleared rooms according to the equipped set.
+- Defensive armour statistics stack with class block and evasion, with safety caps to prevent immunity.
+- The first armour unlocked for a class is automatically selected for the next run; later sets remain manual choices.
+- Migrated SavedVariables to schema 54 without resetting boss kills, armour ownership, equipped sets, crates, Tetris data, Cresh Coins or character profiles.
+
+The level-10 milestone boss system, 20 bosses, 20 normal enemy additions, four crate types and all placeholder artwork remain included.

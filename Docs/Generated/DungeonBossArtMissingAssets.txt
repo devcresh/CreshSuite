@@ -1,0 +1,18 @@
+Remaining placeholder textures after v0.3.58 integration:
+
+Bosses still missing (icon + full body each):
+- Nexus Lord Vaelrix
+- High Seer Skyrend
+- Akoru the Soulkeeper
+- Sunblade Grand Magister
+- Gorvak the Unchained
+- The Drowned Ancient
+- Astralax the Devourer
+- Prototype Omega-Reaver
+- CATS, Master of the Base
+
+Reserved armour still missing (icon + full body each):
+- Druid: Moonbark Raiment, Cenarion Wildguard, Zangarmarsh Dreamer, Emerald Shapewarden, Archdruid of the Twisting Nether
+- Shaman: Stonecaller Mail, Earthen Ring Regalia, Stormforged Elements, Elemental Arena Champion, Farseer of the Broken World
+
+Custom player portrait/full-body reward cosmetics are still undecided and remain ungenerated.

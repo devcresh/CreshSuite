@@ -1,0 +1,33 @@
+Legacy animation reference retained for compatibility. Current build: 0.3.46-progression-voice-audio.
+See Docs/DEVELOPER_GUIDE.md and Docs/UI_REFERENCE.md.
+
+CRESHCHAT v0.3.26 ANIMATION GUIDE
+
+Available opening motion styles:
+- Slide from dock
+- Slide from left / right / up / down
+- Pop
+- Fan upward / downward
+- Swoop
+- Fade
+- Zoom
+- Bounce
+- None
+
+Console tab switching:
+- The active content performs a brief nine-pixel directional slide with a light alpha fade.
+- Direction follows the left-to-right tab order.
+- The transition does not alter saved window positions or dimensions.
+
+Configure composer and main-history opening motion in Settings > C Dock.
+Configure notification-card motion in Settings > Cards + Sound.
+Configure main/detached-window opening motion in Settings > Windows.
+Detached pop-outs retain their saved position after the opening animation.
+
+Launcher notification motion:
+- The C outline uses a continuous sine-eased alpha pulse while an unread notification is active.
+- The letter remains stable while only the outline and slight letter opacity breathe.
+- Disabling Animated C notification outline keeps the letter and static coloured outline.
+
+ZLR launcher restoration:
+- Notification letters use the normal pulse/glow animation, then return to q3a instead of C while ZLR Arena remains selected.

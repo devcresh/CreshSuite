@@ -1,0 +1,552 @@
+[
+  {
+    "key": "ZONE_ELWYNN_FOREST",
+    "name": "Elwynn Forest",
+    "file": "ZONE_ELWYNN_FOREST.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "forest"
+  },
+  {
+    "key": "ZONE_WESTFALL",
+    "name": "Westfall",
+    "file": "ZONE_WESTFALL.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "plains"
+  },
+  {
+    "key": "ZONE_REDRIDGE_MOUNTAINS",
+    "name": "Redridge Mountains",
+    "file": "ZONE_REDRIDGE_MOUNTAINS.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "mountains"
+  },
+  {
+    "key": "ZONE_DUSKWOOD",
+    "name": "Duskwood",
+    "file": "ZONE_DUSKWOOD.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "dark_forest"
+  },
+  {
+    "key": "ZONE_STRANGLETHORN_VALE",
+    "name": "Stranglethorn Vale",
+    "file": "ZONE_STRANGLETHORN_VALE.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "jungle"
+  },
+  {
+    "key": "ZONE_DEADWIND_PASS",
+    "name": "Deadwind Pass",
+    "file": "ZONE_DEADWIND_PASS.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "dark_mountains"
+  },
+  {
+    "key": "ZONE_SWAMP_OF_SORROWS",
+    "name": "Swamp of Sorrows",
+    "file": "ZONE_SWAMP_OF_SORROWS.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "swamp"
+  },
+  {
+    "key": "ZONE_BLASTED_LANDS",
+    "name": "Blasted Lands",
+    "file": "ZONE_BLASTED_LANDS.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "wasteland"
+  },
+  {
+    "key": "ZONE_DUN_MOROGH",
+    "name": "Dun Morogh",
+    "file": "ZONE_DUN_MOROGH.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "snow"
+  },
+  {
+    "key": "ZONE_LOCH_MODAN",
+    "name": "Loch Modan",
+    "file": "ZONE_LOCH_MODAN.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "lake"
+  },
+  {
+    "key": "ZONE_WETLANDS",
+    "name": "Wetlands",
+    "file": "ZONE_WETLANDS.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "wetlands"
+  },
+  {
+    "key": "ZONE_ARATHI_HIGHLANDS",
+    "name": "Arathi Highlands",
+    "file": "ZONE_ARATHI_HIGHLANDS.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "highlands"
+  },
+  {
+    "key": "ZONE_HILLSBRAD_FOOTHILLS",
+    "name": "Hillsbrad Foothills",
+    "file": "ZONE_HILLSBRAD_FOOTHILLS.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "plains"
+  },
+  {
+    "key": "ZONE_ALTERAC_MOUNTAINS",
+    "name": "Alterac Mountains",
+    "file": "ZONE_ALTERAC_MOUNTAINS.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "snow_mountains"
+  },
+  {
+    "key": "ZONE_SILVERPINE_FOREST",
+    "name": "Silverpine Forest",
+    "file": "ZONE_SILVERPINE_FOREST.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "moon_forest"
+  },
+  {
+    "key": "ZONE_TIRISFAL_GLADES",
+    "name": "Tirisfal Glades",
+    "file": "ZONE_TIRISFAL_GLADES.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "plague"
+  },
+  {
+    "key": "ZONE_EASTERN_PLAGUELANDS",
+    "name": "Eastern Plaguelands",
+    "file": "ZONE_EASTERN_PLAGUELANDS.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "plague"
+  },
+  {
+    "key": "ZONE_WESTERN_PLAGUELANDS",
+    "name": "Western Plaguelands",
+    "file": "ZONE_WESTERN_PLAGUELANDS.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "plague_fields"
+  },
+  {
+    "key": "ZONE_THE_HINTERLANDS",
+    "name": "The Hinterlands",
+    "file": "ZONE_THE_HINTERLANDS.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "forest_mountains"
+  },
+  {
+    "key": "ZONE_SEARING_GORGE",
+    "name": "Searing Gorge",
+    "file": "ZONE_SEARING_GORGE.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "volcanic"
+  },
+  {
+    "key": "ZONE_BURNING_STEPPES",
+    "name": "Burning Steppes",
+    "file": "ZONE_BURNING_STEPPES.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "volcanic"
+  },
+  {
+    "key": "ZONE_BADLANDS",
+    "name": "Badlands",
+    "file": "ZONE_BADLANDS.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "badlands"
+  },
+  {
+    "key": "ZONE_TANARIS",
+    "name": "Tanaris",
+    "file": "ZONE_TANARIS.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "desert"
+  },
+  {
+    "key": "ZONE_UNGORO_CRATER",
+    "name": "Un'Goro Crater",
+    "file": "ZONE_UNGORO_CRATER.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "jungle_crater"
+  },
+  {
+    "key": "ZONE_SILITHUS",
+    "name": "Silithus",
+    "file": "ZONE_SILITHUS.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "desert_crystal"
+  },
+  {
+    "key": "ZONE_FERALAS",
+    "name": "Feralas",
+    "file": "ZONE_FERALAS.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "ancient_jungle"
+  },
+  {
+    "key": "ZONE_DESOLACE",
+    "name": "Desolace",
+    "file": "ZONE_DESOLACE.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "wasteland"
+  },
+  {
+    "key": "ZONE_STONETALON_MOUNTAINS",
+    "name": "Stonetalon Mountains",
+    "file": "ZONE_STONETALON_MOUNTAINS.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "mountains"
+  },
+  {
+    "key": "ZONE_ASHENVALE",
+    "name": "Ashenvale",
+    "file": "ZONE_ASHENVALE.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "moon_forest"
+  },
+  {
+    "key": "ZONE_DARKSHORE",
+    "name": "Darkshore",
+    "file": "ZONE_DARKSHORE.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "coast"
+  },
+  {
+    "key": "ZONE_MOONGLADE",
+    "name": "Moonglade",
+    "file": "ZONE_MOONGLADE.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "moon_lake"
+  },
+  {
+    "key": "ZONE_WINTERSPRING",
+    "name": "Winterspring",
+    "file": "ZONE_WINTERSPRING.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "snow_forest"
+  },
+  {
+    "key": "ZONE_FELWOOD",
+    "name": "Felwood",
+    "file": "ZONE_FELWOOD.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "fel_forest"
+  },
+  {
+    "key": "ZONE_AZSHARA",
+    "name": "Azshara",
+    "file": "ZONE_AZSHARA.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "autumn_coast"
+  },
+  {
+    "key": "ZONE_THE_BARRENS",
+    "name": "The Barrens",
+    "file": "ZONE_THE_BARRENS.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "savanna"
+  },
+  {
+    "key": "ZONE_THOUSAND_NEEDLES",
+    "name": "Thousand Needles",
+    "file": "ZONE_THOUSAND_NEEDLES.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "needles"
+  },
+  {
+    "key": "ZONE_MULGORE",
+    "name": "Mulgore",
+    "file": "ZONE_MULGORE.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "plains"
+  },
+  {
+    "key": "ZONE_DUROTAR",
+    "name": "Durotar",
+    "file": "ZONE_DUROTAR.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "badlands"
+  },
+  {
+    "key": "ZONE_HELLFIRE_PENINSULA",
+    "name": "Hellfire Peninsula",
+    "file": "ZONE_HELLFIRE_PENINSULA.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "fel_wasteland"
+  },
+  {
+    "key": "ZONE_ZANGARMARSH",
+    "name": "Zangarmarsh",
+    "file": "ZONE_ZANGARMARSH.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "mushroom"
+  },
+  {
+    "key": "ZONE_TEROKKAR_FOREST",
+    "name": "Terokkar Forest",
+    "file": "ZONE_TEROKKAR_FOREST.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "twilight_forest"
+  },
+  {
+    "key": "ZONE_NAGRAND",
+    "name": "Nagrand",
+    "file": "ZONE_NAGRAND.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "floating_plains"
+  },
+  {
+    "key": "ZONE_BLADES_EDGE_MOUNTAINS",
+    "name": "Blade's Edge Mountains",
+    "file": "ZONE_BLADES_EDGE_MOUNTAINS.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "spires"
+  },
+  {
+    "key": "ZONE_NETHERSTORM",
+    "name": "Netherstorm",
+    "file": "ZONE_NETHERSTORM.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "arcane"
+  },
+  {
+    "key": "ZONE_SHADOWMOON_VALLEY",
+    "name": "Shadowmoon Valley",
+    "file": "ZONE_SHADOWMOON_VALLEY.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "fel"
+  },
+  {
+    "key": "ZONE_EVERSONG_WOODS",
+    "name": "Eversong Woods",
+    "file": "ZONE_EVERSONG_WOODS.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "autumn_forest"
+  },
+  {
+    "key": "ZONE_GHOSTLANDS",
+    "name": "Ghostlands",
+    "file": "ZONE_GHOSTLANDS.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "dead_autumn"
+  },
+  {
+    "key": "ZONE_AZUREMYST_ISLE",
+    "name": "Azuremyst Isle",
+    "file": "ZONE_AZUREMYST_ISLE.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "crystal_coast"
+  },
+  {
+    "key": "ZONE_BLOODMYST_ISLE",
+    "name": "Bloodmyst Isle",
+    "file": "ZONE_BLOODMYST_ISLE.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "crystal_wasteland"
+  },
+  {
+    "key": "ZONE_ISLE_OF_QUELDANAS",
+    "name": "Isle of Quel'Danas",
+    "file": "ZONE_ISLE_OF_QUELDANAS.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "motif": "sunwell"
+  }
+]

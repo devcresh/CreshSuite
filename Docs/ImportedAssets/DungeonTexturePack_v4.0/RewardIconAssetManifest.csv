@@ -1,0 +1,6 @@
+﻿key,name,icon_tga,icon_png,source_image,status
+DamageRelic,Damage Relic,Media/Games/DungeonDwellers/RewardIcons/Icons/RewardIcon_DamageRelic.tga,Source_PNG/Games/DungeonDwellers/RewardIcons/Icons/RewardIcon_DamageRelic.png,fiery_shard_of_ancient_power.png,complete
+CreshCoinCache,Cresh Coin Cache,Media/Games/DungeonDwellers/RewardIcons/Icons/RewardIcon_CreshCoinCache.tga,Source_PNG/Games/DungeonDwellers/RewardIcons/Icons/RewardIcon_CreshCoinCache.png,golden_treasure_pouch_icon.png,complete
+PortraitToken,Portrait Token,Media/Games/DungeonDwellers/RewardIcons/Icons/RewardIcon_PortraitToken.tga,Source_PNG/Games/DungeonDwellers/RewardIcons/Icons/RewardIcon_PortraitToken.png,golden_medallion_with_warrior_portrait.png,complete
+FullBodyToken,Full-Body Token,Media/Games/DungeonDwellers/RewardIcons/Icons/RewardIcon_FullBodyToken.tga,Source_PNG/Games/DungeonDwellers/RewardIcons/Icons/RewardIcon_FullBodyToken.png,glowing_knight_emblem_with_ornate_gems.png,complete
+ArmourChoiceToken,Armour Choice Token,Media/Games/DungeonDwellers/RewardIcons/Icons/RewardIcon_ArmourChoiceToken.tga,Source_PNG/Games/DungeonDwellers/RewardIcons/Icons/RewardIcon_ArmourChoiceToken.png,ornate_fantasy_crest_with_glowing_gems.png,complete

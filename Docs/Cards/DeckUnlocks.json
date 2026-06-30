@@ -1,0 +1,44 @@
+{
+  "Classic_8Bit": {
+    "displayName": "Classic 8-Bit",
+    "battlePassTier": 0,
+    "unlockedByDefault": true,
+    "description": "Default traditional red-and-black pixel playing cards."
+  },
+  "Alliance_Vanguard": {
+    "displayName": "Alliance Vanguard",
+    "battlePassTier": 10,
+    "unlockedByDefault": false,
+    "description": "Blue-and-gold heroic fantasy deck."
+  },
+  "Horde_Warband": {
+    "displayName": "Horde Warband",
+    "battlePassTier": 25,
+    "unlockedByDefault": false,
+    "description": "Red, iron and bone warband deck."
+  },
+  "Fel_Crusade": {
+    "displayName": "Fel Crusade",
+    "battlePassTier": 40,
+    "unlockedByDefault": false,
+    "description": "Fel-green and violet Outland deck."
+  },
+  "Shattrath_Light": {
+    "displayName": "Shattrath Light",
+    "battlePassTier": 55,
+    "unlockedByDefault": false,
+    "description": "Teal, gold and ivory city-of-light deck."
+  },
+  "Netherstorm_Arcana": {
+    "displayName": "Netherstorm Arcana",
+    "battlePassTier": 75,
+    "unlockedByDefault": false,
+    "description": "Purple and cyan arcane storm deck."
+  },
+  "Dark_Portal": {
+    "displayName": "Dark Portal",
+    "battlePassTier": 100,
+    "unlockedByDefault": false,
+    "description": "Stone, shadow and green portal deck."
+  }
+}

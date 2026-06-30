@@ -1,0 +1,174 @@
+CreshChat 0.2.1-final-audit
+
+- Public version reset to 0.2; SavedVariables schema advanced to 75 without progression reset.
+- Responsive header layout verified for normal, Friends and Whisper control sets.
+- Settings coverage audit added every live end-user option that previously lacked a control; obsolete legacy-only keys remain hidden.
+- Top-level frames use clamping or explicit screen-bound positioning; settings, console, drawer, pop-outs, cards and game windows retain safe scaling.
+- Addon-message discovery is paced to 6.7 probes/second, capped at 12 targets and protected by a 15-second cooldown. Automatic login-wide probing was removed.
+- Static policy scan found no external networking, executables, obfuscated code, advertisements, donation requests, account automation or client modification.
+
+CreshChat 0.3.84-live-chat-whisper-routing
+
+Target: World of Warcraft TBC Anniversary (Interface 20505)
+Schema: 74
+
+Validation focuses on live chat capture, unavailable-player system filtering and native unit-menu whisper routing.
+
+Static and mocked validation
+- 25/25 top-level Lua modules parsed successfully.
+- 21/21 live-chat, filtering and whisper-routing assertions passed.
+- Mock capture passed for character whispers, Guild, Officer, General, Party, Raid, Instance and Say.
+- Localized unavailable-player detection marked the pending CreshChat row failed and left unrelated system messages untouched.
+- Player/party unit resolution preserved full cross-realm names.
+- 11/11 achievement, game, progression, Friends and Voice modules remained byte-identical to v0.3.83.
+
+Live verification still recommended
+- Receive messages in each enabled console tab while the console is open.
+- Right-click target, player, party and raid frames and choose Whisper.
+- Whisper an offline character and confirm the row is marked failed without the Blizzard system line.
+
+CreshChat 0.3.83-class-achievements
+
+Target: World of Warcraft TBC Anniversary (Interface 20505)
+Schema: 73
+
+Validation focuses on the 90 class-only achievements, class filters, and strict separation between real WoW dungeon progress and Dungeon Dwellers game progress.
+
+Static and mocked validation
+- 25/25 top-level Lua modules parsed successfully with Lua 5.1-compatible syntax.
+- 62/62 catalogue, migration, filter, class-tracking and dungeon-isolation checks passed.
+- Runtime catalogue contains 531 unique achievements.
+- 90 class achievements are present: 10 each for Druid, Hunter, Mage, Paladin, Priest, Rogue, Shaman, Warlock and Warrior.
+- 33 Dungeon Dwellers achievements are under Cresh Games and read only the account-wide Dungeon Dwellers save.
+- Real WoW dungeon kills, bosses, unique final bosses and clears exclude Dungeon Dwellers progress.
+- Class Mastery includes All Classes plus individual class filters and retains All / In Progress / Completed status filters.
+- Mock tracking passed for Druid shapeshifts/healing, Mage movement/conjuring/portals, Rogue finishers, Paladin emergency healing and Warrior interrupts.
+- Existing Battle Pass reward filters and social roster visibility controls remain present.
+
+Tracking note
+- Existing Dungeon Dwellers runs, kills, bosses and unique boss types backfill from the shared game save.
+- New class-action counters begin with this build, except known Flight Form, Charger/Dreadsteed and the active Hunter pet can backfill immediately.
+- Some class goals use the closest reliable TBC event (for example trap placement for trap activity) where Blizzard does not expose a perfect historical counter.
+
+Live verification still recommended
+- Open Achievements > Classes and test the class filters on multiple characters.
+- Cast several signature abilities and reload to confirm account-wide persistence.
+- Complete one Dungeon Dwellers run and one real WoW dungeon to confirm the two categories advance independently.
+
+CreshChat 0.3.82-achievement-expansion
+
+Target: World of Warcraft TBC Anniversary (Interface 20505)
+Schema: 72
+
+Validation focuses on the full 300-achievement expansion, achievement/Battle Pass status filters, account-wide progression retention, and reliable Friends/Guild online/offline roster cards.
+
+Static and mocked validation
+- 24/24 top-level Lua modules parsed successfully with Lua 5.1-compatible syntax.
+- 92/92 catalogue, filter, migration, tracking, roster and regression checks passed.
+- Runtime catalogue contains 408 unique achievements: 108 existing and 300 approved additions.
+- All 300 approved achievement titles match the reviewed proposal in the same order.
+- Achievement filters: All, In Progress and Completed.
+- Battle Pass filters: All, Ready, Claimed and Locked.
+- Six roster-card controls are available under Settings > Windows > Console roster cards.
+- Legacy Battle.net mock retained account name, active TBC character, level, class and online state.
+- Guild mock produced one online and one offline member.
+- Existing account-wide coins, Battle Pass, games, unlocks and achievement progress remain preserved.
+
+Tracking note
+- Current profession ranks, reputations and live friend/guild rosters can populate immediately.
+- Historical quest completions, dungeon-specific clears, travel, crafts and PvP activity that Blizzard does not expose begin tracking from this build.
+
+Live verification still recommended
+- Reload after login and open Game Friends, Battle.net and Guild to verify Blizzard roster timing.
+- Toggle each online/offline roster-card switch under Settings > Windows.
+- Turn in a quest, finish a dungeon and claim a Battle Pass reward using each new filter.
+
+CreshChat 0.3.81-roster-visibility
+
+Target: World of Warcraft TBC Anniversary (Interface 20505)
+Schema: 71
+
+Validation focuses on independent online/offline visibility filters for Game Friends, Battle.net Friends and Guild rosters.
+
+Static validation
+- 23/23 top-level Lua modules parsed successfully.
+- Six roster visibility defaults and schema migration keys are present.
+- Game Friends and Battle.net filters only accept their matching Blizzard friend kind.
+- Guild visibility is applied only to the Guild roster path.
+- Empty-state guidance identifies intentionally hidden categories.
+- Existing account-wide progression, achievements, notifications and social actions remain present.
+
+Live verification still recommended
+- Toggle each online/offline pair from Settings > Console > Roster visibility.
+- Confirm Game Friends never includes a guild-only member.
+- Confirm Guild online/offline rows follow their separate switches.
+
+CreshChat 0.3.79-account-achievements
+
+Target: World of Warcraft TBC Anniversary (Interface 20505)
+Schema: 70
+
+Validation focuses on account-wide progression migration, 108 achievement definitions, increasing rewards, profession/flight/death/zone/dungeon tracking, boss-event deduplication, and the searchable achievement drawer.
+
+Static and mocked validation
+- 23/23 top-level Lua modules parsed successfully.
+- 47/47 account progression, achievement, UI and regression checks passed.
+- Silent migration rewards are batched into one coin and one Pass XP update.
+- TBC profession slots with nil gaps still include Fishing, Cooking and First Aid.
+- Multiple Blizzard boss events for one named boss produce one boss kill and one direct reward.
+- Guild chat, actual-friend filtering, roster collapse, notification controls and custom party invites remain present.
+
+Live verification still recommended
+- Switch between two characters and compare coins, Battle Pass, game saves and unlocks.
+- Complete a taxi flight, enter a dungeon and kill a boss.
+- Cross a 1,000-step boundary and confirm one reward.
+
+CreshChat 0.3.78-guild-chat-roster-collapse
+
+Target: World of Warcraft TBC Anniversary (Interface 20505)
+Schema: 69
+
+Validation focuses on Guild capture failover, Friends source isolation, roster identity details, and full-width roster collapse.
+
+CreshChat 0.3.77-social-roster-sections
+
+Static validation
+- 22/22 Lua files parsed with Lua 5.1-compatible syntax.
+- Party has a dedicated current-unit roster and no longer uses the local /who roster.
+- Party excludes raid members and does not retain stale party names after leaving.
+- Party, Raid and Instance rosters separate connected and disconnected units into ONLINE and OFFLINE.
+- Friends retains separate Battle.net Online, Game Friends Online, Battle.net Offline and Game Friends Offline sections.
+- The same person can remain visible once per Blizzard source when present in both friend systems.
+- Character-friend online state remains tied to the exact character rather than an online Battle.net alt.
+- Existing Guild and current-area General roster paths remain unchanged.
+- Redundant Party Invite actions are hidden for members already in Party or Raid rosters.
+- SavedVariables schema remains 68.
+
+Mock validation
+- A three-member party produced player, party1 and party2 only.
+- A disconnected party2 sorted into OFFLINE.
+- Party returned no rows while the mock client was in a raid.
+- Friends sorted in the required five-section order and preserved duplicate source membership.
+
+Live verification still recommended
+- Test connection-state changes from an actual disconnected party or raid member.
+- Confirm TBC Anniversary unit names and realm suffixes render correctly for cross-realm groups.
+- Confirm the Instance roster follows party/raid conversion correctly.
+
+CreshChat v0.3.80 Battle.net Friend Tabs
+----------------------------------------
+Static validation
+- 23 Lua modules parsed successfully with Lua 5.1-compatible syntax.
+- Friends contains separate Game Friends and Battle.net directory tabs.
+- Battle.net directory rows retain B.NET, /W, PARTY and voice actions.
+- Online Battle.net TBC characters expose ADD only when not already a game friend.
+
+Mock Battle.net validation
+- Modern TBC project record: included and online.
+- Modern Retail project record: excluded.
+- Legacy TBC tuple with no wowProjectID: included through the 2.x client fallback.
+- Existing game friend matching the active Battle.net character: ADD suppressed.
+
+Live verification still recommended
+- Confirm the exact Battle.net game-account tuple exposed by the current TBC Anniversary build.
+- Confirm adding a cross-realm active character refreshes Blizzard's game-friend roster.

@@ -1,0 +1,29 @@
+CreshChat v0.3.69 Tetris reveal renderer audit
+
+Solo/CPU renderer
+- Full image: ARTWORK sublayer -8
+- Bright bands: ARTWORK sublayer -6
+- Tetromino/empty cells: ARTWORK sublayer 0
+- Grid lines: ARTWORK sublayer 2
+- Empty image cells: neutral RGB 0.008/0.010/0.016, alpha 0.025
+
+Multiplayer renderer
+- Local and remote full images: ARTWORK sublayer -8
+- Local and remote bright bands: ARTWORK sublayer -6
+- Local and remote tetromino cells: ARTWORK sublayer 0
+- Local and remote grid lines: ARTWORK sublayer 2
+- Empty image cells: neutral RGB 0.008/0.010/0.016, alpha 0.025
+
+Progression
+- 0 lines: stage 0, dark full image
+- 9 lines: stage 0
+- 10 lines: stage 1, first cropped band bright
+- 20 lines: stage 2
+- 100 lines: stage 10 returned, image unlocked, next locked image starts at stage 0
+
+Coverage
+- Solo Timed Endless
+- VS CPU Timed Endless
+- VS CPU Endless Attack
+- Multiplayer Timed Endless
+- Multiplayer Endless Attack

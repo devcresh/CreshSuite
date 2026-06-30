@@ -1,0 +1,43 @@
+Legacy UI design reference retained for compatibility. Current build: 0.3.56-dungeon-texture-pack
+See Docs/DEVELOPER_GUIDE.md and Docs/UI_REFERENCE.md.
+
+CreshChat v0.3.26 window-flow design
+======================================
+
+Main console
+- Friends remains first, followed by Whispers, Guild, General, Quests and Combat.
+- Games remains a header control that opens a full-height right-side drawer.
+- Leaderboards and History are available from compact H and LB drawer controls and from the Solo hub.
+
+Solo arcade
+- Six cards fit in two rows of three.
+- Higher or Lower follows the same persistent-bank presentation as Hold'em and Blackjack.
+- Leaderboard and History overlays remain within the Solo window and use compact, subtle row boxes.
+- W/L/D summary boxes are intentionally low-profile and do not compete with game controls.
+
+Chess
+- Piece notation remains readable without pretending to be art assets.
+- Each piece label sits inside a 30 x 30 token, leaving visible board-square margins.
+- White and Black use inverse fill/text treatments for immediate side recognition.
+
+ZLR Arena
+- q3a is the theme's baseline launcher identity.
+- Notification state is temporary and always resolves through the theme-aware baseline rather than a hard-coded C.
+- The composer prompt uses /say or /console to reinforce the arena-console style.
+
+Shared scores
+- No public/global service is required.
+- Compatible players exchange compact records through private addon messages when discovered.
+- Cached remote rows persist locally until refreshed by a later scan/message.
+
+BATTLE PASS DRAWER
+- The existing right-side slide animation now serves four drawer modes: Solo, Multi, Battle Pass and Unlock Themes.
+- Battle Pass uses a long scrollable reward track while keeping the drawer height matched to the console.
+- Unlock Themes uses compact colour swatches and state-aware buttons: NEED, UNLOCK NOW, EQUIP and EQUIPPED.
+
+
+v0.3.24 REFINEMENT
+- Numerical settings use boxed 48-pixel rows with a plain horizontal track, accent fill and compact thumb.
+- The Settings page is intentionally always on top, while the rest of CreshChat retains click-to-front layering.
+- Screen-fit scale limiting is a safety override only; the saved requested UI scale remains the user's chosen value.
+- Locked Battle Pass rows behave as navigation: clicking one reveals its requirement and a direct game action.

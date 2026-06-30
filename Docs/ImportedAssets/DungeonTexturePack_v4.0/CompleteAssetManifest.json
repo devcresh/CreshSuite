@@ -1,0 +1,1125 @@
+{
+  "enemies": [
+    {
+      "number": "01",
+      "key": "KoboldMiner",
+      "enemy_type": "Kobold Miner",
+      "display_name": "Candlewick Tunnel Rat",
+      "icon_tga": "Media/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_KoboldMiner_CandlewickTunnelRat.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_KoboldMiner_CandlewickTunnelRat.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_KoboldMiner_CandlewickTunnelRat.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_KoboldMiner_CandlewickTunnelRat.png",
+      "source_sheet": "carried forward from validated v1.0",
+      "status": "complete"
+    },
+    {
+      "number": "02",
+      "key": "GnollBrute",
+      "enemy_type": "Gnoll Brute",
+      "display_name": "Redtooth Mauler",
+      "icon_tga": "Media/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_GnollBrute_RedtoothMauler.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_GnollBrute_RedtoothMauler.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_GnollBrute_RedtoothMauler.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_GnollBrute_RedtoothMauler.png",
+      "source_sheet": "carried forward from validated v1.0",
+      "status": "complete"
+    },
+    {
+      "number": "03",
+      "key": "MurlocTidecaller",
+      "enemy_type": "Murloc Tidecaller",
+      "display_name": "Glubfin the Loud",
+      "icon_tga": "Media/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_MurlocTidecaller_GlubfintheLoud.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_MurlocTidecaller_GlubfintheLoud.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_MurlocTidecaller_GlubfintheLoud.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_MurlocTidecaller_GlubfintheLoud.png",
+      "source_sheet": "carried forward from validated v1.0",
+      "status": "complete"
+    },
+    {
+      "number": "04",
+      "key": "NagaSiren",
+      "enemy_type": "Naga Siren",
+      "display_name": "Coilscale Enchantress",
+      "icon_tga": "Media/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_NagaSiren_CoilscaleEnchantress.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_NagaSiren_CoilscaleEnchantress.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_NagaSiren_CoilscaleEnchantress.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_NagaSiren_CoilscaleEnchantress.png",
+      "source_sheet": "carried forward from validated v1.0",
+      "status": "complete"
+    },
+    {
+      "number": "05",
+      "key": "TroggEarthshaker",
+      "enemy_type": "Trogg Earthshaker",
+      "display_name": "Grumblefist",
+      "icon_tga": "Media/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_TroggEarthshaker_Grumblefist.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_TroggEarthshaker_Grumblefist.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_TroggEarthshaker_Grumblefist.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_TroggEarthshaker_Grumblefist.png",
+      "source_sheet": "carried forward from validated v1.0",
+      "status": "complete"
+    },
+    {
+      "number": "06",
+      "key": "HarpyStormtalon",
+      "enemy_type": "Harpy Stormtalon",
+      "display_name": "Screechwing Tempest",
+      "icon_tga": "Media/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_HarpyStormtalon_ScreechwingTempest.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_HarpyStormtalon_ScreechwingTempest.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_HarpyStormtalon_ScreechwingTempest.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_HarpyStormtalon_ScreechwingTempest.png",
+      "source_sheet": "carried forward from validated v1.0",
+      "status": "complete"
+    },
+    {
+      "number": "07",
+      "key": "SatyrFelwhisper",
+      "enemy_type": "Satyr Felwhisper",
+      "display_name": "Xavros the Twisted",
+      "icon_tga": "Media/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_SatyrFelwhisper_XavrostheTwisted.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_SatyrFelwhisper_XavrostheTwisted.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_SatyrFelwhisper_XavrostheTwisted.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_SatyrFelwhisper_XavrostheTwisted.png",
+      "source_sheet": "carried forward from validated v1.0",
+      "status": "complete"
+    },
+    {
+      "number": "08",
+      "key": "NerubianWebwarden",
+      "enemy_type": "Nerubian Webwarden",
+      "display_name": "Cryptweb Binder",
+      "icon_tga": "Media/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_NerubianWebwarden_CryptwebBinder.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_NerubianWebwarden_CryptwebBinder.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_NerubianWebwarden_CryptwebBinder.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_NerubianWebwarden_CryptwebBinder.png",
+      "source_sheet": "carried forward from validated v1.0",
+      "status": "complete"
+    },
+    {
+      "number": "09",
+      "key": "FrostRevenant",
+      "enemy_type": "Frost Revenant",
+      "display_name": "Coldgrave Watcher",
+      "icon_tga": "Media/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_FrostRevenant_ColdgraveWatcher.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_FrostRevenant_ColdgraveWatcher.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_FrostRevenant_ColdgraveWatcher.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_FrostRevenant_ColdgraveWatcher.png",
+      "source_sheet": "carried forward from validated v1.0",
+      "status": "complete"
+    },
+    {
+      "number": "10",
+      "key": "DarkIronBombardier",
+      "enemy_type": "Dark Iron Bombardier",
+      "display_name": "Fusebeard Demolitionist",
+      "icon_tga": "Media/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_DarkIronBombardier_FusebeardDemolitionist.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_DarkIronBombardier_FusebeardDemolitionist.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_DarkIronBombardier_FusebeardDemolitionist.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_DarkIronBombardier_FusebeardDemolitionist.png",
+      "source_sheet": "carried forward from validated v1.0",
+      "status": "complete"
+    },
+    {
+      "number": "11",
+      "key": "EtherealPhaseblade",
+      "enemy_type": "Ethereal Phaseblade",
+      "display_name": "Nexus Cutthroat",
+      "icon_tga": "Media/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_EtherealPhaseblade_NexusCutthroat.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_EtherealPhaseblade_NexusCutthroat.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_EtherealPhaseblade_NexusCutthroat.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_EtherealPhaseblade_NexusCutthroat.png",
+      "source_sheet": "carried forward from validated v1.0",
+      "status": "complete"
+    },
+    {
+      "number": "12",
+      "key": "ArakkoaWindseer",
+      "enemy_type": "Arakkoa Windseer",
+      "display_name": "Skyrend Prophet",
+      "icon_tga": "Media/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_ArakkoaWindseer_SkyrendProphet.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_ArakkoaWindseer_SkyrendProphet.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_ArakkoaWindseer_SkyrendProphet.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_ArakkoaWindseer_SkyrendProphet.png",
+      "source_sheet": "carried forward from validated v1.0",
+      "status": "complete"
+    },
+    {
+      "number": "13",
+      "key": "BrokenSoulbinder",
+      "enemy_type": "Broken Soulbinder",
+      "display_name": "Akoru the Forsaken",
+      "icon_tga": "Media/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_BrokenSoulbinder_AkorutheForsaken.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_BrokenSoulbinder_AkorutheForsaken.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_BrokenSoulbinder_AkorutheForsaken.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_BrokenSoulbinder_AkorutheForsaken.png",
+      "source_sheet": "carried forward from validated v1.0",
+      "status": "complete"
+    },
+    {
+      "number": "14",
+      "key": "BloodElfSpellbreaker",
+      "enemy_type": "Blood Elf Spellbreaker",
+      "display_name": "Sunblade Disruptor",
+      "icon_tga": "Media/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_BloodElfSpellbreaker_SunbladeDisruptor.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_BloodElfSpellbreaker_SunbladeDisruptor.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_BloodElfSpellbreaker_SunbladeDisruptor.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_BloodElfSpellbreaker_SunbladeDisruptor.png",
+      "source_sheet": "carried forward from validated v1.0",
+      "status": "complete"
+    },
+    {
+      "number": "15",
+      "key": "FelOrcBerserker",
+      "enemy_type": "Fel Orc Berserker",
+      "display_name": "Hellfire Bloodhowler",
+      "icon_tga": "Media/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_FelOrcBerserker_HellfireBloodhowler.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_FelOrcBerserker_HellfireBloodhowler.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_FelOrcBerserker_HellfireBloodhowler.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_FelOrcBerserker_HellfireBloodhowler.png",
+      "source_sheet": "carried forward from validated v1.0",
+      "status": "complete"
+    },
+    {
+      "number": "16",
+      "key": "BogBeast",
+      "enemy_type": "Bog Beast",
+      "display_name": "Marshroot Ancient",
+      "icon_tga": "Media/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_BogBeast_MarshrootAncient.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_BogBeast_MarshrootAncient.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_BogBeast_MarshrootAncient.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_BogBeast_MarshrootAncient.png",
+      "source_sheet": "mossy_golem_character_concept_art.png",
+      "icon_crop": [
+        942,
+        324,
+        1372,
+        761
+      ],
+      "status": "complete"
+    },
+    {
+      "number": "17",
+      "key": "ManaWyrm",
+      "enemy_type": "Mana Wyrm",
+      "display_name": "Arcane Glimmermaw",
+      "icon_tga": "Media/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_ManaWyrm_ArcaneGlimmermaw.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_ManaWyrm_ArcaneGlimmermaw.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_ManaWyrm_ArcaneGlimmermaw.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_ManaWyrm_ArcaneGlimmermaw.png",
+      "source_sheet": "arcane_glimmermaw_wyrm_portrait.png",
+      "icon_crop": [
+        965,
+        346,
+        1387,
+        803
+      ],
+      "status": "complete"
+    },
+    {
+      "number": "18",
+      "key": "ClockworkReaver",
+      "enemy_type": "Clockwork Reaver",
+      "display_name": "Geargrind Prototype",
+      "icon_tga": "Media/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_ClockworkReaver_GeargrindPrototype.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_ClockworkReaver_GeargrindPrototype.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_ClockworkReaver_GeargrindPrototype.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_ClockworkReaver_GeargrindPrototype.png",
+      "source_sheet": "geargrind_prototype_clockwork_reaver_design.png",
+      "icon_crop": [
+        859,
+        389,
+        1329,
+        845
+      ],
+      "status": "complete"
+    },
+    {
+      "number": "19",
+      "key": "ArenaGladiator",
+      "enemy_type": "Arena Gladiator",
+      "display_name": "ZLR Blood Champion",
+      "icon_tga": "Media/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_ArenaGladiator_ZLRBloodChampion.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_ArenaGladiator_ZLRBloodChampion.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_ArenaGladiator_ZLRBloodChampion.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_ArenaGladiator_ZLRBloodChampion.png",
+      "source_sheet": "zlr_blood_champion_gladiator_artwork.png",
+      "icon_crop": [
+        894,
+        253,
+        1378,
+        762
+      ],
+      "status": "complete"
+    },
+    {
+      "number": "20",
+      "key": "ZeroWingDrone",
+      "enemy_type": "Zero Wing Drone",
+      "display_name": "CATS Assault Unit",
+      "icon_tga": "Media/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_ZeroWingDrone_CATSAssaultUnit.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_ZeroWingDrone_CATSAssaultUnit.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Sets/08_Enemy_Icons_Expansion_01/Icons/Enemy_ZeroWingDrone_CATSAssaultUnit.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/Sets/09_Enemy_FullBody_Expansion_01/FullBody/Enemy_ZeroWingDrone_CATSAssaultUnit.png",
+      "source_sheet": "cats_assault_unit_drone_concept.png",
+      "icon_crop": [
+        930,
+        331,
+        1358,
+        758
+      ],
+      "status": "complete"
+    }
+  ],
+  "classArmor": [
+    {
+      "class": "Defender",
+      "level": 20,
+      "set_name": "Deepforge Bulwark",
+      "key": "DeepforgeBulwark",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Defender/ClassArmor_Defender_L20_DeepforgeBulwark.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Defender/ClassArmor_Defender_L20_DeepforgeBulwark.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Defender/ClassArmor_Defender_L20_DeepforgeBulwark.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Defender/ClassArmor_Defender_L20_DeepforgeBulwark.png",
+      "source_sheet": "heroic_knight_in_shining_armor.png",
+      "icon_crop": [
+        889,
+        300,
+        1335,
+        748
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Defender",
+      "level": 40,
+      "set_name": "Ironforge Kingsguard",
+      "key": "IronforgeKingsguard",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Defender/ClassArmor_Defender_L40_IronforgeKingsguard.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Defender/ClassArmor_Defender_L40_IronforgeKingsguard.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Defender/ClassArmor_Defender_L40_IronforgeKingsguard.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Defender/ClassArmor_Defender_L40_IronforgeKingsguard.png",
+      "source_sheet": "armoured_knight_with_mace_and_shield.png",
+      "icon_crop": [
+        894,
+        279,
+        1378,
+        763
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Defender",
+      "level": 60,
+      "set_name": "Gruulbreaker Plate",
+      "key": "GruulbreakerPlate",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Defender/ClassArmor_Defender_L60_GruulbreakerPlate.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Defender/ClassArmor_Defender_L60_GruulbreakerPlate.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Defender/ClassArmor_Defender_L60_GruulbreakerPlate.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Defender/ClassArmor_Defender_L60_GruulbreakerPlate.png",
+      "source_sheet": "heroic_paladin_with_hammer_and_shield.png",
+      "icon_crop": [
+        691,
+        281,
+        1347,
+        733
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Defender",
+      "level": 80,
+      "set_name": "Chess King Citadel",
+      "key": "ChessKingCitadel",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Defender/ClassArmor_Defender_L80_ChessKingCitadel.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Defender/ClassArmor_Defender_L80_ChessKingCitadel.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Defender/ClassArmor_Defender_L80_ChessKingCitadel.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Defender/ClassArmor_Defender_L80_ChessKingCitadel.png",
+      "source_sheet": "epic_warrior_in_spiked_armor.png",
+      "icon_crop": [
+        696,
+        293,
+        1391,
+        762
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Defender",
+      "level": 100,
+      "set_name": "Titanwall Eternal",
+      "key": "TitanwallEternal",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Defender/ClassArmor_Defender_L100_TitanwallEternal.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Defender/ClassArmor_Defender_L100_TitanwallEternal.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Defender/ClassArmor_Defender_L100_TitanwallEternal.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Defender/ClassArmor_Defender_L100_TitanwallEternal.png",
+      "source_sheet": "knight_of_embers_in_battle_ready_stance.png",
+      "icon_crop": [
+        867,
+        279,
+        1353,
+        767
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Mage",
+      "level": 20,
+      "set_name": "Emberweave Robes",
+      "key": "EmberweaveRobes",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Mage/ClassArmor_Mage_L20_EmberweaveRobes.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Mage/ClassArmor_Mage_L20_EmberweaveRobes.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Mage/ClassArmor_Mage_L20_EmberweaveRobes.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Mage/ClassArmor_Mage_L20_EmberweaveRobes.png",
+      "source_sheet": "pixel_art_mage_in_red_and_black.png",
+      "icon_crop": [
+        863,
+        279,
+        1366,
+        781
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Mage",
+      "level": 40,
+      "set_name": "Arcane Conservator",
+      "key": "ArcaneConservator",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Mage/ClassArmor_Mage_L40_ArcaneConservator.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Mage/ClassArmor_Mage_L40_ArcaneConservator.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Mage/ClassArmor_Mage_L40_ArcaneConservator.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Mage/ClassArmor_Mage_L40_ArcaneConservator.png",
+      "source_sheet": "arcane_mage_with_glowing_staff.png",
+      "icon_crop": [
+        861,
+        281,
+        1365,
+        782
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Mage",
+      "level": 60,
+      "set_name": "Netherstorm Magister",
+      "key": "NetherstormMagister",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Mage/ClassArmor_Mage_L60_NetherstormMagister.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Mage/ClassArmor_Mage_L60_NetherstormMagister.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Mage/ClassArmor_Mage_L60_NetherstormMagister.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Mage/ClassArmor_Mage_L60_NetherstormMagister.png",
+      "source_sheet": "regal_mage_with_glowing_crystal_powers.png",
+      "icon_crop": [
+        868,
+        282,
+        1368,
+        783
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Mage",
+      "level": 80,
+      "set_name": "Zero Wing Starcaster",
+      "key": "ZeroWingStarcaster",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Mage/ClassArmor_Mage_L80_ZeroWingStarcaster.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Mage/ClassArmor_Mage_L80_ZeroWingStarcaster.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Mage/ClassArmor_Mage_L80_ZeroWingStarcaster.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Mage/ClassArmor_Mage_L80_ZeroWingStarcaster.png",
+      "source_sheet": "cosmic_mage_with_magical_staff.png",
+      "icon_crop": [
+        863,
+        278,
+        1366,
+        779
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Mage",
+      "level": 100,
+      "set_name": "Tempest Keep Archmage",
+      "key": "TempestKeepArchmage",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Mage/ClassArmor_Mage_L100_TempestKeepArchmage.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Mage/ClassArmor_Mage_L100_TempestKeepArchmage.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Mage/ClassArmor_Mage_L100_TempestKeepArchmage.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Mage/ClassArmor_Mage_L100_TempestKeepArchmage.png",
+      "source_sheet": "arcane_mage_with_glowing_runes.png",
+      "icon_crop": [
+        869,
+        277,
+        1372,
+        777
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Paladin",
+      "level": 20,
+      "set_name": "Dawnwatch Plate",
+      "key": "DawnwatchPlate",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Paladin/ClassArmor_Paladin_L20_DawnwatchPlate.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Paladin/ClassArmor_Paladin_L20_DawnwatchPlate.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Paladin/ClassArmor_Paladin_L20_DawnwatchPlate.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Paladin/ClassArmor_Paladin_L20_DawnwatchPlate.png",
+      "source_sheet": "paladin_hero_character_profile_art.png",
+      "icon_crop": [
+        867,
+        279,
+        1354,
+        769
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Paladin",
+      "level": 40,
+      "set_name": "Lionguard Regalia",
+      "key": "LionguardRegalia",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Paladin/ClassArmor_Paladin_L40_LionguardRegalia.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Paladin/ClassArmor_Paladin_L40_LionguardRegalia.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Paladin/ClassArmor_Paladin_L40_LionguardRegalia.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Paladin/ClassArmor_Paladin_L40_LionguardRegalia.png",
+      "source_sheet": "regal_knight_in_pixel_art_style.png",
+      "icon_crop": [
+        866,
+        279,
+        1354,
+        769
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Paladin",
+      "level": 60,
+      "set_name": "Shattrath Sunforged",
+      "key": "ShattrathSunforged",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Paladin/ClassArmor_Paladin_L60_ShattrathSunforged.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Paladin/ClassArmor_Paladin_L60_ShattrathSunforged.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Paladin/ClassArmor_Paladin_L60_ShattrathSunforged.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Paladin/ClassArmor_Paladin_L60_ShattrathSunforged.png",
+      "source_sheet": "armoured_paladin_with_glowing_sword_and_shield.png",
+      "icon_crop": [
+        866,
+        279,
+        1353,
+        768
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Paladin",
+      "level": 80,
+      "set_name": "Dark Portal Crusader",
+      "key": "DarkPortalCrusader",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Paladin/ClassArmor_Paladin_L80_DarkPortalCrusader.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Paladin/ClassArmor_Paladin_L80_DarkPortalCrusader.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Paladin/ClassArmor_Paladin_L80_DarkPortalCrusader.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Paladin/ClassArmor_Paladin_L80_DarkPortalCrusader.png",
+      "source_sheet": "armoured_paladin_with_glowing_symbols.png",
+      "icon_crop": [
+        867,
+        279,
+        1354,
+        766
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Paladin",
+      "level": 100,
+      "set_name": "Ashbringer Ascendant",
+      "key": "AshbringerAscendant",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Paladin/ClassArmor_Paladin_L100_AshbringerAscendant.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Paladin/ClassArmor_Paladin_L100_AshbringerAscendant.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Paladin/ClassArmor_Paladin_L100_AshbringerAscendant.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Paladin/ClassArmor_Paladin_L100_AshbringerAscendant.png",
+      "source_sheet": "radiant_knight_of_the_sun.png",
+      "icon_crop": [
+        867,
+        279,
+        1353,
+        767
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Priest",
+      "level": 20,
+      "set_name": "Candlelight Vestments",
+      "key": "CandlelightVestments",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Priest/ClassArmor_Priest_L20_CandlelightVestments.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Priest/ClassArmor_Priest_L20_CandlelightVestments.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Priest/ClassArmor_Priest_L20_CandlelightVestments.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Priest/ClassArmor_Priest_L20_CandlelightVestments.png",
+      "source_sheet": "holy_cleric_with_ornate_staff_and_book.png",
+      "icon_crop": [
+        867,
+        277,
+        1363,
+        774
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Priest",
+      "level": 40,
+      "set_name": "Anchorite's Grace",
+      "key": "AnchoritesGrace",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Priest/ClassArmor_Priest_L40_AnchoritesGrace.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Priest/ClassArmor_Priest_L40_AnchoritesGrace.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Priest/ClassArmor_Priest_L40_AnchoritesGrace.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Priest/ClassArmor_Priest_L40_AnchoritesGrace.png",
+      "source_sheet": "ornate_hero_in_gold_and_blue.png",
+      "icon_crop": [
+        866,
+        277,
+        1365,
+        776
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Priest",
+      "level": 60,
+      "set_name": "Shattrath Lightweaver",
+      "key": "ShattrathLightweaver",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Priest/ClassArmor_Priest_L60_ShattrathLightweaver.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Priest/ClassArmor_Priest_L60_ShattrathLightweaver.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Priest/ClassArmor_Priest_L60_ShattrathLightweaver.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Priest/ClassArmor_Priest_L60_ShattrathLightweaver.png",
+      "source_sheet": "fantasy_templar_hero_with_glowing_staff.png",
+      "icon_crop": [
+        865,
+        276,
+        1366,
+        777
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Priest",
+      "level": 80,
+      "set_name": "Voidbound Confessor",
+      "key": "VoidboundConfessor",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Priest/ClassArmor_Priest_L80_VoidboundConfessor.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Priest/ClassArmor_Priest_L80_VoidboundConfessor.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Priest/ClassArmor_Priest_L80_VoidboundConfessor.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Priest/ClassArmor_Priest_L80_VoidboundConfessor.png",
+      "source_sheet": "arcane_mage_with_glowing_crystal_accents.png",
+      "icon_crop": [
+        864,
+        276,
+        1359,
+        775
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Priest",
+      "level": 100,
+      "set_name": "Prophet of the Naaru",
+      "key": "ProphetoftheNaaru",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Priest/ClassArmor_Priest_L100_ProphetoftheNaaru.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Priest/ClassArmor_Priest_L100_ProphetoftheNaaru.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Priest/ClassArmor_Priest_L100_ProphetoftheNaaru.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Priest/ClassArmor_Priest_L100_ProphetoftheNaaru.png",
+      "source_sheet": "holy_mage_paladin_character_design.png",
+      "icon_crop": [
+        864,
+        278,
+        1363,
+        779
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Ranger",
+      "level": 20,
+      "set_name": "Wildwood Tracker",
+      "key": "WildwoodTracker",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Ranger/ClassArmor_Ranger_L20_WildwoodTracker.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Ranger/ClassArmor_Ranger_L20_WildwoodTracker.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Ranger/ClassArmor_Ranger_L20_WildwoodTracker.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Ranger/ClassArmor_Ranger_L20_WildwoodTracker.png",
+      "source_sheet": "fantasy_ranger_character_concept_art.png",
+      "icon_crop": [
+        870,
+        276,
+        1368,
+        779
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Ranger",
+      "level": 40,
+      "set_name": "Farstrider Battlegear",
+      "key": "FarstriderBattlegear",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Ranger/ClassArmor_Ranger_L40_FarstriderBattlegear.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Ranger/ClassArmor_Ranger_L40_FarstriderBattlegear.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Ranger/ClassArmor_Ranger_L40_FarstriderBattlegear.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Ranger/ClassArmor_Ranger_L40_FarstriderBattlegear.png",
+      "source_sheet": "elven_ranger_in_armour_design.png",
+      "icon_crop": [
+        869,
+        276,
+        1368,
+        778
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Ranger",
+      "level": 60,
+      "set_name": "Zangarmarsh Stalker",
+      "key": "ZangarmarshStalker",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Ranger/ClassArmor_Ranger_L60_ZangarmarshStalker.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Ranger/ClassArmor_Ranger_L60_ZangarmarshStalker.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Ranger/ClassArmor_Ranger_L60_ZangarmarshStalker.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Ranger/ClassArmor_Ranger_L60_ZangarmarshStalker.png",
+      "source_sheet": "ranger_of_the_glowing_forest.png",
+      "icon_crop": [
+        869,
+        277,
+        1366,
+        778
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Ranger",
+      "level": 80,
+      "set_name": "Frostwolf Huntmaster",
+      "key": "FrostwolfHuntmaster",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Ranger/ClassArmor_Ranger_L80_FrostwolfHuntmaster.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Ranger/ClassArmor_Ranger_L80_FrostwolfHuntmaster.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Ranger/ClassArmor_Ranger_L80_FrostwolfHuntmaster.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Ranger/ClassArmor_Ranger_L80_FrostwolfHuntmaster.png",
+      "source_sheet": "epic_hunter_warrior_in_pixel_art.png",
+      "icon_crop": [
+        869,
+        276,
+        1368,
+        778
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Ranger",
+      "level": 100,
+      "set_name": "Beastlord of Outland",
+      "key": "BeastlordofOutland",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Ranger/ClassArmor_Ranger_L100_BeastlordofOutland.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Ranger/ClassArmor_Ranger_L100_BeastlordofOutland.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Ranger/ClassArmor_Ranger_L100_BeastlordofOutland.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Ranger/ClassArmor_Ranger_L100_BeastlordofOutland.png",
+      "source_sheet": "rugged_ranger_in_dark_fantasy_style.png",
+      "icon_crop": [
+        869,
+        276,
+        1367,
+        777
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Rogue",
+      "level": 20,
+      "set_name": "Gloomstep Leathers",
+      "key": "GloomstepLeathers",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Rogue/ClassArmor_Rogue_L20_GloomstepLeathers.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Rogue/ClassArmor_Rogue_L20_GloomstepLeathers.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Rogue/ClassArmor_Rogue_L20_GloomstepLeathers.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Rogue/ClassArmor_Rogue_L20_GloomstepLeathers.png",
+      "source_sheet": "pixel_art_fantasy_rogue_character_design.png",
+      "icon_crop": [
+        868,
+        274,
+        1368,
+        776
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Rogue",
+      "level": 40,
+      "set_name": "Nightblade Disguise",
+      "key": "NightbladeDisguise",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Rogue/ClassArmor_Rogue_L40_NightbladeDisguise.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Rogue/ClassArmor_Rogue_L40_NightbladeDisguise.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Rogue/ClassArmor_Rogue_L40_NightbladeDisguise.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Rogue/ClassArmor_Rogue_L40_NightbladeDisguise.png",
+      "source_sheet": "rogue_assassin_character_portrait_and_sprite.png",
+      "icon_crop": [
+        871,
+        276,
+        1372,
+        778
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Rogue",
+      "level": 60,
+      "set_name": "Netherknife Harness",
+      "key": "NetherknifeHarness",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Rogue/ClassArmor_Rogue_L60_NetherknifeHarness.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Rogue/ClassArmor_Rogue_L60_NetherknifeHarness.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Rogue/ClassArmor_Rogue_L60_NetherknifeHarness.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Rogue/ClassArmor_Rogue_L60_NetherknifeHarness.png",
+      "source_sheet": "warrior_rogue_with_glowing_accents.png",
+      "icon_crop": [
+        873,
+        275,
+        1373,
+        777
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Rogue",
+      "level": 80,
+      "set_name": "ZLR Arena Assassin",
+      "key": "ZLRArenaAssassin",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Rogue/ClassArmor_Rogue_L80_ZLRArenaAssassin.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Rogue/ClassArmor_Rogue_L80_ZLRArenaAssassin.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Rogue/ClassArmor_Rogue_L80_ZLRArenaAssassin.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Rogue/ClassArmor_Rogue_L80_ZLRArenaAssassin.png",
+      "source_sheet": "rogue_warrior_on_the_battlefield.png",
+      "icon_crop": [
+        868,
+        274,
+        1367,
+        774
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Rogue",
+      "level": 100,
+      "set_name": "Shadow of Karazhan",
+      "key": "ShadowofKarazhan",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Rogue/ClassArmor_Rogue_L100_ShadowofKarazhan.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Rogue/ClassArmor_Rogue_L100_ShadowofKarazhan.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Rogue/ClassArmor_Rogue_L100_ShadowofKarazhan.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Rogue/ClassArmor_Rogue_L100_ShadowofKarazhan.png",
+      "source_sheet": "arcane_rogue_warrior_portrait_and_icon.png",
+      "icon_crop": [
+        871,
+        274,
+        1368,
+        777
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Warlock",
+      "level": 20,
+      "set_name": "Sootbound Raiment",
+      "key": "SootboundRaiment",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Warlock/ClassArmor_Warlock_L20_SootboundRaiment.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Warlock/ClassArmor_Warlock_L20_SootboundRaiment.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Warlock/ClassArmor_Warlock_L20_SootboundRaiment.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Warlock/ClassArmor_Warlock_L20_SootboundRaiment.png",
+      "source_sheet": "heroic_mage_in_dark_fantasy_attire.png",
+      "icon_crop": [
+        842,
+        271,
+        1309,
+        748
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Warlock",
+      "level": 40,
+      "set_name": "Shadow Council Vestments",
+      "key": "ShadowCouncilVestments",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Warlock/ClassArmor_Warlock_L40_ShadowCouncilVestments.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Warlock/ClassArmor_Warlock_L40_ShadowCouncilVestments.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Warlock/ClassArmor_Warlock_L40_ShadowCouncilVestments.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Warlock/ClassArmor_Warlock_L40_ShadowCouncilVestments.png",
+      "source_sheet": "sinister_sorcerer_in_purple_and_gold.png",
+      "icon_crop": [
+        838,
+        294,
+        1355,
+        791
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Warlock",
+      "level": 60,
+      "set_name": "Felheart Reborn",
+      "key": "FelheartReborn",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Warlock/ClassArmor_Warlock_L60_FelheartReborn.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Warlock/ClassArmor_Warlock_L60_FelheartReborn.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Warlock/ClassArmor_Warlock_L60_FelheartReborn.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Warlock/ClassArmor_Warlock_L60_FelheartReborn.png",
+      "source_sheet": "dark_sorcerer_with_glowing_magic.png",
+      "icon_crop": [
+        825,
+        238,
+        1375,
+        825
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Warlock",
+      "level": 80,
+      "set_name": "Dark Portal Soulbinder",
+      "key": "DarkPortalSoulbinder",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Warlock/ClassArmor_Warlock_L80_DarkPortalSoulbinder.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Warlock/ClassArmor_Warlock_L80_DarkPortalSoulbinder.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Warlock/ClassArmor_Warlock_L80_DarkPortalSoulbinder.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Warlock/ClassArmor_Warlock_L80_DarkPortalSoulbinder.png",
+      "source_sheet": "epic_warlock_mage_character_design.png",
+      "icon_crop": [
+        825,
+        238,
+        1375,
+        825
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Warlock",
+      "level": 100,
+      "set_name": "Lord of the Burning Rift",
+      "key": "LordoftheBurningRift",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Warlock/ClassArmor_Warlock_L100_LordoftheBurningRift.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Warlock/ClassArmor_Warlock_L100_LordoftheBurningRift.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Warlock/ClassArmor_Warlock_L100_LordoftheBurningRift.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Warlock/ClassArmor_Warlock_L100_LordoftheBurningRift.png",
+      "source_sheet": "demonic_fantasy_creature_character_sheet.png",
+      "icon_crop": [
+        829,
+        257,
+        1363,
+        803
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Warrior",
+      "level": 20,
+      "set_name": "Ironhide Battlegear",
+      "key": "IronhideBattlegear",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Warrior/ClassArmor_Warrior_L20_IronhideBattlegear.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Warrior/ClassArmor_Warrior_L20_IronhideBattlegear.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Warrior/ClassArmor_Warrior_L20_IronhideBattlegear.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Warrior/ClassArmor_Warrior_L20_IronhideBattlegear.png",
+      "source_sheet": "pixel_art_fantasy_warrior_portrait_and_figure.png",
+      "icon_crop": [
+        873,
+        280,
+        1365,
+        775
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Warrior",
+      "level": 40,
+      "set_name": "Warsong Vanguard",
+      "key": "WarsongVanguard",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Warrior/ClassArmor_Warrior_L40_WarsongVanguard.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Warrior/ClassArmor_Warrior_L40_WarsongVanguard.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Warrior/ClassArmor_Warrior_L40_WarsongVanguard.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Warrior/ClassArmor_Warrior_L40_WarsongVanguard.png",
+      "source_sheet": "heroic_knight_in_pixel_art_style.png",
+      "icon_crop": [
+        875,
+        278,
+        1364,
+        772
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Warrior",
+      "level": 60,
+      "set_name": "Hellfire Juggernaut",
+      "key": "HellfireJuggernaut",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Warrior/ClassArmor_Warrior_L60_HellfireJuggernaut.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Warrior/ClassArmor_Warrior_L60_HellfireJuggernaut.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Warrior/ClassArmor_Warrior_L60_HellfireJuggernaut.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Warrior/ClassArmor_Warrior_L60_HellfireJuggernaut.png",
+      "source_sheet": "warrior_of_the_molten_forge.png",
+      "icon_crop": [
+        880,
+        277,
+        1367,
+        765
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Warrior",
+      "level": 80,
+      "set_name": "Q3A Bloodsteel",
+      "key": "Q3ABloodsteel",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Warrior/ClassArmor_Warrior_L80_Q3ABloodsteel.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Warrior/ClassArmor_Warrior_L80_Q3ABloodsteel.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Warrior/ClassArmor_Warrior_L80_Q3ABloodsteel.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Warrior/ClassArmor_Warrior_L80_Q3ABloodsteel.png",
+      "source_sheet": "armoured_warrior_with_spiked_axe.png",
+      "icon_crop": [
+        871,
+        276,
+        1365,
+        770
+      ],
+      "status": "complete"
+    },
+    {
+      "class": "Warrior",
+      "level": 100,
+      "set_name": "Warlord of the Black Temple",
+      "key": "WarlordoftheBlackTemple",
+      "icon_tga": "Media/Games/DungeonDwellers/ClassArmor/Icons/Warrior/ClassArmor_Warrior_L100_WarlordoftheBlackTemple.tga",
+      "fullbody_tga": "Media/Games/DungeonDwellers/ClassArmor/FullBody/Warrior/ClassArmor_Warrior_L100_WarlordoftheBlackTemple.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/Icons/Warrior/ClassArmor_Warrior_L100_WarlordoftheBlackTemple.png",
+      "fullbody_png": "Source_PNG/Games/DungeonDwellers/ClassArmor/FullBody/Warrior/ClassArmor_Warrior_L100_WarlordoftheBlackTemple.png",
+      "source_sheet": "demonic_warrior_in_ornate_armor.png",
+      "icon_crop": [
+        879,
+        279,
+        1366,
+        772
+      ],
+      "status": "complete"
+    }
+  ],
+  "chests": [
+    {
+      "level": 20,
+      "name": "Level 20 Milestone Chest",
+      "key": "Level20MilestoneChest",
+      "icon_tga": "Media/Games/DungeonDwellers/Chests/Icons/Chest_L20_Level20MilestoneChest.tga",
+      "display_tga": "Media/Games/DungeonDwellers/Chests/Display/Chest_L20_Level20MilestoneChest.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Chests/Icons/Chest_L20_Level20MilestoneChest.png",
+      "display_png": "Source_PNG/Games/DungeonDwellers/Chests/Display/Chest_L20_Level20MilestoneChest.png",
+      "source_sheet": "fantasy_treasure_chest_art_showcase.png",
+      "icon_crop": [
+        825,
+        238,
+        1375,
+        825
+      ],
+      "status": "complete"
+    },
+    {
+      "level": 40,
+      "name": "Level 40 Milestone Chest",
+      "key": "Level40MilestoneChest",
+      "icon_tga": "Media/Games/DungeonDwellers/Chests/Icons/Chest_L40_Level40MilestoneChest.tga",
+      "display_tga": "Media/Games/DungeonDwellers/Chests/Display/Chest_L40_Level40MilestoneChest.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Chests/Icons/Chest_L40_Level40MilestoneChest.png",
+      "display_png": "Source_PNG/Games/DungeonDwellers/Chests/Display/Chest_L40_Level40MilestoneChest.png",
+      "source_sheet": "treasure_chest_with_glowing_runes.png",
+      "icon_crop": [
+        825,
+        238,
+        1375,
+        825
+      ],
+      "status": "complete"
+    },
+    {
+      "level": 60,
+      "name": "Level 60 Milestone Chest",
+      "key": "Level60MilestoneChest",
+      "icon_tga": "Media/Games/DungeonDwellers/Chests/Icons/Chest_L60_Level60MilestoneChest.tga",
+      "display_tga": "Media/Games/DungeonDwellers/Chests/Display/Chest_L60_Level60MilestoneChest.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Chests/Icons/Chest_L60_Level60MilestoneChest.png",
+      "display_png": "Source_PNG/Games/DungeonDwellers/Chests/Display/Chest_L60_Level60MilestoneChest.png",
+      "source_sheet": "ornate_fantasy_treasure_chest_design.png",
+      "icon_crop": [
+        825,
+        238,
+        1375,
+        825
+      ],
+      "status": "complete"
+    },
+    {
+      "level": 80,
+      "name": "Level 80 Milestone Chest",
+      "key": "Level80MilestoneChest",
+      "icon_tga": "Media/Games/DungeonDwellers/Chests/Icons/Chest_L80_Level80MilestoneChest.tga",
+      "display_tga": "Media/Games/DungeonDwellers/Chests/Display/Chest_L80_Level80MilestoneChest.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Chests/Icons/Chest_L80_Level80MilestoneChest.png",
+      "display_png": "Source_PNG/Games/DungeonDwellers/Chests/Display/Chest_L80_Level80MilestoneChest.png",
+      "source_sheet": "ornate_enchanted_treasure_chest_display.png",
+      "icon_crop": [
+        825,
+        238,
+        1375,
+        825
+      ],
+      "status": "complete"
+    },
+    {
+      "level": 100,
+      "name": "Level 100 Milestone Chest",
+      "key": "Level100MilestoneChest",
+      "icon_tga": "Media/Games/DungeonDwellers/Chests/Icons/Chest_L100_Level100MilestoneChest.tga",
+      "display_tga": "Media/Games/DungeonDwellers/Chests/Display/Chest_L100_Level100MilestoneChest.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/Chests/Icons/Chest_L100_Level100MilestoneChest.png",
+      "display_png": "Source_PNG/Games/DungeonDwellers/Chests/Display/Chest_L100_Level100MilestoneChest.png",
+      "source_sheet": "ornate_fantasy_treasure_chest_close_up.png",
+      "icon_crop": [
+        825,
+        238,
+        1375,
+        825
+      ],
+      "status": "complete"
+    }
+  ],
+  "rewardIcons": [
+    {
+      "key": "DamageRelic",
+      "name": "Damage Relic",
+      "icon_tga": "Media/Games/DungeonDwellers/RewardIcons/Icons/RewardIcon_DamageRelic.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/RewardIcons/Icons/RewardIcon_DamageRelic.png",
+      "source_image": "fiery_shard_of_ancient_power.png",
+      "status": "complete"
+    },
+    {
+      "key": "CreshCoinCache",
+      "name": "Cresh Coin Cache",
+      "icon_tga": "Media/Games/DungeonDwellers/RewardIcons/Icons/RewardIcon_CreshCoinCache.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/RewardIcons/Icons/RewardIcon_CreshCoinCache.png",
+      "source_image": "golden_treasure_pouch_icon.png",
+      "status": "complete"
+    },
+    {
+      "key": "PortraitToken",
+      "name": "Portrait Token",
+      "icon_tga": "Media/Games/DungeonDwellers/RewardIcons/Icons/RewardIcon_PortraitToken.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/RewardIcons/Icons/RewardIcon_PortraitToken.png",
+      "source_image": "golden_medallion_with_warrior_portrait.png",
+      "status": "complete"
+    },
+    {
+      "key": "FullBodyToken",
+      "name": "Full-Body Token",
+      "icon_tga": "Media/Games/DungeonDwellers/RewardIcons/Icons/RewardIcon_FullBodyToken.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/RewardIcons/Icons/RewardIcon_FullBodyToken.png",
+      "source_image": "glowing_knight_emblem_with_ornate_gems.png",
+      "status": "complete"
+    },
+    {
+      "key": "ArmourChoiceToken",
+      "name": "Armour Choice Token",
+      "icon_tga": "Media/Games/DungeonDwellers/RewardIcons/Icons/RewardIcon_ArmourChoiceToken.tga",
+      "icon_png": "Source_PNG/Games/DungeonDwellers/RewardIcons/Icons/RewardIcon_ArmourChoiceToken.png",
+      "source_image": "ornate_fantasy_crest_with_glowing_gems.png",
+      "status": "complete"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+CreshChat v0.3.61 mocked UI and runtime audit
+
+Constructed successfully:
+- Main solo games window
+- Solo Tetris view
+- Dungeon Dweller view
+- Multiplayer game window
+- Multiplayer Tetris view
+
+Runtime checks completed:
+- Solo Timed Endless started with a 10-minute duration.
+- Solo VS CPU switched from Timed Endless to Endless Attack.
+- Multiplayer Timed Endless started with a 10-minute duration.
+- Multiplayer Endless Attack accepted one incoming garbage row after the active piece was cleared without setting gameOver or ending the match.
+- Dungeon attack button remained shown.
+- Dungeon dice card measured 190 x 100 and uses equal 32 x 32 party/enemy die frames.
+- Tetris reveal state advanced at 10 lines, unlocked the first background at 100 lines, played the reveal effect and advanced to the next background.
+- All 20 textured themes were stepped through the solo reveal rotation in a Lua runtime test; each unlocked at 100 lines and the final rotation returned to the selected default background.
+- Dungeon attack control remains shown and mouse-enabled in guarded non-combat states.

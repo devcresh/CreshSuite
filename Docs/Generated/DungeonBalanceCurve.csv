@@ -1,0 +1,14 @@
+level,normal_hp,normal_attack,boss_base_hp,boss_base_attack,boss_key,boss_name,boss_final_hp,boss_final_attack
+1,6,1,17,2,,,,
+5,12,1,29,2,,,,
+10,21,2,49,3,KING_CANDLEWICK,King Candlewick,108,5
+20,40,4,91,6,GNARLFANG_PACKLORD,Gnarlfang the Packlord,214,8
+40,87,9,193,12,ZARISS_COIL_QUEEN,Zariss the Coil Queen,492,15
+60,146,16,319,20,STORMTALON_MATRIARCH,Stormtalon Matriarch,877,23
+80,216,23,467,29,AZARAK_WEB_TYRANT,Azarak the Web Tyrant,1401,33
+100,297,32,637,39,EMPEROR_BLACKFUSE,Emperor Blackfuse,2070,44
+120,392,43,835,51,HIGH_SEER_SKYREND,High Seer Skyrend,2839,56
+150,564,63,1191,73,GORVAK_UNCHAINED,Gorvak the Unchained,4347,79
+200,931,103,1945,117,CATS_MASTER_BASE,"CATS, Master of the Base",8266,125
+250,1397,151,2897,168,GRUMBAR_EARTHBREAKER,Grumbar Earthbreaker,7822,171
+300,1962,207,4047,227,EMPEROR_BLACKFUSE,Emperor Blackfuse,13153,232

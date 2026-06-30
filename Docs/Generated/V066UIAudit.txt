@@ -1,0 +1,13 @@
+CreshChat v0.3.66 Tetris UI audit
+
+PASS
+
+- Reveal artwork: BACKGROUND base art at sublevel -8; ten reveal strips on BORDER sublevel 1; grid cells and pieces remain on ARTWORK/OVERLAY.
+- Solo Timed Endless: Score, Lines, Speed and Time/Mode cards, reveal progress, next-piece box and bottom control strip.
+- VS CPU: dual 196x380 boards with a responsive centre information column, comparison card, CPU format/level controls and bottom control strip.
+- Background gallery: eight 164x196 cards per page, four columns by two rows, All/Unlocked/Locked filter and paging controls.
+- Multiplayer: two 180x340 boards, graphical versus card, line bars, reveal panel, mode status and bottom control strip.
+- Mode coverage: solo Timed Endless, CPU Timed Endless, CPU Endless Attack, multiplayer Timed Endless and multiplayer Endless Attack.
+- Default window dimensions and anchors leave the controls below gameplay information without covering either board.
+
+Final in-client inspection remains recommended at multiple UI scales.

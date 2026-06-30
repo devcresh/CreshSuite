@@ -1,0 +1,42 @@
+{
+  "version": "0.3.67-account-friends-alt-chat",
+  "schema": 63,
+  "passed": true,
+  "lua_files": 22,
+  "parser": "luaparser 4.0.1",
+  "compiler": "Lua load() via lupa 2.8",
+  "toc_entries": 22,
+  "toc_missing": [],
+  "toc_duplicates": [],
+  "assets": {
+    "tga_files": 782,
+    "ogg_files": 144,
+    "uncompressed_32_bit_tga": 782,
+    "tga_errors": []
+  },
+  "runtime_tests": {
+    "outgoing_character_immediate": true,
+    "outgoing_character_reconciles_without_duplicate": true,
+    "outgoing_battlenet_immediate": true,
+    "outgoing_battlenet_reconciles_without_duplicate": true,
+    "account_friend_survives_alt_roster_change": true,
+    "account_remove_tombstone_blocks_reimport": true,
+    "manual_readd_clears_tombstone": true,
+    "short_and_realm_friend_names_dedupe": true,
+    "bnet_main_alt_routes": [
+      "B.NET",
+      "MAIN",
+      "ALT"
+    ]
+  },
+  "preserved_systems": [
+    "Tetris reveal UI",
+    "70 Tetris backgrounds",
+    "Dungeon Collection",
+    "Dungeon Dwellers Battle Pass",
+    "main Battle Pass",
+    "notification hub",
+    "account-wide direct conversations"
+  ],
+  "known_constraint": "Automatic main/alt grouping requires a Battle.net presence link; arbitrary character-only friends expose no account identity."
+}

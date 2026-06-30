@@ -1,0 +1,45 @@
+{
+  "build": "0.3.84-live-chat-whisper-routing",
+  "schema": 74,
+  "interface": 20505,
+  "result": "PASS_STATIC_AND_MOCK",
+  "checks": {
+    "luaModulesParsed": 25,
+    "parseErrors": 0,
+    "assertionsPassed": 21,
+    "assertionsTotal": 21,
+    "tocLuaEntries": 25,
+    "tocMissingEntries": [],
+    "preservedFeatureModules": 11,
+    "preservedFeatureModulesExpected": 11,
+    "runtimeMockPass": true,
+    "runtimeMockOutput": "RUNTIME_MOCK_PASS\nguild 2 general 5 whispers 1"
+  },
+  "assertions": {
+    "core version": true,
+    "toc version": true,
+    "schema 74": true,
+    "migration 74": true,
+    "direct chat events": true,
+    "retryable filters": true,
+    "retryable message bridge": true,
+    "world-entry bridge retry": true,
+    "system filter registered": true,
+    "localized player-not-found match": true,
+    "inline failed whisper": true,
+    "other system route preserved": true,
+    "immediate live refresh": true,
+    "guild live refresh": true,
+    "general tab live refresh": true,
+    "unit popup target cache": true,
+    "cross realm unit target": true,
+    "native send tell redirect": true,
+    "unit popup click redirect": true,
+    "redirect retry timers": true,
+    "notification setting": true
+  },
+  "errors": [],
+  "limitations": [
+    "A live TBC Anniversary client is still required to validate Blizzard server chat delivery and protected unit-menu behaviour."
+  ]
+}

@@ -1,0 +1,16 @@
+CreshChat v0.3.84 Live Chat Audit
+
+CAPTURE
+- Direct registered CHAT_MSG_* events remain primary.
+- Filters, ChatFrame_MessageEventHandler and ChatFrame_OnEvent are retryable backup routes.
+- Visible CreshChat views refresh immediately before broader UI/roster refreshes.
+- Duplicate routes reconcile through line ID/time-bucket de-duplication.
+
+SYSTEM MESSAGE
+- Only unavailable-player whisper lines are suppressed.
+- The outgoing CreshChat row remains and is marked failed.
+- Other CHAT_MSG_SYSTEM and UI_INFO_MESSAGE events remain visible.
+
+UNIT MENU WHISPER
+- Native Whisper actions from player/target/party/raid unit menus open CreshChat.
+- Full cross-realm names are preferred and dropdown context is cached.

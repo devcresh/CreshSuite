@@ -1,0 +1,37 @@
+## Interface: 20505
+## Title: CreshChat
+## Notes: Compact TBC Anniversary chat, games, progression, themes, voice calls and collectible media.
+## Author: creshor
+## Version: 0.2.2
+## SavedVariables: CreshChatDB
+
+Core.lua
+FeatureManager.lua
+ProgressRouter.lua
+SoundLibrary.lua
+Quest.lua
+Friends.lua
+Voice.lua
+Themes.lua
+CardDeckLibrary.lua
+CardDecks.lua
+UI.lua
+ChessTextureManifest.lua
+DungeonDwellersAssetSets.lua
+DungeonCrawlerContent.lua
+TetrisThemes.lua
+Games.lua
+SoloGames.lua
+BattlePass.lua
+DungeonDwellersProgression.lua
+Progression.lua
+Achievements.lua
+AchievementExpansion.lua
+ClassAchievements.lua
+DungeonAchievements.lua
+CombatTracker.lua
+ProgressHub.lua
+GameAudio.lua
+Quality.lua
+Developer.lua
+Settings.lua

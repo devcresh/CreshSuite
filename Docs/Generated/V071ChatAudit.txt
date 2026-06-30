@@ -1,0 +1,27 @@
+CreshChat v0.3.71 Chat Audit
+
+CAPTURE
+- Primary: direct registered CHAT_MSG_* events.
+- Backup: non-suppressing ChatFrame filter, ChatFrame_MessageEventHandler and ChatFrame_OnEvent hooks.
+- De-duplication: Blizzard line ID, with short time-bucket fallback.
+- Error isolation: protected event and UI dispatch.
+- Safety: native Blizzard chat restored after three consecutive processing failures.
+
+ROUTING
+- Direct account store: character whispers and Battle.net whispers, kept as separate namespaces.
+- Guild store: Guild and Officer.
+- General/activity store: Party, Raid, Instance, Battleground, Say, Yell, Emote, channels, NPC/boss, loot/economy/progression and system messages.
+- Filtered Party/Raid/Instance/etc. views use the same General history.
+
+OUTGOING
+- Pending row is inserted before the Blizzard send call.
+- Matching outgoing event marks the row delivered.
+- Failure leaves a visible failed row with a failure reason.
+
+SOCIAL
+- Character roster synchronises on login, world entry and FRIENDLIST_UPDATE without opening Friends.
+- Account directory is the union of observed alt rosters.
+- Battle.net stable identity is cached; numeric sending routes are reset each login and rebuilt live.
+
+MOCK RUNTIME RESULT: PASS
+In-client two-account testing remains recommended.

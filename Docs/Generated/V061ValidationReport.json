@@ -1,0 +1,78 @@
+{
+  "build": "0.3.61-tetris-reveal-dungeon-ui",
+  "schema": 57,
+  "protocol": 4,
+  "lua_files_parsed": 21,
+  "tga_files_checked": 732,
+  "invalid_tga_files": [],
+  "tetris_backgrounds": 20,
+  "dice_textures": 9,
+  "generated_tetris_sounds": [
+    {
+      "file": "tetris_line_clear.ogg",
+      "bytes": 6315,
+      "sample_rate": 44100,
+      "channels": 1,
+      "duration": 0.42
+    },
+    {
+      "file": "tetris_line_clear_v25.ogg",
+      "bytes": 6036,
+      "sample_rate": 44100,
+      "channels": 1,
+      "duration": 0.42
+    },
+    {
+      "file": "tetris_line_clear_v50.ogg",
+      "bytes": 6241,
+      "sample_rate": 44100,
+      "channels": 1,
+      "duration": 0.42
+    },
+    {
+      "file": "tetris_line_clear_v75.ogg",
+      "bytes": 6294,
+      "sample_rate": 44100,
+      "channels": 1,
+      "duration": 0.42
+    },
+    {
+      "file": "tetris_reveal.ogg",
+      "bytes": 9894,
+      "sample_rate": 44100,
+      "channels": 1,
+      "duration": 1.149977
+    },
+    {
+      "file": "tetris_reveal_v25.ogg",
+      "bytes": 9181,
+      "sample_rate": 44100,
+      "channels": 1,
+      "duration": 1.149977
+    },
+    {
+      "file": "tetris_reveal_v50.ogg",
+      "bytes": 9669,
+      "sample_rate": 44100,
+      "channels": 1,
+      "duration": 1.149977
+    },
+    {
+      "file": "tetris_reveal_v75.ogg",
+      "bytes": 9837,
+      "sample_rate": 44100,
+      "channels": 1,
+      "duration": 1.149977
+    }
+  ],
+  "static_assertions": {
+    "race_controls_removed": true,
+    "timed_endless_present_solo_multiplayer": true,
+    "endless_attack_present_cpu_multiplayer": true,
+    "garbage_applied_after_piece_clear": true,
+    "attack_button_persistent": true,
+    "reveal_progression_registered": true,
+    "all_20_textured_themes_revealable": true,
+    "attack_button_mouse_enabled": true
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "boss": "ZLR Arena Overlord",
+  "asset_key": "ZLRArenaOverlord",
+  "source": "/mnt/data/image.png",
+  "source_size": [
+    1672,
+    941
+  ],
+  "icon": {
+    "path": "Media/Games/DungeonDwellers/Bosses/Icons/ZLRArenaOverlord.tga",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "crop": [
+      1003,
+      207,
+      518,
+      518
+    ]
+  },
+  "full_body": {
+    "path": "Media/Games/DungeonDwellers/Bosses/FullBody/ZLRArenaOverlord.tga",
+    "size": [
+      256,
+      512
+    ],
+    "mode": "RGBA",
+    "source_crop": [
+      0,
+      0,
+      969,
+      941
+    ]
+  },
+  "remaining_confirmed_placeholder_files": 38
+}

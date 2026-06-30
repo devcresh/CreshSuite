@@ -1,0 +1,74 @@
+{
+  "enemy_roster": {
+    "status": "complete",
+    "missing_count": 0
+  },
+  "current_class_armor": {
+    "status": "complete",
+    "complete_classes": [
+      "Paladin",
+      "Warrior",
+      "Rogue",
+      "Ranger",
+      "Mage",
+      "Priest",
+      "Warlock",
+      "Defender"
+    ],
+    "missing_set_count": 0,
+    "missing_texture_count": 0
+  },
+  "future_class_armor": {
+    "missing_classes": {
+      "Druid": [
+        "Moonbark Raiment",
+        "Cenarion Wildguard",
+        "Zangarmarsh Dreamer",
+        "Emerald Shapewarden",
+        "Archdruid of the Twisting Nether"
+      ],
+      "Shaman": [
+        "Stonecaller Mail",
+        "Earthen Ring Regalia",
+        "Stormforged Elements",
+        "Elemental Arena Champion",
+        "Farseer of the Broken World"
+      ]
+    },
+    "missing_set_count": 10,
+    "missing_texture_count": 20
+  },
+  "chests": {
+    "status": "complete",
+    "complete_levels": [
+      20,
+      40,
+      60,
+      80,
+      100
+    ],
+    "asset_count": 10
+  },
+  "reward_icons": {
+    "status": "complete",
+    "complete": [
+      "Damage Relic",
+      "Cresh Coin Cache",
+      "Portrait Token",
+      "Full-Body Token",
+      "Armour Choice Token"
+    ],
+    "asset_count": 5
+  },
+  "not_imported_reference_or_loose_images": [
+    "a_clean_graphic_showcase_poster_sprite_sheet_lay.png",
+    "a_dark_game_asset_sheet_infographic_style_image_o.png",
+    "a_clean_game_asset_showcase_sheet_ui_style_poste.png",
+    "a_game_sprite_sheet_concept_art_showcase_image_w.png",
+    "a_high_detail_game_asset_sheet_style_image_with_a.png",
+    "a_wide_game_asset_promotional_sheet_style_image.png",
+    "storm_bringer_shaman_with_lightning_power.png",
+    "shamanic_aquatic_creature_character_sheet.png",
+    "spectral_necromancer_with_spirit_orb.png"
+  ]
+}

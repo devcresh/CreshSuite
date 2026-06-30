@@ -1,0 +1,14 @@
+{
+  "deck_count": 7,
+  "standard_card_count": 364,
+  "joker_count": 14,
+  "card_back_count": 7,
+  "deck_icon_count": 7,
+  "locked_icon_count": 7,
+  "total_tga_textures": 399,
+  "all_tga_rgba": true,
+  "all_dimensions_power_of_two": true,
+  "all_tga_uncompressed_true_colour": true,
+  "all_tga_32_bit": true,
+  "errors": []
+}

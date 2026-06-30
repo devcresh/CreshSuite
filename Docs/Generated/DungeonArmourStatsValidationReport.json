@@ -1,0 +1,43 @@
+{
+  "build": "0.3.56-dungeon-texture-pack",
+  "schema": 55,
+  "armour_sets": 50,
+  "active_sets": 40,
+  "reserved_sets": 10,
+  "unique_stat_profiles": 50,
+  "all_profiles_unique": true,
+  "effect_usage": {
+    "attack": 8,
+    "bleedChance": 11,
+    "bleedDamage": 11,
+    "bleedTurns": 11,
+    "blockAmount": 4,
+    "blockChance": 5,
+    "bossDamage": 3,
+    "doubleDamageChance": 16,
+    "evadeChance": 6,
+    "extraDice": 13,
+    "extraDieChance": 8,
+    "extraDiePower": 19,
+    "flatBlock": 5,
+    "maxHP": 19,
+    "minionBonus": 5,
+    "regenRoom": 7,
+    "regenTurn": 11
+  },
+  "selector_rows": 5,
+  "equipped_per_class": true,
+  "artwork_applied_when_equipped": true,
+  "fresh_run_on_equip": true,
+  "runtime_tests": {
+    "ui_constructed": true,
+    "max_hp_and_attack": true,
+    "extra_dice": true,
+    "double_damage": true,
+    "bleed_application_and_tick": true,
+    "turn_regeneration": true,
+    "flat_block_and_regeneration": true
+  },
+  "issues": [],
+  "valid": true
+}
