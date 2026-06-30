@@ -382,6 +382,7 @@ events:SetScript("OnEvent", function(_, event)
 end)
 
 events:SetScript("OnUpdate", function(_, elapsed)
+    if not CC:IsFeatureEnabled("worldProgression") then return end
     Progression.elapsed = (Progression.elapsed or 0) + (elapsed or 0)
     if Progression.elapsed < Progression.pollInterval then return end
     Progression.elapsed = 0

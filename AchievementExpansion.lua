@@ -560,7 +560,8 @@ function A:CacheQuestLog()
     end
 end
 
-function A:RecordQuestTurnIn(questID)
+function A:RecordQuestTurnIn(questID, sourceGame)
+    if sourceGame ~= nil and sourceGame ~= "WOW" then return end
     local e = expansionSave(); if not e then return end
     local key = tostring(questID or "")
     self.recentQuestTurnins = self.recentQuestTurnins or {}
