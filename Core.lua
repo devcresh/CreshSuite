@@ -4,8 +4,8 @@ _G.CreshChat = CC
 
 CC.name = ADDON_NAME or "CreshChat"
 CC.BUILD = CC.BUILD or {
-    version = "0.2.2",
-    schema = 78,
+    version = "0.2.3",
+    schema = 79,
     interface = 20505,
     stage = "Alpha",
 }
@@ -90,6 +90,12 @@ local defaults = {
         qualityProfile = "BALANCED", -- BALANCED, MINIMAL, MESSENGER, POPOUT, PERFORMANCE
         showBuildBadge = false,
         launcherMode = "SINGLE", -- SINGLE or EXPANDED
+        launcherDefault = "LAST", -- LAST, CHAT, GAMES, ACHIEVEMENTS, or SETTINGS
+        lastLauncherDest = nil, -- runtime-tracked, not a real default
+        lastGameMode = "SOLO", -- remembers SOLO vs MULTIPLAYER for the games button
+        showGamesButton = false, -- EXPANDED-mode satellite button (always shown when chat is disabled)
+        showAchievementsButton = false, -- EXPANDED-mode satellite button (always shown when chat is disabled)
+        showProgressButton = false, -- EXPANDED-mode satellite button for Progress Hub
         launcherNotificationPulse = true,
         launcherIdleFade = false,
         launcherIdleDelay = 5,
@@ -316,6 +322,21 @@ local defaults = {
         battleNetFingerprints = {},
         battleNetFriends = {},
     },
+    -- Feature flags: each key enables or disables a major subsystem.
+    -- All default to true so upgrades see no behaviour change.
+    features = {
+        chat             = true,
+        games            = true,
+        multiplayerGames = true,
+        gameProgression  = true,
+        battlePass       = true,
+        worldProgression = true,
+        combatTracking   = true,
+        questCapture     = true,
+        friendsPresence  = true,
+        voice            = true,
+        notifications    = true,
+    },
 }
 
 local function deepCopy(value)
@@ -348,7 +369,7 @@ local PROFILE_UI_FIELDS = {
     "historyLimit", "combatHistoryLimit", "combatEnabled", "quickChannel",
     "panelScale", "ui", "notifications", "notificationPriorities", "sounds", "soundChoices",
     "soundVolumes", "gameAudio", "voice", "colors", "playerCache",
-    "positions", "sizes", "commandHistory",
+    "positions", "sizes", "commandHistory", "features",
 }
 
 local PROFILE_PROGRESSION_FIELDS = {
@@ -2268,6 +2289,7 @@ end
 
 function CC:ShouldReplacePartyInvitePopup()
     if not self.db or not self.db.ui or self.db.ui.replacePartyInvitePopup ~= true then return false end
+    if self.IsFeatureEnabled and not self:IsFeatureEnabled("notifications") then return false end
     if self.IsNotificationEnabled and not self:IsNotificationEnabled("PARTY_INVITE") then return false end
     return true
 end
@@ -2703,6 +2725,11 @@ function CC:ApplyBlizzardChatVisibility()
 
     self:HookBlizzardChatFrames()
     local hide = self:ShouldHideBlizzardChat()
+    -- Never hide Blizzard chat when the Chat feature is disabled.
+    -- The player must always have a working chat surface.
+    if hide and self.IsFeatureEnabled and not self:IsFeatureEnabled("chat") then
+        hide = false
+    end
     if self.db.hideBlizzard and self.state.chatCaptureReady == false then
         -- Never hide Blizzard chat if this client rejected the core chat events.
         -- This leaves the user with a working fallback instead of a silent screen.
@@ -2850,6 +2877,7 @@ local liveFeedLabels = {
 
 function CC:DispatchChatEvent(source, event, ...)
     source = tostring(source or "UNKNOWN")
+    if self.IsFeatureEnabled and not self:IsFeatureEnabled("chat") then return nil end
     if not self:ShouldProcessChatEvent(event, ...) then return nil end
     self.state.chatSourceCounts = self.state.chatSourceCounts or {}
     self.state.chatSourceCounts[source] = (self.state.chatSourceCounts[source] or 0) + 1
@@ -3225,6 +3253,8 @@ function CC:ShowHelp()
     self:Print("/cc general - open General chat")
     self:Print("/cc friends - open online/offline friends and nearby saved quest givers")
     self:Print("/cc games - open the slide-out games drawer")
+    self:Print("/cc achievements - open the Achievements tab")
+    self:Print("/cc progress - open the Progress Hub (World Progression, Quests, Combat stats)")
     self:Print("/cc battlepass - open the 100-level Battle Pass")
     self:Print("/cc unlockthemes - spend Cresh Coins on premium themes")
     self:Print("/cc solo - open Frogger, Dungeon Dweller, Solo Chess, Tetris, Texas Hold'em, Blackjack and Higher or Lower")
@@ -3244,6 +3274,9 @@ function CC:ShowHelp()
     self:Print("/cc bubble on|off - floating button")
     self:Print("/cc clear - clear saved CreshChat history")
     self:Print("/cc reset - reset window positions")
+    self:Print("/cc modules - show which features are currently enabled or disabled")
+    self:Print("/cc preset full|games|chat|minimal - apply a feature preset")
+    self:Print("/cc settings then Modules tab - per-feature toggle panel")
 end
 
 function CC:HandleSlashCommand(input)
@@ -3318,8 +3351,18 @@ function CC:HandleSlashCommand(input)
         return
     end
 
+    if command == "achievements" or command == "achievement" or command == "achieve" then
+        if self.UI and self.UI.LauncherToggleMode then self.UI:LauncherToggleMode("ACHIEVEMENTS") end
+        return
+    end
+
     if command == "battlepass" or command == "pass" or command == "bp" then
         if self.UI and self.UI.OpenGameDrawer then self.UI:OpenGameDrawer("BATTLEPASS") end
+        return
+    end
+
+    if command == "progress" or command == "hub" or command == "tracking" then
+        if self.ProgressHub and self.ProgressHub.Toggle then self.ProgressHub:Toggle() end
         return
     end
 
@@ -3490,6 +3533,40 @@ function CC:HandleSlashCommand(input)
 
     if command == "reset" then
         self:ResetPositions()
+        return
+    end
+
+    -- Feature module commands ---------------------------------------------------
+
+    if command == "modules" or command == "features" then
+        if not self.GetFeatureStatusLine then
+            self:Print("Feature system not available.")
+            return
+        end
+        local lines = self:GetFeatureStatusLine()
+        if type(lines) == "table" then
+            for _, line in ipairs(lines) do self:Print(line) end
+        else
+            self:Print(tostring(lines))
+        end
+        return
+    end
+
+    if command == "preset" then
+        local presetKey = string.lower(tostring(rawRest or rest or ""))
+        if presetKey == "" then
+            self:Print("Current preset: " .. string.upper(self:GetFeaturePreset()))
+            self:Print("Available presets: full, games, chat, minimal")
+            return
+        end
+        if not self.ApplyFeaturePreset or not self:ApplyFeaturePreset(presetKey) then
+            self:Print("Unknown preset '" .. presetKey .. "'. Use: full, games, chat, minimal.")
+            return
+        end
+        self:Print("Applied preset: " .. string.upper(presetKey) .. ". Reload (/reload) to fully apply all changes.")
+        -- Apply immediate safe changes.
+        self:ApplyBlizzardChatVisibility()
+        if self.UI and self.UI.RefreshSettingsPanel then self.UI:RefreshSettingsPanel() end
         return
     end
 
@@ -4610,6 +4687,26 @@ function CC:InitializeDatabase()
         end
     end
 
+    if previousVersion < 79 then
+        -- v79 introduces the modular feature system (FeatureManager.lua).
+        -- All features default to enabled, so upgrading users see no behaviour change.
+        -- The features table is populated automatically by mergeDefaults above.
+        CreshChatDB.features = CreshChatDB.features or {}
+        if type(CreshChatDB.features) == "table" then
+            local featureDefaults = {
+                chat=true, games=true, multiplayerGames=true,
+                gameProgression=true, battlePass=true,
+                worldProgression=true, combatTracking=true,
+                questCapture=true, friendsPresence=true,
+                voice=true, notifications=true,
+            }
+            for k, v in pairs(featureDefaults) do
+                if CreshChatDB.features[k] == nil then CreshChatDB.features[k] = v end
+            end
+        end
+        CreshChatDB.featurePreset = CreshChatDB.featurePreset or "full"
+    end
+
     CreshChatDB.version = CC.schemaVersion
     self.db = CreshChatDB
     self.accountDB = CreshChatDB
@@ -4617,6 +4714,7 @@ function CC:InitializeDatabase()
     self:ActivateCharacterProfile()
     self:BindSharedWhisperStorage()
     self:MergeWhisperDuplicates()
+    if self.EnsureFeatures then self:EnsureFeatures() end
     if self.Quality and self.Quality.SanitizeDatabase then self.Quality:SanitizeDatabase() end
 end
 
@@ -4720,10 +4818,14 @@ eventFrame:SetScript("OnEvent", function(_, event, ...)
         local loadedAddon = ...
         if loadedAddon == CC.name then
             CC:InitializeDatabase()
-            CC:InstallPartyInvitePopupHook()
+            CC:EnsureFeatures()
+            local chatReady = CC:IsFeatureEnabled("chat")
+            if chatReady then CC:InstallPartyInvitePopupHook() end
             CC:EnsureChatEventRegistration()
-            CC:RegisterChatFilters()
-            CC:InstallChatBridge()
+            if chatReady then
+                CC:RegisterChatFilters()
+                CC:InstallChatBridge()
+            end
             CC:ApplyBlizzardChatVisibility()
         end
         return
@@ -4733,16 +4835,22 @@ eventFrame:SetScript("OnEvent", function(_, event, ...)
         if not CC.db then
             CC:InitializeDatabase()
         end
-        CC:InstallPartyInvitePopupHook()
         CC:UpdatePlayerIdentity()
         CC:ActivateCharacterProfile()
-        CC:EnsureChatStorage()
-        CC:ResetBattleNetLiveRoutes()
-        CC:ClearSessionChatHistory()
+        CC:EnsureFeatures()
+        local chatEnabled = CC:IsFeatureEnabled("chat")
+        if chatEnabled then
+            CC:InstallPartyInvitePopupHook()
+            CC:EnsureChatStorage()
+            CC:ResetBattleNetLiveRoutes()
+            CC:ClearSessionChatHistory()
+        end
         CC.state.wasGrouped = CC:IsPlayerInGroup()
         CC:EnsureChatEventRegistration()
-        CC:RegisterChatFilters()
-        CC:InstallChatBridge()
+        if chatEnabled then
+            CC:RegisterChatFilters()
+            CC:InstallChatBridge()
+        end
         CC:ApplyBlizzardChatVisibility()
         if CC.UI and CC.UI.Initialize then
             CC.UI:Initialize()
@@ -4763,12 +4871,17 @@ eventFrame:SetScript("OnEvent", function(_, event, ...)
 
     if event == "PLAYER_ENTERING_WORLD" then
         CC:UpdatePlayerIdentity()
-        CC:EnsureChatStorage()
+        local chatOK = CC:IsFeatureEnabled("chat")
+        if chatOK then CC:EnsureChatStorage() end
         CC:EnsureChatEventRegistration()
-        CC:RegisterChatFilters()
-        CC:InstallChatBridge()
+        if chatOK then
+            CC:RegisterChatFilters()
+            CC:InstallChatBridge()
+        end
         CC:ApplyBlizzardChatVisibility()
-        if CC.UI and CC.UI.InstallBlizzardChatRedirects and CC.UI.initialized then CC.UI:InstallBlizzardChatRedirects() end
+        if chatOK then
+            if CC.UI and CC.UI.InstallBlizzardChatRedirects and CC.UI.initialized then CC.UI:InstallBlizzardChatRedirects() end
+        end
         if CC.UI and CC.UI.SetBubbleGroupShown and CC.db then
             CC.UI:SetBubbleGroupShown(CC.db.bubbleVisible)
         end
@@ -4795,12 +4908,13 @@ eventFrame:SetScript("OnEvent", function(_, event, ...)
         CC.state.partyInvitePending = true
         CC.state.partyInviteAction = nil
         CC.state.partyInviteAcceptedAt = nil
-        local showInviteAlert = CC:IsNotificationEnabled("PARTY_INVITE")
+        local notifEnabled = CC:IsFeatureEnabled("notifications")
+        local showInviteAlert = notifEnabled and CC:IsNotificationEnabled("PARTY_INVITE")
         if showInviteAlert and CC.UI and CC.UI.ShowPartyInvite then
             CC.UI:ShowPartyInvite(CC.state.pendingPartyInviter, false)
         end
         if showInviteAlert and CC.UI and CC.UI.NotifyLauncher then CC.UI:NotifyLauncher("PARTY_INVITE", CC.state.pendingPartyInviter) end
-        CC:PlayAlertSound("PARTY_INVITE")
+        if notifEnabled then CC:PlayAlertSound("PARTY_INVITE") end
         if showInviteAlert and CC:ShouldReplacePartyInvitePopup() then
             CC:HideBlizzardPartyInvitePopups()
             if C_Timer and C_Timer.After then
@@ -4878,32 +4992,39 @@ eventFrame:SetScript("OnEvent", function(_, event, ...)
     end
 
     if event == "BN_FRIEND_ACCOUNT_ONLINE" or event == "BN_FRIEND_ACCOUNT_OFFLINE" then
-        local accountID, fallbackName = select(1, ...), select(2, ...)
-        local accountName = CC:ResolveBattleNetPresenceName(accountID, fallbackName)
-        if accountName and CC.UI and CC.UI.ShowPresenceToast then
-            CC.UI:ShowPresenceToast(accountName, event == "BN_FRIEND_ACCOUNT_ONLINE")
-            if CC.UI.NotifyLauncher then CC.UI:NotifyLauncher("FRIEND", accountName, 4.0) end
+        if CC:IsFeatureEnabled("friendsPresence") and CC:IsFeatureEnabled("notifications") then
+            local accountID, fallbackName = select(1, ...), select(2, ...)
+            local accountName = CC:ResolveBattleNetPresenceName(accountID, fallbackName)
+            if accountName and CC.UI and CC.UI.ShowPresenceToast then
+                CC.UI:ShowPresenceToast(accountName, event == "BN_FRIEND_ACCOUNT_ONLINE")
+                if CC.UI.NotifyLauncher then CC.UI:NotifyLauncher("FRIEND", accountName, 4.0) end
+            end
         end
         return
     end
 
     if event == "CHAT_MSG_SYSTEM" or event == "UI_INFO_MESSAGE" then
-        local text = CC:GetFirstEventMessage(...)
-        if text and event == "CHAT_MSG_SYSTEM" and CC:IsPlayerNotFoundSystemMessage(text) then
-            CC:HandleSuppressedPlayerNotFound(text)
-            return
-        end
-        if text then
-            local historyMessage = CC:AddGeneralMessage("System", text, true, nil, nil, event == "UI_INFO_MESSAGE" and "Game" or "System", event)
-            CC:NotifyChatUI("GENERAL", nil, historyMessage, false)
-            local presenceName, isOnline = CC:ExtractPresenceNotice(text)
-            if CC.UI then
-                if presenceName and CC.UI.ShowPresenceToast then
-                    CC.UI:ShowPresenceToast(presenceName, isOnline)
-                    if CC.UI.NotifyLauncher then CC.UI:NotifyLauncher("FRIEND", presenceName, 4.0) end
-                elseif CC.UI.ShowSystemToast then
-                    CC.UI:ShowSystemToast(event == "UI_INFO_MESSAGE" and "Game notification" or "System", text, "INFO")
-                    if CC.UI.NotifyLauncher then CC.UI:NotifyLauncher("SYSTEM", nil, 5.0) end
+        -- Always run the player-not-found suppressor when chat is enabled (it guards pending whispers).
+        if CC:IsFeatureEnabled("chat") then
+            local text = CC:GetFirstEventMessage(...)
+            if text and event == "CHAT_MSG_SYSTEM" and CC:IsPlayerNotFoundSystemMessage(text) then
+                CC:HandleSuppressedPlayerNotFound(text)
+                return
+            end
+            if text then
+                local historyMessage = CC:AddGeneralMessage("System", text, true, nil, nil, event == "UI_INFO_MESSAGE" and "Game" or "System", event)
+                CC:NotifyChatUI("GENERAL", nil, historyMessage, false)
+                if CC:IsFeatureEnabled("notifications") then
+                    local presenceName, isOnline = CC:ExtractPresenceNotice(text)
+                    if CC.UI then
+                        if presenceName and CC.UI.ShowPresenceToast then
+                            CC.UI:ShowPresenceToast(presenceName, isOnline)
+                            if CC.UI.NotifyLauncher then CC.UI:NotifyLauncher("FRIEND", presenceName, 4.0) end
+                        elseif CC.UI.ShowSystemToast then
+                            CC.UI:ShowSystemToast(event == "UI_INFO_MESSAGE" and "Game notification" or "System", text, "INFO")
+                            if CC.UI.NotifyLauncher then CC.UI:NotifyLauncher("SYSTEM", nil, 5.0) end
+                        end
+                    end
                 end
             end
         end
@@ -4911,7 +5032,9 @@ eventFrame:SetScript("OnEvent", function(_, event, ...)
     end
 
     if event == "COMBAT_LOG_EVENT_UNFILTERED" then
-        CC:HandleCombatLogEvent(...)
+        if CC:IsFeatureEnabled("chat") then
+            CC:HandleCombatLogEvent(...)
+        end
         return
     end
 

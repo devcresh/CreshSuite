@@ -211,6 +211,13 @@ function Pass:AddXP(amount, source, activityKey, silent, isSimulation)
     return amount, previousLevel, newLevel
 end
 
+-- DORMANT: no callers anywhere in the codebase as of the 2026-06-30 audit.
+-- Predates the WOW/DD isolation fix (the "WoW mob defeated" label is a holdover
+-- from before Progression:RecordKill was rerouted to call BattlePass:AddPassXP
+-- directly instead of going through the DD Pass). Do not wire this to a live
+-- WOW_MOB_KILL event without a sourceGame guard matching
+-- AchievementExpansion:RecordBoss's pattern -- as written it has none, so any
+-- caller would award DD progression for plain WoW kills.
 function Pass:RecordMobKill()
     return self:AddXP(1, "WoW mob defeated", "mobKills", false)
 end
@@ -219,6 +226,8 @@ function Pass:RecordDungeonKill(isBoss)
     return self:AddXP(isBoss and 5 or 2, isBoss and "Dungeon boss defeated" or "Dungeon enemy defeated", "dungeonKills", false)
 end
 
+-- DORMANT: no callers anywhere in the codebase as of the 2026-06-30 audit.
+-- Same pre-isolation-fix origin as RecordMobKill above; has no sourceGame guard.
 function Pass:RecordQuest(questID, title)
     return self:AddXP(15, title or ("Quest " .. tostring(questID or "completed")), "quests", false)
 end
@@ -232,6 +241,8 @@ function Pass:RecordZone(zoneKey, zoneName)
     return self:AddXP(20, "New zone: " .. tostring(zoneName or zoneKey), "zones", false)
 end
 
+-- DORMANT: no callers anywhere in the codebase as of the 2026-06-30 audit.
+-- Same pre-isolation-fix origin as RecordMobKill above; has no sourceGame guard.
 function Pass:RecordAchievement(achievementID, name)
     local save = self:Ensure()
     if not save then return 0 end

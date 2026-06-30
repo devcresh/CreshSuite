@@ -1,3 +1,24 @@
+# v0.2.3 — Modular Feature System and Games-Only Mode (Unreleased)
+
+Schema 79. Adds FeatureManager.lua (11 toggleable subsystems, dependency cascades,
+4 presets), a Settings > Modules panel, Games-Only mode (UI:BuildGamesAnchor
+replaces the main chat frame when Chat is disabled), the Progress Hub, and an
+adaptive C launcher that appears whenever Chat, Games, Game Progression or the
+Progress Hub is enabled. Fixes a gap where World Progression's background polling
+didn't fully stop when the module was disabled, and closes a structural isolation
+gap in AchievementExpansion:RecordQuestTurnIn. See CHANGELOG.txt for full detail.
+
+## v0.2.2 — Per-Character Combat Tracking and Class Achievement Key Migration
+
+Schema 78. Per-character combat tracking alongside the account-aggregate table;
+CHARACTER scope for class achievements; class achievement keys renamed from
+CLASS_*_NNN to the stable ACH_CLASS_*_NNN format via an idempotent migration.
+
+## v0.2.1 — Version Correction
+
+Version numbering correction only (v0.2 → v0.2.1); no schema change, no
+functional changes.
+
 # v0.2 — Final Compatibility and UI Audit
 
 Public version reset; schema 75; responsive header, complete live settings coverage, paced addon networking and final policy review.

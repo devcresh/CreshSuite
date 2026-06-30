@@ -13,6 +13,15 @@ local Achievements = {
         PROFESSIONS = "Professions",
         GAMES = "Cresh Games",
     },
+    -- Which feature flags must be enabled for each achievement category to be active.
+    -- A category with no entry here is always shown (no feature dependency).
+    categoryRequiredFeatures = {
+        GAMES       = { "games", "gameProgression" },
+        COMBAT      = { "combatTracking" },
+        EXPLORATION = { "worldProgression" },
+        DUNGEONS    = { "worldProgression" },
+        PROFESSIONS = { "worldProgression" },
+    },
 }
 CC.Achievements = Achievements
 if CC.RegisterModule then CC:RegisterModule("Achievements", Achievements) end
@@ -20,6 +29,16 @@ if CC.RegisterModule then CC:RegisterModule("Achievements", Achievements) end
 local floor, max, min = math.floor, math.max, math.min
 local upper, lower = string.upper, string.lower
 local format = string.format
+
+local function isCategoryEnabled(category)
+    local required = Achievements.categoryRequiredFeatures[category]
+    if not required then return true end
+    if not (CC.IsFeatureEnabled) then return true end
+    for _, feature in ipairs(required) do
+        if CC:IsFeatureEnabled(feature) then return true end
+    end
+    return false
+end
 
 local function now()
     if type(_G.GetServerTime) == "function" then return _G.GetServerTime() end
@@ -630,7 +649,7 @@ function Achievements:GetPanelHeight(filter, category)
         local haystack = lower(table.concat({ achievement.title, achievement.description, self.categoryNames[achievement.category] or achievement.category }, " "))
         if categoryMatch and (filter == "" or string.find(haystack, filter, 1, true)) then count = count + 1 end
     end
-    return 180 + (count * 62)
+    return 208 + (count * 62)
 end
 
 function Achievements:BuildDrawerPanel(drawer, helpers)
@@ -686,6 +705,7 @@ function Achievements:BuildDrawerPanel(drawer, helpers)
     panel.filters:SetPoint("TOPRIGHT", panel.searchFrame, "BOTTOMRIGHT", 0, -6)
     panel.filters:SetHeight(28)
     panel.filterButtons = {}
+    panel.enabledOnly = false
     local filters = {
         { "ALL", "ALL", 42 }, { "EXPLORATION", "EXPLORE", 58 }, { "COMBAT", "COMBAT", 52 },
         { "DUNGEONS", "DUNGEON", 58 }, { "PROFESSIONS", "PROF", 46 }, { "GAMES", "GAMES", 46 },
@@ -702,11 +722,28 @@ function Achievements:BuildDrawerPanel(drawer, helpers)
         previous = button
     end
 
+    panel.toggleRow = CreateFrame("Frame", nil, panel)
+    panel.toggleRow:SetPoint("TOPLEFT", panel.filters, "BOTTOMLEFT", 0, -4)
+    panel.toggleRow:SetPoint("TOPRIGHT", panel.filters, "BOTTOMRIGHT", 0, -4)
+    panel.toggleRow:SetHeight(24)
+    panel.enabledToggle = createButton(panel.toggleRow, "ENABLED MODULES ONLY", 150, 22, function()
+        panel.enabledOnly = not panel.enabledOnly
+        Achievements:RefreshDrawerPanel(drawer, helpers, true)
+    end)
+    panel.enabledToggle:SetPoint("RIGHT", panel.toggleRow, "RIGHT", 0, 0)
+    panel.enabledToggle:SetScript("OnEnter", function(btn)
+        GameTooltip:SetOwner(btn, "ANCHOR_BOTTOM")
+        GameTooltip:SetText("Enabled Modules Only", 1, 1, 1)
+        GameTooltip:AddLine("Show only achievements for modules you have turned on in Settings > Modules.", 0.8, 0.8, 0.8, true)
+        GameTooltip:Show()
+    end)
+    panel.enabledToggle:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
     panel.rows = {}
     for index, achievement in ipairs(self.catalog) do
         local row = CreateFrame("Frame", nil, panel, templateName())
-        row:SetPoint("TOPLEFT", panel.filters, "BOTTOMLEFT", 0, -8)
-        row:SetPoint("TOPRIGHT", panel.filters, "BOTTOMRIGHT", 0, -8)
+        row:SetPoint("TOPLEFT", panel.toggleRow, "BOTTOMLEFT", 0, -8)
+        row:SetPoint("TOPRIGHT", panel.toggleRow, "BOTTOMRIGHT", 0, -8)
         row:SetHeight(56)
         applyBackdrop(row, colors.panelSoft, colors.border)
         row.title = createFont(row, 10, colors.text, "LEFT")
@@ -743,35 +780,50 @@ function Achievements:RefreshDrawerPanel(drawer, helpers, resetScroll)
         if helpers.setAccent then helpers.setAccent(button, active and helpers.colors.quest or helpers.colors.border, active) end
         if button.label then button.label:SetTextColor(active and 1 or 0.72, active and 0.82 or 0.74, active and 0.28 or 0.80, 1) end
     end
+    if panel.enabledToggle then
+        if helpers.setAccent then helpers.setAccent(panel.enabledToggle, panel.enabledOnly and helpers.colors.green or helpers.colors.border, panel.enabledOnly) end
+        if panel.enabledToggle.label then
+            panel.enabledToggle.label:SetTextColor(panel.enabledOnly and 0.4 or 0.72, panel.enabledOnly and 1 or 0.74, panel.enabledOnly and 0.4 or 0.80, 1)
+        end
+    end
 
     local filter = lower(tostring(panel.searchText or ""))
     local y = 0
     for _, row in ipairs(panel.rows or {}) do
         local achievement = row.achievement
         local categoryMatch = panel.category == "ALL" or panel.category == achievement.category
+        local enabledMatch = not panel.enabledOnly or isCategoryEnabled(achievement.category)
         local haystack = lower(table.concat({ achievement.title, achievement.description, self.categoryNames[achievement.category] or achievement.category }, " "))
         local searchMatch = filter == "" or string.find(haystack, filter, 1, true)
-        if categoryMatch and searchMatch then
+        if categoryMatch and enabledMatch and searchMatch then
             row:ClearAllPoints()
-            row:SetPoint("TOPLEFT", panel.filters, "BOTTOMLEFT", 0, -8 - y)
-            row:SetPoint("TOPRIGHT", panel.filters, "BOTTOMRIGHT", 0, -8 - y)
+            row:SetPoint("TOPLEFT", panel.toggleRow, "BOTTOMLEFT", 0, -8 - y)
+            row:SetPoint("TOPRIGHT", panel.toggleRow, "BOTTOMRIGHT", 0, -8 - y)
             y = y + 62
             local value = self:GetStat(achievement.stat)
             local complete = save.unlocked[achievement.key] ~= nil
-            row.title:SetText((complete and "✓ " or "") .. achievement.title .. "  ·  TIER " .. tostring(achievement.tier) .. "  ·  " .. (self.categoryNames[achievement.category] or achievement.category))
+            local disabled = not isCategoryEnabled(achievement.category)
+            local label = (complete and "✓ " or "") .. achievement.title .. "  ·  TIER " .. tostring(achievement.tier) .. "  ·  " .. (self.categoryNames[achievement.category] or achievement.category)
+            if disabled then label = label .. "  ·  MODULE OFF" end
+            row.title:SetText(label)
             row.detail:SetText(achievement.description)
             row.progress:SetText(complete and "UNLOCKED" or (formatNumber(min(value, achievement.goal)) .. "/" .. formatNumber(achievement.goal)))
             row.reward:SetText("+" .. achievement.coins .. " coins · +" .. achievement.xp .. " XP")
             applyBackdrop(row, complete and darken(colors.green, 0.58) or colors.panelSoft, complete and colors.green or colors.border)
-            row.title:SetTextColor(complete and colors.green[1] or colors.text[1], complete and colors.green[2] or colors.text[2], complete and colors.green[3] or colors.text[3], 1)
+            if disabled and not complete then
+                row.title:SetTextColor(colors.muted[1], colors.muted[2], colors.muted[3], 1)
+            else
+                row.title:SetTextColor(complete and colors.green[1] or colors.text[1], complete and colors.green[2] or colors.text[2], complete and colors.green[3] or colors.text[3], 1)
+            end
+            row:SetAlpha(disabled and not complete and 0.55 or 1)
             row:Show()
         else
             row:Hide()
         end
     end
-    panel:SetHeight(180 + y)
+    panel:SetHeight(208 + y)
     if drawer.mode == "ACHIEVEMENTS" then
-        drawer.content:SetHeight(max(240, 180 + y))
+        drawer.content:SetHeight(max(240, 208 + y))
         if resetScroll and CC.UI and CC.UI.SetGameDrawerScroll then CC.UI:SetGameDrawerScroll(0) end
     end
     if drawer.achievementMode and drawer.achievementMode.label then
@@ -795,10 +847,16 @@ safeRegister("BOSS_KILL")
 
 eventFrame:SetScript("OnEvent", function(_, event, ...)
     if event == "PLAYER_LOGIN" then
+        -- Ensure() always runs: it initialises save.stats used by CombatTracker.
         Achievements:Ensure()
-        Achievements:ScanProfessions(true)
-        Achievements:EvaluateAll(true)
-    elseif event == "PLAYER_ENTERING_WORLD" then
+        if CC:IsFeatureEnabled("worldProgression") then
+            Achievements:ScanProfessions(true)
+            Achievements:EvaluateAll(true)
+        end
+        return
+    end
+    if not CC:IsFeatureEnabled("worldProgression") then return end
+    if event == "PLAYER_ENTERING_WORLD" then
         Achievements:ProcessInstanceState(true)
         Achievements:CaptureBossUnits()
     elseif event == "PLAYER_DEAD" then

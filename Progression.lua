@@ -357,6 +357,7 @@ events:RegisterEvent("ZONE_CHANGED")
 events:RegisterEvent("ZONE_CHANGED_INDOORS")
 events:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 events:SetScript("OnEvent", function(_, event)
+    if not CC:IsFeatureEnabled("worldProgression") then return end
     if event == "COMBAT_LOG_EVENT_UNFILTERED" then
         if type(_G.CombatLogGetCurrentEventInfo) == "function" then
             local _, subevent, _, sourceGUID, _, sourceFlags, _, destGUID, destName = _G.CombatLogGetCurrentEventInfo()
@@ -381,6 +382,7 @@ events:SetScript("OnEvent", function(_, event)
 end)
 
 events:SetScript("OnUpdate", function(_, elapsed)
+    if not CC:IsFeatureEnabled("worldProgression") then return end
     Progression.elapsed = (Progression.elapsed or 0) + (elapsed or 0)
     if Progression.elapsed < Progression.pollInterval then return end
     Progression.elapsed = 0

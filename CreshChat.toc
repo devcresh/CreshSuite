@@ -2,10 +2,11 @@
 ## Title: CreshChat
 ## Notes: Compact TBC Anniversary chat, games, progression, themes, voice calls and collectible media.
 ## Author: creshor
-## Version: 0.2.2
+## Version: 0.2.3
 ## SavedVariables: CreshChatDB
 
 Core.lua
+FeatureManager.lua
 ProgressRouter.lua
 SoundLibrary.lua
 Quest.lua
@@ -29,6 +30,7 @@ AchievementExpansion.lua
 ClassAchievements.lua
 DungeonAchievements.lua
 CombatTracker.lua
+ProgressHub.lua
 GameAudio.lua
 Quality.lua
 Developer.lua

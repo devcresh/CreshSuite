@@ -560,7 +560,8 @@ function A:CacheQuestLog()
     end
 end
 
-function A:RecordQuestTurnIn(questID)
+function A:RecordQuestTurnIn(questID, sourceGame)
+    if sourceGame ~= nil and sourceGame ~= "WOW" then return end
     local e = expansionSave(); if not e then return end
     local key = tostring(questID or "")
     self.recentQuestTurnins = self.recentQuestTurnins or {}
@@ -1004,6 +1005,7 @@ for _,event in ipairs({
 }) do register(event) end
 
 frame:SetScript("OnEvent", function(_, event, ...)
+    if not CC:IsFeatureEnabled("worldProgression") then return end
     if event == "PLAYER_LOGIN" then
         A:BuildCatalog(); expansionSave(); A:CacheQuestLog(); A:ScanReputation(true); A:ScanHonor(); A:ScanGroupPlayers(); A:CheckPortalCrossing(); A:EvaluateAll(true)
     elseif event == "PLAYER_ENTERING_WORLD" then

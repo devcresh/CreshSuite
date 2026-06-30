@@ -1074,16 +1074,26 @@ function Pass:RefreshDrawerPanel(drawer, api)
     drawer.passHero.progress:SetValue(level >= self.maxLevel and required or current)
     drawer.passHero.progressText:SetText(level >= self.maxLevel and "BATTLE PASS COMPLETE" or (formatNumber(current) .. " / " .. formatNumber(required) .. " POINTS TO LEVEL " .. (level + 1)))
     if drawer.goalBox then
-        local walk,walkValue=self:GetNextMilestone("WALK")
-        local kill,killValue=self:GetNextMilestone("KILL")
-        if walk then
-            drawer.goalBox.walk:SetText(walk.title .. " · " .. formatNumber(walkValue) .. "/" .. formatNumber(walk.goal) .. " steps · +" .. walk.coins .. " coins / +" .. walk.xp .. " XP")
-            drawer.goalBox.walkBar:SetMinMaxValues(0,walk.goal); drawer.goalBox.walkBar:SetValue(math.min(walk.goal,walkValue))
-        else drawer.goalBox.walk:SetText("All walking goals completed"); drawer.goalBox.walkBar:SetMinMaxValues(0,1); drawer.goalBox.walkBar:SetValue(1) end
-        if kill then
-            drawer.goalBox.kill:SetText(kill.title .. " · " .. formatNumber(killValue) .. "/" .. formatNumber(kill.goal) .. " kills · +" .. kill.coins .. " coins / +" .. kill.xp .. " XP")
-            drawer.goalBox.killBar:SetMinMaxValues(0,kill.goal); drawer.goalBox.killBar:SetValue(math.min(kill.goal,killValue))
-        else drawer.goalBox.kill:SetText("All kill goals completed"); drawer.goalBox.killBar:SetMinMaxValues(0,1); drawer.goalBox.killBar:SetValue(1) end
+        local worldOn = CC.IsFeatureEnabled and CC:IsFeatureEnabled("worldProgression")
+        if worldOn == false then
+            drawer.goalBox.title:SetText("EXPLORATION GOALS (MODULE OFF)")
+            drawer.goalBox.walk:SetText("World Progression is disabled in Settings > Modules. Walking goals are paused.")
+            drawer.goalBox.kill:SetText("Kill goals are paused until World Progression is re-enabled.")
+            drawer.goalBox.walkBar:SetMinMaxValues(0,1); drawer.goalBox.walkBar:SetValue(0)
+            drawer.goalBox.killBar:SetMinMaxValues(0,1); drawer.goalBox.killBar:SetValue(0)
+        else
+            drawer.goalBox.title:SetText("EXPLORATION GOALS")
+            local walk,walkValue=self:GetNextMilestone("WALK")
+            local kill,killValue=self:GetNextMilestone("KILL")
+            if walk then
+                drawer.goalBox.walk:SetText(walk.title .. " · " .. formatNumber(walkValue) .. "/" .. formatNumber(walk.goal) .. " steps · +" .. walk.coins .. " coins / +" .. walk.xp .. " XP")
+                drawer.goalBox.walkBar:SetMinMaxValues(0,walk.goal); drawer.goalBox.walkBar:SetValue(math.min(walk.goal,walkValue))
+            else drawer.goalBox.walk:SetText("All walking goals completed"); drawer.goalBox.walkBar:SetMinMaxValues(0,1); drawer.goalBox.walkBar:SetValue(1) end
+            if kill then
+                drawer.goalBox.kill:SetText(kill.title .. " · " .. formatNumber(killValue) .. "/" .. formatNumber(kill.goal) .. " kills · +" .. kill.coins .. " coins / +" .. kill.xp .. " XP")
+                drawer.goalBox.killBar:SetMinMaxValues(0,kill.goal); drawer.goalBox.killBar:SetValue(math.min(kill.goal,killValue))
+            else drawer.goalBox.kill:SetText("All kill goals completed"); drawer.goalBox.killBar:SetMinMaxValues(0,1); drawer.goalBox.killBar:SetValue(1) end
+        end
         drawer.goalBox.walkBar:SetStatusBarColor(colors.blue[1],colors.blue[2],colors.blue[3],0.95)
         drawer.goalBox.killBar:SetStatusBarColor(colors.quest[1],colors.quest[2],colors.quest[3],0.95)
     end
@@ -1093,12 +1103,24 @@ function Pass:RefreshDrawerPanel(drawer, api)
     end
     local selectedRequirement = self:GetRequirement(self.selectedLevel)
     drawer.passRequirementLevel = selectedRequirement.level
-    drawer.passRequirement.title:SetText("LEVEL " .. selectedRequirement.level .. " REQUIREMENT · " .. selectedRequirement.reward.title)
-    drawer.passRequirement.detail:SetText(selectedRequirement.detail)
-    drawer.passRequirement.action.label:SetText(selectedRequirement.reached and (self:IsRewardClaimed(selectedRequirement.level) and "VIEW COMPLETE" or "UNLOCK NOW") or selectedRequirement.route.action)
-    setButtonEnabled(drawer.passRequirement.action, not (selectedRequirement.reached and self:IsRewardClaimed(selectedRequirement.level)))
-    applyBackdrop(drawer.passRequirement, darken(selectedRequirement.reached and colors.green or (colors.quest or colors.blue), 0.78), selectedRequirement.reached and colors.green or (colors.quest or colors.blue))
-    if setAccent then setAccent(drawer.passRequirement.action, selectedRequirement.reached and colors.green or (colors.quest or colors.blue)) end
+    local route = selectedRequirement.route
+    local gamesOn = CC.IsFeatureEnabled and CC:IsFeatureEnabled("games")
+    local routeOn = gamesOn and (route.mode ~= "MULTIPLAYER" or CC:IsFeatureEnabled("multiplayerGames"))
+    if not selectedRequirement.reached and not routeOn then
+        drawer.passRequirement.title:SetText("LEVEL " .. selectedRequirement.level .. " REQUIREMENT · MODULE OFF")
+        drawer.passRequirement.detail:SetText("Games is disabled in Settings > Modules, so this requirement can't progress. Re-enable Games to continue the Battle Pass.")
+        drawer.passRequirement.action.label:SetText("MODULE OFF")
+        setButtonEnabled(drawer.passRequirement.action, false)
+        applyBackdrop(drawer.passRequirement, darken(colors.muted, 0.78), colors.muted)
+        if setAccent then setAccent(drawer.passRequirement.action, colors.muted) end
+    else
+        drawer.passRequirement.title:SetText("LEVEL " .. selectedRequirement.level .. " REQUIREMENT · " .. selectedRequirement.reward.title)
+        drawer.passRequirement.detail:SetText(selectedRequirement.detail)
+        drawer.passRequirement.action.label:SetText(selectedRequirement.reached and (self:IsRewardClaimed(selectedRequirement.level) and "VIEW COMPLETE" or "UNLOCK NOW") or route.action)
+        setButtonEnabled(drawer.passRequirement.action, not (selectedRequirement.reached and self:IsRewardClaimed(selectedRequirement.level)))
+        applyBackdrop(drawer.passRequirement, darken(selectedRequirement.reached and colors.green or (colors.quest or colors.blue), 0.78), selectedRequirement.reached and colors.green or (colors.quest or colors.blue))
+        if setAccent then setAccent(drawer.passRequirement.action, selectedRequirement.reached and colors.green or (colors.quest or colors.blue)) end
+    end
 
     local ready = 0
     for rewardLevel = 1, self.maxLevel do

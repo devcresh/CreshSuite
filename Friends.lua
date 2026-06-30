@@ -1161,6 +1161,7 @@ frame:SetScript("OnEvent", function(_, event, ...)
         local loadedAddon = ...
         if loadedAddon ~= CC.name then return end
     end
+    if not CC:IsFeatureEnabled("friendsPresence") then return end
 
     if event == "PLAYER_LOGIN" or event == "PLAYER_ENTERING_WORLD" or event == "ADDON_LOADED" then
         Friends:RequestRoster()
