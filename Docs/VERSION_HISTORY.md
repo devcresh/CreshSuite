@@ -6,7 +6,18 @@ replaces the main chat frame when Chat is disabled), the Progress Hub, and an
 adaptive C launcher that appears whenever Chat, Games, Game Progression or the
 Progress Hub is enabled. Fixes a gap where World Progression's background polling
 didn't fully stop when the module was disabled, and closes a structural isolation
-gap in AchievementExpansion:RecordQuestTurnIn. See CHANGELOG.txt for full detail.
+gap in AchievementExpansion:RecordQuestTurnIn.
+
+A subsequent multi-phase audit (combat/achievement correctness, progression
+routing, major-feature repairs, UI/navigation, assets) found and fixed several
+related feature-isolation gaps: a handful of entry points (game drawer modes,
+combat panel, solo game launch, voice calls) could still run when reached
+directly even with their owning module disabled; the toast notification system
+didn't respect the Notifications or Friends/Presence flags; and game completions
+could award progress with Game Progression disabled. It also found and fixed a
+genuine duplicate-reward bug where every finished game funded the Battle Pass
+twice through two independent, uncoordinated reward paths. See CHANGELOG.txt for
+full detail.
 
 ## v0.2.2 — Per-Character Combat Tracking and Class Achievement Key Migration
 

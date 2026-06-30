@@ -282,7 +282,7 @@ local Content = {
             firstKill = { type = "DAMAGE", value = 1, label = "+1 permanent Dungeon damage" },
             icon = ROOT .. "\\Bosses\\Icons\\KingCandlewick.tga",
             fullBody = ROOT .. "\\Bosses\\FullBody\\KingCandlewick.tga",
-            artStatus = "PLACEHOLDER",
+            artStatus = "LIVE_BOSS_ART",
         },
         GNARLFANG_PACKLORD = {
             key = "GNARLFANG_PACKLORD", assetKey = "GnarlfangPacklord", name = "Gnarlfang the Packlord", level = 20, family = "Gnoll",
@@ -292,7 +292,7 @@ local Content = {
             firstKill = { type = "CRATE", value = "ADVENTURER", label = "Adventurer’s Cache" },
             icon = ROOT .. "\\Bosses\\Icons\\GnarlfangPacklord.tga",
             fullBody = ROOT .. "\\Bosses\\FullBody\\GnarlfangPacklord.tga",
-            artStatus = "PLACEHOLDER",
+            artStatus = "LIVE_BOSS_ART",
         },
         MURKFIN_TIDE_KING = {
             key = "MURKFIN_TIDE_KING", assetKey = "MurkfinTideKing", name = "Murkfin Tide King", level = 30, family = "Murloc",
@@ -302,7 +302,7 @@ local Content = {
             firstKill = { type = "COINS", value = 30, label = "30 Cresh Coins" },
             icon = ROOT .. "\\Bosses\\Icons\\MurkfinTideKing.tga",
             fullBody = ROOT .. "\\Bosses\\FullBody\\MurkfinTideKing.tga",
-            artStatus = "PLACEHOLDER",
+            artStatus = "LIVE_BOSS_ART",
         },
         ZARISS_COIL_QUEEN = {
             key = "ZARISS_COIL_QUEEN", assetKey = "ZarissCoilQueen", name = "Zariss the Coil Queen", level = 40, family = "Naga",
@@ -312,7 +312,7 @@ local Content = {
             firstKill = { type = "ARMOUR", value = 2, label = "Tier 2 class armour" },
             icon = ROOT .. "\\Bosses\\Icons\\ZarissCoilQueen.tga",
             fullBody = ROOT .. "\\Bosses\\FullBody\\ZarissCoilQueen.tga",
-            artStatus = "PLACEHOLDER",
+            artStatus = "LIVE_BOSS_ART",
         },
         GRUMBAR_EARTHBREAKER = {
             key = "GRUMBAR_EARTHBREAKER", assetKey = "GrumbarEarthbreaker", name = "Grumbar Earthbreaker", level = 50, family = "Trogg",
@@ -322,7 +322,7 @@ local Content = {
             firstKill = { type = "PORTRAIT_TOKEN", value = 1, label = "Boss portrait token" },
             icon = ROOT .. "\\Bosses\\Icons\\GrumbarEarthbreaker.tga",
             fullBody = ROOT .. "\\Bosses\\FullBody\\GrumbarEarthbreaker.tga",
-            artStatus = "PLACEHOLDER",
+            artStatus = "LIVE_BOSS_ART",
         },
         STORMTALON_MATRIARCH = {
             key = "STORMTALON_MATRIARCH", assetKey = "StormtalonMatriarch", name = "Stormtalon Matriarch", level = 60, family = "Harpy",
@@ -342,7 +342,7 @@ local Content = {
             firstKill = { type = "CRATE", value = "ROYAL", label = "Royal Vanguard Chest" },
             icon = ROOT .. "\\Bosses\\Icons\\XavrosFelwhisper.tga",
             fullBody = ROOT .. "\\Bosses\\FullBody\\XavrosFelwhisper.tga",
-            artStatus = "PLACEHOLDER",
+            artStatus = "LIVE_BOSS_ART",
         },
         AZARAK_WEB_TYRANT = {
             key = "AZARAK_WEB_TYRANT", assetKey = "AzarakWebTyrant", name = "Azarak the Web Tyrant", level = 80, family = "Nerubian",
@@ -352,7 +352,7 @@ local Content = {
             firstKill = { type = "ARMOUR", value = 4, label = "Tier 4 class armour" },
             icon = ROOT .. "\\Bosses\\Icons\\AzarakWebTyrant.tga",
             fullBody = ROOT .. "\\Bosses\\FullBody\\AzarakWebTyrant.tga",
-            artStatus = "PLACEHOLDER",
+            artStatus = "LIVE_BOSS_ART",
         },
         LORD_COLDGRAVE = {
             key = "LORD_COLDGRAVE", assetKey = "LordColdgrave", name = "Lord Coldgrave", level = 90, family = "Frost Revenant",
@@ -362,7 +362,7 @@ local Content = {
             firstKill = { type = "FULLBODY_TOKEN", value = 1, label = "Full-body profile token" },
             icon = ROOT .. "\\Bosses\\Icons\\LordColdgrave.tga",
             fullBody = ROOT .. "\\Bosses\\FullBody\\LordColdgrave.tga",
-            artStatus = "PLACEHOLDER",
+            artStatus = "LIVE_BOSS_ART",
         },
         EMPEROR_BLACKFUSE = {
             key = "EMPEROR_BLACKFUSE", assetKey = "EmperorBlackfuse", name = "Emperor Blackfuse", level = 100, family = "Dark Iron",
@@ -372,7 +372,7 @@ local Content = {
             firstKill = { type = "ARMOUR", value = 5, label = "Tier 5 class armour" },
             icon = ROOT .. "\\Bosses\\Icons\\EmperorBlackfuse.tga",
             fullBody = ROOT .. "\\Bosses\\FullBody\\EmperorBlackfuse.tga",
-            artStatus = "PLACEHOLDER",
+            artStatus = "LIVE_BOSS_ART",
         },
         NEXUS_LORD_VAELRIX = {
             key = "NEXUS_LORD_VAELRIX", assetKey = "NexusLordVaelrix", name = "Nexus Lord Vaelrix", level = 110, family = "Ethereal",
@@ -382,7 +382,7 @@ local Content = {
             firstKill = { type = "COINS", value = 150, label = "150 Cresh Coins" },
             icon = ROOT .. "\\Bosses\\Icons\\NexusLordVaelrix.tga",
             fullBody = ROOT .. "\\Bosses\\FullBody\\NexusLordVaelrix.tga",
-            artStatus = "PLACEHOLDER",
+            artStatus = "LIVE_BOSS_ART",
         },
         HIGH_SEER_SKYREND = {
             key = "HIGH_SEER_SKYREND", assetKey = "HighSeerSkyrend", name = "High Seer Skyrend", level = 120, family = "Arakkoa",
@@ -392,7 +392,7 @@ local Content = {
             firstKill = { type = "SHARDS", value = 4, label = "4 Armour Shards" },
             icon = ROOT .. "\\Bosses\\Icons\\HighSeerSkyrend.tga",
             fullBody = ROOT .. "\\Bosses\\FullBody\\HighSeerSkyrend.tga",
-            artStatus = "PLACEHOLDER",
+            artStatus = "LIVE_BOSS_ART",
         },
         AKORU_SOULKEEPER = {
             key = "AKORU_SOULKEEPER", assetKey = "AkoruSoulkeeper", name = "Akoru the Soulkeeper", level = 130, family = "Broken",
@@ -402,7 +402,7 @@ local Content = {
             firstKill = { type = "CRATE", value = "ROYAL", label = "Royal Vanguard Chest" },
             icon = ROOT .. "\\Bosses\\Icons\\AkoruSoulkeeper.tga",
             fullBody = ROOT .. "\\Bosses\\FullBody\\AkoruSoulkeeper.tga",
-            artStatus = "PLACEHOLDER",
+            artStatus = "LIVE_BOSS_ART",
         },
         SUNBLADE_GRAND_MAGISTER = {
             key = "SUNBLADE_GRAND_MAGISTER", assetKey = "SunbladeGrandMagister", name = "Sunblade Grand Magister", level = 140, family = "Blood Elf",
@@ -422,7 +422,7 @@ local Content = {
             firstKill = { type = "CRATE", value = "VOID", label = "Voidlord Reliquary" },
             icon = ROOT .. "\\Bosses\\Icons\\GorvakUnchained.tga",
             fullBody = ROOT .. "\\Bosses\\FullBody\\GorvakUnchained.tga",
-            artStatus = "PLACEHOLDER",
+            artStatus = "LIVE_BOSS_ART",
         },
         DROWNED_ANCIENT = {
             key = "DROWNED_ANCIENT", assetKey = "DrownedAncient", name = "The Drowned Ancient", level = 160, family = "Bog Beast",
@@ -432,7 +432,7 @@ local Content = {
             firstKill = { type = "SHARDS", value = 5, label = "5 Armour Shards" },
             icon = ROOT .. "\\Bosses\\Icons\\DrownedAncient.tga",
             fullBody = ROOT .. "\\Bosses\\FullBody\\DrownedAncient.tga",
-            artStatus = "PLACEHOLDER",
+            artStatus = "LIVE_BOSS_ART",
         },
         ASTRALAX_DEVOURER = {
             key = "ASTRALAX_DEVOURER", assetKey = "AstralaxDevourer", name = "Astralax the Devourer", level = 170, family = "Mana Wyrm",
@@ -442,7 +442,7 @@ local Content = {
             firstKill = { type = "PORTRAIT_TOKEN", value = 2, label = "2 Boss portrait tokens" },
             icon = ROOT .. "\\Bosses\\Icons\\AstralaxDevourer.tga",
             fullBody = ROOT .. "\\Bosses\\FullBody\\AstralaxDevourer.tga",
-            artStatus = "PLACEHOLDER",
+            artStatus = "LIVE_BOSS_ART",
         },
         OMEGA_REAVER = {
             key = "OMEGA_REAVER", assetKey = "OmegaReaver", name = "Prototype Omega-Reaver", level = 180, family = "Clockwork",
@@ -452,7 +452,7 @@ local Content = {
             firstKill = { type = "DAMAGE", value = 3, label = "+3 permanent Dungeon damage" },
             icon = ROOT .. "\\Bosses\\Icons\\OmegaReaver.tga",
             fullBody = ROOT .. "\\Bosses\\FullBody\\OmegaReaver.tga",
-            artStatus = "PLACEHOLDER",
+            artStatus = "LIVE_BOSS_ART",
         },
         ZLR_ARENA_OVERLORD = {
             key = "ZLR_ARENA_OVERLORD", assetKey = "ZLRArenaOverlord", name = "ZLR Arena Overlord", level = 190, family = "Arena Gladiator",
@@ -472,7 +472,7 @@ local Content = {
             firstKill = { type = "CRATE", value = "VOID", label = "Voidlord Reliquary" },
             icon = ROOT .. "\\Bosses\\Icons\\CATSMasterBase.tga",
             fullBody = ROOT .. "\\Bosses\\FullBody\\CATSMasterBase.tga",
-            artStatus = "PLACEHOLDER",
+            artStatus = "LIVE_BOSS_ART",
         },
     },
     crateOrder = { "ADVENTURER", "WARBOUND", "ROYAL", "VOID" },

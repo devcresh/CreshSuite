@@ -41,6 +41,31 @@ CreshChat v0.2.3 - Modular Feature System and Games-Only Mode (Unreleased)
   guards and DungeonDwellersProgression's event registration, not by routing
   through it. Wiring BattlePass.lua / DungeonDwellersProgression.lua through the
   router is a larger follow-up, not done in this release.
+- Fixed: several feature-gated entry points could be reached directly (via slash
+  command, or a control whose owning launcher button was already correctly
+  hidden) and run anyway, bypassing the feature flag: UI:OpenGameDrawer (games /
+  battlePass / multiplayerGames / gameProgression modes), UI:ToggleCombatPanel,
+  Solo:StartGame / OpenHub / OpenDungeonDwellers and Voice:RequestCall now each
+  check their owning flag directly instead of relying on the launcher button
+  being hidden.
+- Fixed: the toast notification system (ShowToast / ShowSecondaryToast /
+  ShowSlideToast) and a friend-presence toast embedded in the CHAT_MSG_SYSTEM
+  handler never checked the "notifications" / "friendsPresence" flags
+  respectively; disabling Notifications or Friends and Presence in Settings had
+  no effect on the corresponding toast cards.
+- Fixed: Progression:OnGameStarted / OnGameCompleted and a Dungeon Dwellers Pass
+  zone-discovery award could grant Cresh Coins, Battle Pass XP or Dungeon Pass XP
+  even with Game Progression or Games fully disabled; DungeonAchievements' login
+  handler had the same gap for Dungeon Dweller achievement rewards.
+- Fixed: SoloGames:RecordHistory called both BattlePass:AwardForGame and
+  GameProgression:OnGameCompleted for every finished game, double-funding Cresh
+  Coins and Battle Pass XP from a single result. GameProgression's per-level-up
+  award is now the sole game-completion route into the shared Battle Pass.
+- Fixed: the Achievements drawer rendered a fully blank panel with no message
+  when a filter combination matched zero achievements.
+- Fixed: stale artStatus documentation metadata for 17 Dungeon Dweller bosses
+  whose remastered art had already been installed (not read at runtime; no
+  gameplay change).
 
 CreshChat v0.2.2 - Per-Character Combat Tracking and Class Achievement Key Migration (2026-06-30)
 

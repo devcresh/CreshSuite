@@ -192,6 +192,7 @@ function Progression:AddGameXP(game, amount)
 end
 
 function Progression:OnGameStarted(game, mode)
+    if not CC:IsFeatureEnabled("gameProgression") then return 0 end
     game = upper(tostring(game or "GAME"))
     mode = upper(tostring(mode or "SOLO"))
     local gain = (mode == "MULTIPLAYER" or mode == "MULTI") and 10 or 5
@@ -204,6 +205,7 @@ function Progression:OnGameStarted(game, mode)
 end
 
 function Progression:OnGameCompleted(entry)
+    if not CC:IsFeatureEnabled("gameProgression") then return 0 end
     if type(entry) ~= "table" then return 0 end
     local game = upper(tostring(entry.game or "GAME"))
     local mode = upper(tostring(entry.mode or "SOLO"))
@@ -312,7 +314,7 @@ function Progression:CheckArea(initial)
     else
         self:AwardExploration(3, 2, "New Area Discovered", area, not initial)
     end
-    if CC.DungeonDwellersPass and CC.DungeonDwellersPass.RecordZone then
+    if CC:IsFeatureEnabled("games") and CC.DungeonDwellersPass and CC.DungeonDwellersPass.RecordZone then
         local dungeonZoneKey = tostring(mapID) .. ":" .. lower(tostring(zone ~= "" and zone or area))
         CC.DungeonDwellersPass:RecordZone(dungeonZoneKey, zone ~= "" and zone or area)
     end
