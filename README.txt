@@ -9,6 +9,9 @@ CreshChat v0.2.3 — Modular Feature System and Games-Only Mode (Unreleased)
   even with Chat and Games both disabled.
 - All existing accounts upgrade with every module enabled by default — no change
   in behaviour unless you visit Settings > Modules.
+- Fixes several cases where a disabled module could still be reached (slash
+  commands, toast notifications) or still award progress, plus a bug where every
+  finished game funded the Battle Pass twice.
 - See CHANGELOG.txt for full details and the previous v0.2.2 / v0.2.1 release notes.
 
 --- Previous release ---

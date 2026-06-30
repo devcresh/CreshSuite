@@ -739,6 +739,12 @@ function Achievements:BuildDrawerPanel(drawer, helpers)
     end)
     panel.enabledToggle:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
+    panel.empty = createFont(panel, 9, colors.muted, "CENTER")
+    panel.empty:SetPoint("TOPLEFT", panel.toggleRow, "BOTTOMLEFT", 0, -24)
+    panel.empty:SetPoint("TOPRIGHT", panel.toggleRow, "BOTTOMRIGHT", 0, -24)
+    panel.empty:SetText("No achievements match your filter.")
+    panel.empty:Hide()
+
     panel.rows = {}
     for index, achievement in ipairs(self.catalog) do
         local row = CreateFrame("Frame", nil, panel, templateName())
@@ -821,6 +827,7 @@ function Achievements:RefreshDrawerPanel(drawer, helpers, resetScroll)
             row:Hide()
         end
     end
+    if panel.empty then panel.empty:SetShown(y == 0) end
     panel:SetHeight(208 + y)
     if drawer.mode == "ACHIEVEMENTS" then
         drawer.content:SetHeight(max(240, 208 + y))

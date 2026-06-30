@@ -325,7 +325,9 @@ function Solo:RecordHistory(game, mode, result, opponent, detail, score)
     CC.db.gameHistory = CC.db.gameHistory or {}
     table.insert(CC.db.gameHistory, 1, entry)
     while #CC.db.gameHistory > 60 do table.remove(CC.db.gameHistory) end
-    if CC.BattlePass and CC.BattlePass.AwardForGame then CC.BattlePass:AwardForGame(entry) end
+    -- BattlePass:AwardForGame is intentionally not called here: GameProgression:OnGameCompleted
+    -- (via AddGameXP/AwardGameLevel) is the sole game-completion path into the shared Battle Pass
+    -- pools. Calling both double-funded Cresh Coins/Pass XP from a single game result.
     if CC.GameProgression and CC.GameProgression.OnGameCompleted then CC.GameProgression:OnGameCompleted(entry) end
     if self.socialPanel and self.socialPanel:IsShown() then self:RefreshSocialPanel() end
     return true
@@ -868,10 +870,12 @@ function Solo:ShowHub()
 end
 
 function Solo:OpenHub()
+    if not CC:IsFeatureEnabled("games") then return end
     self:ShowHub()
 end
 
 function Solo:StartGame(game)
+    if not CC:IsFeatureEnabled("games") then return false end
     game = upper(tostring(game or ""))
     local builder = self["Build" .. game .. "View"]
     if not builder then return false end
@@ -896,6 +900,7 @@ function Solo:StartGame(game)
 end
 
 function Solo:OpenDungeonDwellers(mode)
+    if not CC:IsFeatureEnabled("games") then return false end
     local frame = self:BuildWindow()
     if CC.UI and CC.UI.CloseGameDrawer then CC.UI:CloseGameDrawer(true) end
     self:HideViews()

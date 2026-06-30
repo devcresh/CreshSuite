@@ -3395,6 +3395,11 @@ function UI:AnimateGameDrawer(open, immediate)
 end
 
 function UI:OpenGameDrawer(mode, target)
+    if not CC:IsFeatureEnabled("games") then return end
+    local resolvedMode = string.upper(tostring(mode or "SOLO"))
+    if resolvedMode == "BATTLEPASS" and not CC:IsFeatureEnabled("battlePass") then return end
+    if resolvedMode == "MULTIPLAYER" and not CC:IsFeatureEnabled("multiplayerGames") then return end
+    if resolvedMode == "ACHIEVEMENTS" and not CC:IsFeatureEnabled("gameProgression") then return end
     local gameParent = self:GetGameParent()
     if not gameParent then return end
     if target and CC.Games and CC.Games.SetTarget then CC.Games:SetTarget(target) end
@@ -3404,7 +3409,6 @@ function UI:OpenGameDrawer(mode, target)
         self:OpenChannel(openMode, self.currentTarget)
     end
     self:BuildGameDrawer(gameParent)
-    local resolvedMode = string.upper(tostring(mode or "SOLO"))
     self:SetGameDrawerMode(resolvedMode)
     self:RefreshGameDrawer()
     self:AnimateGameDrawer(true)
@@ -5686,6 +5690,7 @@ function UI:BuildCombatPanel()
 end
 
 function UI:ToggleCombatPanel()
+    if not CC:IsFeatureEnabled("combatTracking") then return end
     if not self.combatPanel then
         return
     end
@@ -7546,6 +7551,7 @@ function UI:MakeRoomForSlideToast()
 end
 
 function UI:ShowToast(channel, target, message)
+    if CC.IsFeatureEnabled and not CC:IsFeatureEnabled("notifications") then return end
     local notificationKind = self:GetMessageNotificationKind(channel, message)
     if CC.IsNotificationEnabled and not CC:IsNotificationEnabled(notificationKind) then return end
     local role = self:GetNotificationRole(notificationKind, "SLIDE")
@@ -7598,6 +7604,7 @@ function UI:ShowToast(channel, target, message)
 end
 
 function UI:ShowSecondaryToast(title, message, status, key, playerName, kind)
+    if CC.IsFeatureEnabled and not CC:IsFeatureEnabled("notifications") then return end
     kind = string.upper(tostring(kind or "SYSTEM"))
     if CC.IsNotificationEnabled and not CC:IsNotificationEnabled(kind) then return end
     key = tostring(key or (tostring(title) .. ":" .. tostring(message)))
@@ -7618,6 +7625,7 @@ function UI:ShowSecondaryToast(title, message, status, key, playerName, kind)
 end
 
 function UI:ShowSlideToast(title, message, status, key, playerName, kind, target)
+    if CC.IsFeatureEnabled and not CC:IsFeatureEnabled("notifications") then return end
     kind = string.upper(tostring(kind or "SYSTEM"))
     if CC.IsNotificationEnabled and not CC:IsNotificationEnabled(kind) then return end
     key = tostring(key or (tostring(kind) .. ":" .. tostring(title) .. ":" .. tostring(message)))

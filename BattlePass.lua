@@ -543,6 +543,11 @@ function Pass:ClaimAllAvailable()
     return claimed, total
 end
 
+-- DORMANT: no callers as of the Phase 3 progression-routing audit (2026-06-30).
+-- SoloGames:RecordHistory used to call this alongside GameProgression:OnGameCompleted,
+-- double-funding Cresh Coins/Pass XP from a single game result. GameProgression's
+-- AddGameXP/AwardGameLevel path is now the sole game-completion route into the
+-- shared Battle Pass pools. Do not re-wire this without removing that duplication.
 function Pass:AwardForGame(entry)
     local save = self:Ensure()
     if not save or type(entry) ~= "table" then return 0, 0 end

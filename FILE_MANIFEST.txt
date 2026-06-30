@@ -2,6 +2,13 @@ CreshChat v0.2.1 file manifest
 Generated: 2026-06-27
 Format: SHA-256  bytes  relative path
 
+STALE: this manifest was generated for v0.2.1 and was not regenerated for
+v0.2.2 or v0.2.3. No per-file manifest generator script exists in tools/ as of
+this audit (tools/Build-CurseForgeRelease.ps1 only hashes the final release
+ZIP, not individual source files) -- regenerate with a fresh per-file
+Get-FileHash pass against the current file set before relying on this list for
+release verification.
+
 8a7056ecba99fdc232619ff04f41ed54c31c390c289b1af43c3f6dc8b4f4dd82      111558  AchievementExpansion.lua
 c4d94f0681a364b5ecd2a236251892f507a16e4f1ab0b07fdc21efd8a5eef717       35699  Achievements.lua
 483aa00d6d1e81f79c6aff21da2bb81801a0aabecd342846f3051d0953f7c126       56788  BattlePass.lua

@@ -229,6 +229,10 @@ function Voice:EndCall(silent, remoteEnded)
 end
 
 function Voice:RequestCall(target)
+    if not CC:IsFeatureEnabled("voice") then
+        if CC.Print then CC:Print("Voice calls are disabled. Enable Voice Calls in /cc settings.") end
+        return false
+    end
     target = routeName(target)
     if target == "" then return false end
     if not self:CanUseNative() then

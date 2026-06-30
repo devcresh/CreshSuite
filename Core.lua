@@ -5017,7 +5017,7 @@ eventFrame:SetScript("OnEvent", function(_, event, ...)
                 if CC:IsFeatureEnabled("notifications") then
                     local presenceName, isOnline = CC:ExtractPresenceNotice(text)
                     if CC.UI then
-                        if presenceName and CC.UI.ShowPresenceToast then
+                        if presenceName and CC.UI.ShowPresenceToast and CC:IsFeatureEnabled("friendsPresence") then
                             CC.UI:ShowPresenceToast(presenceName, isOnline)
                             if CC.UI.NotifyLauncher then CC.UI:NotifyLauncher("FRIEND", presenceName, 4.0) end
                         elseif CC.UI.ShowSystemToast then

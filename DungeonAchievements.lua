@@ -533,7 +533,9 @@ safeRegister("PLAYER_LOGIN")
 eventFrame:SetScript("OnEvent", function(_, event)
     if event == "PLAYER_LOGIN" then
         DungeonAchievements:Ensure()
-        DungeonAchievements:MigrateFromWoW()
-        DungeonAchievements:EvaluateAll(true)
+        if CC:IsFeatureEnabled("gameProgression") then
+            DungeonAchievements:MigrateFromWoW()
+            DungeonAchievements:EvaluateAll(true)
+        end
     end
 end)
