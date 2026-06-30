@@ -2836,15 +2836,41 @@ local function setDrawerButtonEnabled(button, enabled)
     if enabled then button:Enable() else button:Disable() end
 end
 
+-- Returns self.main when chat is enabled, or self.gamesAnchor in Games Only mode.
+-- Used by game-drawer functions so they work without the main chat frame.
+function UI:GetGameParent()
+    return self.main or self.gamesAnchor
+end
+
+-- Creates an invisible anchor frame positioned where the main frame would be.
+-- Used as the parent / positioning reference for the game drawer in Games Only mode.
+function UI:BuildGamesAnchor()
+    if self.gamesAnchor then return self.gamesAnchor end
+    local anchor = CreateFrame("Frame", "CreshChatGamesAnchor", UIParent)
+    applySize(anchor, "main", 470, 520)
+    anchor:SetFrameStrata("HIGH")
+    anchor:SetClampedToScreen(true)
+    local hasSaved = CC.db and CC.db.positions and CC.db.positions["main"]
+    if hasSaved then
+        applyPosition(anchor, "main")
+    else
+        anchor:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -16, 300)
+    end
+    anchor:Show()
+    self.gamesAnchor = anchor
+    return anchor
+end
+
 function UI:GetGameDrawerSide()
-    local drawer, main = self.gameDrawer, self.main
-    if not drawer or not main or not UIParent then return "RIGHT" end
+    local drawer = self.gameDrawer
+    local anchor = self:GetGameParent()
+    if not drawer or not anchor or not UIParent then return "RIGHT" end
     local screenWidth = tonumber(UIParent.GetWidth and UIParent:GetWidth()) or 0
-    local mainLeft = tonumber(main.GetLeft and main:GetLeft()) or 0
-    local mainRight = tonumber(main.GetRight and main:GetRight()) or 0
-    local rightSpace = max(0, screenWidth - mainRight)
-    local leftSpace = max(0, mainLeft)
-    local visualWidth = (tonumber(drawer.GetWidth and drawer:GetWidth()) or 350) * (tonumber(main.GetScale and main:GetScale()) or 1)
+    local anchorLeft = tonumber(anchor.GetLeft and anchor:GetLeft()) or 0
+    local anchorRight = tonumber(anchor.GetRight and anchor:GetRight()) or 0
+    local rightSpace = max(0, screenWidth - anchorRight)
+    local leftSpace = max(0, anchorLeft)
+    local visualWidth = (tonumber(drawer.GetWidth and drawer:GetWidth()) or 350) * (tonumber(anchor.GetScale and anchor:GetScale()) or 1)
     if rightSpace >= visualWidth + 8 then return "RIGHT" end
     if leftSpace >= visualWidth + 8 then return "LEFT" end
     return rightSpace >= leftSpace and "RIGHT" or "LEFT"
@@ -2852,7 +2878,8 @@ end
 
 function UI:PositionGameDrawer(offset, side)
     local drawer = self.gameDrawer
-    if not drawer or not self.main then return end
+    local anchor = self:GetGameParent()
+    if not drawer or not anchor then return end
     side = side or drawer.creshSide or self:GetGameDrawerSide()
     drawer.creshSide = side
     local width = drawer:GetWidth() or 350
@@ -2863,11 +2890,11 @@ function UI:PositionGameDrawer(offset, side)
     offset = tonumber(offset) or 0
     drawer:ClearAllPoints()
     if side == "LEFT" then
-        drawer:SetPoint("TOPRIGHT", self.main, "TOPLEFT", offset, 0)
-        drawer:SetPoint("BOTTOMRIGHT", self.main, "BOTTOMLEFT", offset, 0)
+        drawer:SetPoint("TOPRIGHT", anchor, "TOPLEFT", offset, 0)
+        drawer:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMLEFT", offset, 0)
     else
-        drawer:SetPoint("TOPLEFT", self.main, "TOPRIGHT", offset, 0)
-        drawer:SetPoint("BOTTOMLEFT", self.main, "BOTTOMRIGHT", offset, 0)
+        drawer:SetPoint("TOPLEFT", anchor, "TOPRIGHT", offset, 0)
+        drawer:SetPoint("BOTTOMLEFT", anchor, "BOTTOMRIGHT", offset, 0)
     end
 end
 
@@ -3138,7 +3165,7 @@ function UI:SetGameDrawerStatus(text, color)
 end
 
 function UI:SetGameDrawerMode(mode, preserveScroll)
-    local drawer = self:BuildGameDrawer(self.main)
+    local drawer = self:BuildGameDrawer(self:GetGameParent())
     if not drawer then return end
     mode = string.upper(tostring(mode or "SOLO"))
     if mode ~= "MULTIPLAYER" and mode ~= "BATTLEPASS" and mode ~= "ACHIEVEMENTS" and mode ~= "THEMES" then mode = "SOLO" end
@@ -3182,6 +3209,7 @@ function UI:SetGameDrawerMode(mode, preserveScroll)
         drawer.scroll:SetVerticalScroll(0)
     end
     self:RefreshGameDrawer()
+    self:RefreshLauncherButtonStates()
 end
 
 function UI:SetGameDrawerScroll(value)
@@ -3325,7 +3353,7 @@ function UI:RefreshGameDrawer(silent)
 end
 
 function UI:AnimateGameDrawer(open, immediate)
-    local drawer = self:BuildGameDrawer(self.main)
+    local drawer = self:BuildGameDrawer(self:GetGameParent())
     if not drawer then return end
     if drawer.creshSlide then drawer:SetScript("OnUpdate", nil); drawer.creshSlide = nil end
     local width = drawer:GetWidth() or 350
@@ -3336,6 +3364,7 @@ function UI:AnimateGameDrawer(open, immediate)
     if immediate then
         drawer.creshOpen = open == true
         self:UpdateTabAppearance()
+        self:RefreshLauncherButtonStates()
         if open then drawer:Show(); self:PositionGameDrawer(openX, side) else self:PositionGameDrawer(closedX, side); drawer:Hide() end
         return
     end
@@ -3344,6 +3373,7 @@ function UI:AnimateGameDrawer(open, immediate)
     if open then drawer:Show() end
     drawer.creshOpen = open == true
     self:UpdateTabAppearance()
+    self:RefreshLauncherButtonStates()
     local duration = max(0.12, min(0.26, self:GetAnimationDuration() * 1.05))
     local elapsedTotal = 0
     drawer.creshSlide = true
@@ -3365,14 +3395,15 @@ function UI:AnimateGameDrawer(open, immediate)
 end
 
 function UI:OpenGameDrawer(mode, target)
-    if not self.main then return end
+    local gameParent = self:GetGameParent()
+    if not gameParent then return end
     if target and CC.Games and CC.Games.SetTarget then CC.Games:SetTarget(target) end
-    if not self.main:IsShown() then
+    if self.main and not self.main:IsShown() then
         local openMode = self.mode
         if openMode == "GAMES" or not openMode then openMode = "FRIENDS" end
         self:OpenChannel(openMode, self.currentTarget)
     end
-    self:BuildGameDrawer(self.main)
+    self:BuildGameDrawer(gameParent)
     local resolvedMode = string.upper(tostring(mode or "SOLO"))
     self:SetGameDrawerMode(resolvedMode)
     self:RefreshGameDrawer()
@@ -3388,7 +3419,7 @@ function UI:CloseGameDrawer(immediate)
 end
 
 function UI:ToggleGameDrawer(mode, target)
-    local drawer = self:BuildGameDrawer(self.main)
+    local drawer = self:BuildGameDrawer(self:GetGameParent())
     if drawer and drawer.creshOpen and drawer:IsShown() then
         self:CloseGameDrawer()
     else
@@ -3921,6 +3952,18 @@ function UI:SetBubbleGroupShown(shown)
     if self.whisperBubble then self.whisperBubble:SetShown(effectiveShown and expanded and options.showWhisperButton ~= false) end
     if self.generalBubble then self.generalBubble:SetShown(effectiveShown and expanded and options.showGeneralButton ~= false) end
     if self.combatBubble then self.combatBubble:SetShown(effectiveShown and expanded and options.showCombatButton ~= false) end
+    -- Module buttons are always visible when chat is disabled (they become the
+    -- primary launcher); otherwise they follow EXPANDED mode + their own toggle.
+    local chatOn     = CC.IsFeatureEnabled and CC:IsFeatureEnabled("chat")
+    local gamesOn    = CC.IsFeatureEnabled and CC:IsFeatureEnabled("games")
+    local achieveOn  = CC.IsFeatureEnabled and CC:IsFeatureEnabled("gameProgression")
+    local progressOn = CC.ProgressHub and CC.ProgressHub:HasAnyEnabled()
+    local showGames    = effectiveShown and gamesOn    and (not chatOn or (expanded and options.showGamesButton        == true))
+    local showAchieve  = effectiveShown and achieveOn  and (not chatOn or (expanded and options.showAchievementsButton == true))
+    local showProgress = effectiveShown and progressOn and (not chatOn or (expanded and options.showProgressButton     == true))
+    if self.gamesButton    then self.gamesButton:SetShown(showGames    == true) end
+    if self.achieveButton  then self.achieveButton:SetShown(showAchieve  == true) end
+    if self.progressButton then self.progressButton:SetShown(showProgress == true) end
     if not shown and self.quickInput then self.quickInput:Hide() end
     if not shown and self.combatPanel then self.combatPanel:Hide() end
     self:PositionQuickButtons()
@@ -3938,6 +3981,17 @@ function UI:PositionQuickButtons()
     if expanded and self.whisperBubble and options.showWhisperButton ~= false then tinsert(ordered, self.whisperBubble) end
     if expanded and self.generalBubble and options.showGeneralButton ~= false then tinsert(ordered, self.generalBubble) end
     if expanded and self.combatBubble and options.showCombatButton ~= false then tinsert(ordered, self.combatBubble) end
+
+    local chatOn     = CC.IsFeatureEnabled and CC:IsFeatureEnabled("chat")
+    local gamesOn    = CC.IsFeatureEnabled and CC:IsFeatureEnabled("games")
+    local achieveOn  = CC.IsFeatureEnabled and CC:IsFeatureEnabled("gameProgression")
+    local progressOn = CC.ProgressHub and CC.ProgressHub:HasAnyEnabled()
+    local showGames    = gamesOn    and (not chatOn or (expanded and options.showGamesButton        == true))
+    local showAchieve  = achieveOn  and (not chatOn or (expanded and options.showAchievementsButton == true))
+    local showProgress = progressOn and (not chatOn or (expanded and options.showProgressButton     == true))
+    if self.gamesButton    and showGames    then tinsert(ordered, self.gamesButton)    end
+    if self.achieveButton  and showAchieve  then tinsert(ordered, self.achieveButton)  end
+    if self.progressButton and showProgress then tinsert(ordered, self.progressButton) end
 
     local previous = self.bubble
     for _, button in ipairs(ordered) do
@@ -5073,6 +5127,103 @@ function UI:DismissWhisperDockAlert(immediate)
     else chip.dismissing = true end
 end
 
+-- Returns the destination the C button should act on, given launcherDefault and
+-- which features are actually enabled. Knows about: CHAT, GAMES, ACHIEVEMENTS,
+-- PROGRESS, SETTINGS.
+function UI:GetLauncherEffectiveDest()
+    local options = CC.db and CC.db.ui or {}
+    local dest = options.launcherDefault or "LAST"
+    if dest == "LAST" then dest = options.lastLauncherDest end
+    local chatOn     = CC.IsFeatureEnabled and CC:IsFeatureEnabled("chat")
+    local gamesOn    = CC.IsFeatureEnabled and CC:IsFeatureEnabled("games")
+    local achieveOn  = CC.IsFeatureEnabled and CC:IsFeatureEnabled("gameProgression")
+    local progressOn = CC.ProgressHub and CC.ProgressHub:HasAnyEnabled()
+    if dest == "CHAT"         and not chatOn     then dest = nil end
+    if dest == "GAMES"        and not gamesOn    then dest = nil end
+    if dest == "ACHIEVEMENTS" and not achieveOn  then dest = nil end
+    if dest == "PROGRESS"     and not progressOn then dest = nil end
+    if not dest then
+        if chatOn     then dest = "CHAT"
+        elseif gamesOn    then dest = "GAMES"
+        elseif achieveOn  then dest = "ACHIEVEMENTS"
+        elseif progressOn then dest = "PROGRESS"
+        else                   dest = "SETTINGS" end
+    end
+    return dest
+end
+
+-- Smart toggle for a given destination. When the drawer is already open in a
+-- different mode, switches modes instead of closing and re-opening.
+function UI:LauncherToggleMode(dest)
+    dest = string.upper(tostring(dest or "CHAT"))
+    local options = CC.db and CC.db.ui or {}
+    if dest == "CHAT" then
+        self:ToggleMain()
+        options.lastLauncherDest = "CHAT"
+    elseif dest == "GAMES" then
+        local drawer = self.gameDrawer
+        local drawerOpen = drawer and drawer.creshOpen and drawer:IsShown()
+        local isGamesMode = drawerOpen and drawer.mode ~= "ACHIEVEMENTS" and drawer.mode ~= "THEMES"
+        if isGamesMode then
+            self:CloseGameDrawer()
+        elseif drawerOpen then
+            local lastMode = options.lastGameMode or "SOLO"
+            if lastMode == "ACHIEVEMENTS" or lastMode == "THEMES" then lastMode = "SOLO" end
+            self:SetGameDrawerMode(lastMode)
+        else
+            self:OpenGameDrawer(options.lastGameMode or "SOLO")
+        end
+        local newMode = self.gameDrawer and self.gameDrawer.mode or "SOLO"
+        if newMode ~= "ACHIEVEMENTS" and newMode ~= "THEMES" then
+            options.lastGameMode = newMode
+        end
+        options.lastLauncherDest = "GAMES"
+    elseif dest == "ACHIEVEMENTS" then
+        local drawer = self.gameDrawer
+        local drawerOpen = drawer and drawer.creshOpen and drawer:IsShown()
+        if drawerOpen and drawer.mode == "ACHIEVEMENTS" then
+            self:CloseGameDrawer()
+        elseif drawerOpen then
+            self:SetGameDrawerMode("ACHIEVEMENTS")
+        else
+            self:OpenGameDrawer("ACHIEVEMENTS")
+        end
+        options.lastLauncherDest = "ACHIEVEMENTS"
+    elseif dest == "PROGRESS" then
+        if CC.ProgressHub then
+            CC.ProgressHub:Toggle()
+        end
+        options.lastLauncherDest = "PROGRESS"
+    elseif dest == "SETTINGS" then
+        self:OpenSettings()
+    end
+    self:RefreshLauncherButtonStates()
+end
+
+-- Left-click action for the C bubble: delegates to the appropriate destination.
+function UI:LauncherDefaultAction()
+    self:LauncherToggleMode(self:GetLauncherEffectiveDest())
+end
+
+-- Update active-state highlight on satellite launcher buttons.
+function UI:RefreshLauncherButtonStates()
+    local drawer = self.gameDrawer
+    local drawerOpen   = drawer and drawer.creshOpen and drawer:IsShown()
+    local drawerMode   = drawer and drawer.mode or "SOLO"
+    local gamesActive  = drawerOpen and drawerMode ~= "ACHIEVEMENTS" and drawerMode ~= "THEMES"
+    local achieveActive= drawerOpen and drawerMode == "ACHIEVEMENTS"
+    local progressActive = CC.ProgressHub and CC.ProgressHub:IsOpen()
+    if self.gamesButton then
+        applyBackdrop(self.gamesButton, gamesActive and COLORS.blue or COLORS.panelRaised, COLORS.border)
+    end
+    if self.achieveButton then
+        applyBackdrop(self.achieveButton, achieveActive and COLORS.quest or COLORS.panelRaised, COLORS.border)
+    end
+    if self.progressButton then
+        applyBackdrop(self.progressButton, progressActive and COLORS.green or COLORS.panelRaised, COLORS.border)
+    end
+end
+
 function UI:BuildBubble()
     local function makeQuickButton(name, label, tooltipTitle, tooltipText, callback)
         local button = CreateFrame("Button", name, UIParent, templateName())
@@ -5080,7 +5231,8 @@ function UI:BuildBubble()
         button:SetFrameStrata("HIGH")
         button:SetClampedToScreen(true)
         applyBackdrop(button, COLORS.panelRaised, COLORS.border)
-        button.icon = createFont(button, label == "CL" and 12 or 15, COLORS.text, "CENTER")
+        local iconSize = #label >= 3 and 10 or (#label == 2 and 12 or 15)
+        button.icon = createFont(button, iconSize, COLORS.text, "CENTER")
         button.icon:SetAllPoints()
         button.icon:SetText(label)
         button.badge = createBadge(button, 20)
@@ -5169,7 +5321,11 @@ function UI:BuildBubble()
     end
     bubble:SetScript("OnClick", function()
         UI:MarkLauncherActive()
-        UI:ToggleMain()
+        if IsShiftKeyDown and IsShiftKeyDown() then
+            UI:OpenSettings()
+            return
+        end
+        UI:LauncherDefaultAction()
     end)
     bubble:SetScript("OnDragStart", function(selfBubble)
         UI:MarkLauncherActive()
@@ -5188,12 +5344,26 @@ function UI:BuildBubble()
     bubble:SetScript("OnEnter", function(selfBubble)
         UI.launcherHovered = true
         UI:MarkLauncherActive()
+        local chatOn = CC.IsFeatureEnabled and CC:IsFeatureEnabled("chat")
+        local gamesOn = CC.IsFeatureEnabled and CC:IsFeatureEnabled("games")
+        local achieveOn = CC.IsFeatureEnabled and CC:IsFeatureEnabled("gameProgression")
         GameTooltip:SetOwner(selfBubble, "ANCHOR_LEFT")
         GameTooltip:AddLine("CreshChat", 1, 1, 1)
-        GameTooltip:AddLine("Left-click: open chat + typing bar", 0.75, 0.8, 0.9)
-        GameTooltip:AddLine("Right-drag: move C and its composer", 0.75, 0.8, 0.9)
-        GameTooltip:AddLine("Enter: open the bar; typing reveals chat", 0.75, 0.8, 0.9)
-        GameTooltip:AddLine("W / G / Q / P: latest unread notification type", 0.55, 0.75, 1.0)
+        if chatOn then
+            GameTooltip:AddLine("Left-click: open chat + typing bar", 0.75, 0.8, 0.9)
+            GameTooltip:AddLine("Right-drag: move C and its composer", 0.75, 0.8, 0.9)
+        elseif gamesOn then
+            GameTooltip:AddLine("Left-click: open the games hub", 0.75, 0.8, 0.9)
+            GameTooltip:AddLine("Right-drag: move this launcher", 0.75, 0.8, 0.9)
+        elseif achieveOn then
+            GameTooltip:AddLine("Left-click: open Achievements", 0.75, 0.8, 0.9)
+            GameTooltip:AddLine("Right-drag: move this launcher", 0.75, 0.8, 0.9)
+        end
+        GameTooltip:AddLine("Shift+click: open Settings", 0.75, 0.8, 0.9)
+        if chatOn then
+            GameTooltip:AddLine("Enter: open the bar; typing reveals chat", 0.75, 0.8, 0.9)
+            GameTooltip:AddLine("W / G / Q / P: latest unread notification type", 0.55, 0.75, 1.0)
+        end
         GameTooltip:Show()
     end)
     bubble:SetScript("OnLeave", function()
@@ -5217,10 +5387,35 @@ function UI:BuildBubble()
         UI:ToggleCombatPanel()
     end)
 
+    self.gamesButton = makeQuickButton("CreshChatGamesButton", "Gm", "Games Hub", "Toggle the CreshChat games hub", function()
+        UI:LauncherToggleMode("GAMES")
+    end)
+    self.gamesButton:SetScript("OnLeave", function()
+        UI:RefreshLauncherButtonStates()
+        GameTooltip:Hide()
+    end)
+
+    self.achieveButton = makeQuickButton("CreshChatAchievementsButton", "Ach", "Achievements", "Toggle the Achievements panel", function()
+        UI:LauncherToggleMode("ACHIEVEMENTS")
+    end)
+    self.achieveButton:SetScript("OnLeave", function()
+        UI:RefreshLauncherButtonStates()
+        GameTooltip:Hide()
+    end)
+
+    self.progressButton = makeQuickButton("CreshChatProgressButton", "Prg", "Progress Hub", "Toggle the Progress Hub (World · Quests · Combat)", function()
+        UI:LauncherToggleMode("PROGRESS")
+    end)
+    self.progressButton:SetScript("OnLeave", function()
+        UI:RefreshLauncherButtonStates()
+        GameTooltip:Hide()
+    end)
+
     applyPosition(bubble, "bubble")
     self:PositionQuickButtons()
     self:SetBubbleGroupShown(CC.db.bubbleVisible)
     self:RefreshLauncherNotification()
+    self:RefreshLauncherButtonStates()
     self:MarkLauncherActive()
 end
 
@@ -7967,18 +8162,32 @@ function UI:Initialize()
 
     self:SyncThemeColors()
     self:SyncGuildTheme()
-    self:BuildMainFrame()
-    self:BuildBubble()
-    self:BuildQuickInput()
-    self:BuildCombatPanel()
-    self.initialized = true
-    self:InstallEnterChatHook()
-    self:InstallBlizzardChatRedirects()
-    if C_Timer and C_Timer.After then
-        C_Timer.After(1.0, function() if UI.initialized then UI:InstallBlizzardChatRedirects() end end)
-        C_Timer.After(3.0, function() if UI.initialized then UI:InstallBlizzardChatRedirects() end end)
+    local chatEnabled     = CC.IsFeatureEnabled and CC:IsFeatureEnabled("chat")
+    local gamesEnabled    = CC.IsFeatureEnabled and CC:IsFeatureEnabled("games")
+    local achieveEnabled  = CC.IsFeatureEnabled and CC:IsFeatureEnabled("gameProgression")
+    local progressEnabled = CC.ProgressHub and CC.ProgressHub:HasAnyEnabled()
+    if chatEnabled then
+        self:BuildMainFrame()
+        self:BuildQuickInput()
+        self:BuildCombatPanel()
+    else
+        self:BuildGamesAnchor()
     end
-    self:SetMode("WHISPER")
-    self.main:Hide()
+    -- The C launcher is built whenever any major destination is enabled, even
+    -- with chat disabled, so Games/Achievements/Progress-only players still have a launcher.
+    if chatEnabled or gamesEnabled or achieveEnabled or progressEnabled then
+        self:BuildBubble()
+    end
+    self.initialized = true
+    if chatEnabled then
+        self:InstallEnterChatHook()
+        self:InstallBlizzardChatRedirects()
+        if C_Timer and C_Timer.After then
+            C_Timer.After(1.0, function() if UI.initialized then UI:InstallBlizzardChatRedirects() end end)
+            C_Timer.After(3.0, function() if UI.initialized then UI:InstallBlizzardChatRedirects() end end)
+        end
+        self:SetMode("WHISPER")
+        self.main:Hide()
+    end
     self:RefreshAll()
 end

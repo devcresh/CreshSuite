@@ -459,6 +459,7 @@ end
 local frame=CreateFrame("Frame")
 for _,event in ipairs({"PLAYER_LOGIN","PLAYER_ENTERING_WORLD","SPELLS_CHANGED","UNIT_SPELLCAST_SUCCEEDED","UNIT_PET","UNIT_COMBO_POINTS","PLAYER_REGEN_DISABLED","PLAYER_DEAD","PLAYER_ALIVE","BAG_UPDATE_DELAYED","COMBAT_LOG_EVENT_UNFILTERED"}) do pcall(frame.RegisterEvent,frame,event) end
 frame:SetScript("OnEvent",function(_,event,...)
+    if not CC:IsFeatureEnabled("worldProgression") then return end
     if event=="PLAYER_LOGIN" or event=="PLAYER_ENTERING_WORLD" or event=="SPELLS_CHANGED" then
         A:BuildCatalog(); classRoot(); ClassAchievements:ScanKnownClassSpells(); ClassAchievements:ScanSoulShards(true)
         if currentClass()=="HUNTER" and type(_G.UnitExists)=="function" and _G.UnitExists("pet") and type(_G.UnitName)=="function" then ClassAchievements:AddUniquePet(_G.UnitName("pet")) end

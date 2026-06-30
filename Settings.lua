@@ -784,12 +784,26 @@ function Settings:BuildGeneral(page)
     b:HalfToggle("Compact navigation", function() return CC.db.ui.compactNavigation ~= false end, function(v) CC.db.ui.compactNavigation = v end)
 
     b:Section("Launcher")
+    b:Dropdown("Default launcher action", function() return CC.db.ui.launcherDefault or "LAST" end, function(v) CC.db.ui.launcherDefault = v end,
+        { "LAST", "CHAT", "GAMES", "ACHIEVEMENTS", "PROGRESS", "SETTINGS" },
+        { LAST = "Last used", CHAT = "Chat", GAMES = "Games", ACHIEVEMENTS = "Achievements", PROGRESS = "Progress Hub", SETTINGS = "Settings" })
+    b:Note("Left-click on C opens this destination. If it's disabled in Modules, CreshChat falls back to the first enabled destination automatically. Shift+click always opens Settings.")
     b:Dropdown("Launcher buttons", function() return CC.db.ui.launcherMode or "SINGLE" end, function(v) CC.db.ui.launcherMode = v end,
         { "SINGLE", "EXPANDED" }, { SINGLE = "C only", EXPANDED = "C + quick buttons" })
     b:HalfToggle("Whisper quick button", function() return CC.db.ui.showWhisperButton == true end, function(v) CC.db.ui.showWhisperButton = v end)
     b:HalfToggle("General quick button", function() return CC.db.ui.showGeneralButton == true end, function(v) CC.db.ui.showGeneralButton = v end)
     b:HalfToggle("Combat quick button", function() return CC.db.ui.showCombatButton == true end, function(v) CC.db.ui.showCombatButton = v end)
+    b:HalfToggle("Games quick button", function() return CC.db.ui.showGamesButton == true end, function(v) CC.db.ui.showGamesButton = v end)
+    b:HalfToggle("Achievements quick button", function() return CC.db.ui.showAchievementsButton == true end, function(v) CC.db.ui.showAchievementsButton = v end)
+    b:HalfToggle("Progress Hub quick button", function() return CC.db.ui.showProgressButton == true end, function(v) CC.db.ui.showProgressButton = v end)
+    b:Note("Games, Achievements and Progress Hub quick buttons always show next to C when chat is disabled in Modules, regardless of this toggle.")
     b:HalfToggle("Group consecutive messages", function() return CC.db.ui.groupedMessages ~= false end, function(v) CC.db.ui.groupedMessages = v end)
+
+    b:Section("Progress Hub")
+    b:Note("World Progression, Quest Capture and Combat Tracking run in the background. Open /cc progress (or the Prg quick button) any time to see exploration, quest and combat stats, even if Chat and Games are disabled.")
+    b:Buttons({
+        { "OPEN PROGRESS HUB", function() if CC.ProgressHub then CC.ProgressHub:Toggle() end end, 160 },
+    })
 
     b:Section("Portraits and scale")
     b:HalfToggle("Show player portraits", function() return CC.db.ui.showPortraits ~= false end, function(v) CC.db.ui.showPortraits = v end)
@@ -1223,6 +1237,33 @@ function Settings:BuildProfiles(page)
     b:Finish()
 end
 
+function Settings:BuildModules(page)
+    local b = self:NewBuilder(page, "Feature Modules",
+        "Enable or disable major CreshChat subsystems. Disabled modules become genuinely dormant — event handlers return early, hooks no-op, background processing stops. Changes require /reload to fully activate.")
+
+    b:Section("Presets")
+    b:Buttons({
+        { "Full CreshChat", function() CC:ApplyFeaturePreset("full");    Settings:Refresh() end, 120 },
+        { "Games Only",     function() CC:ApplyFeaturePreset("games");   Settings:Refresh() end, 120 },
+        { "Chat Only",      function() CC:ApplyFeaturePreset("chat");    Settings:Refresh() end, 120 },
+        { "Minimal",        function() CC:ApplyFeaturePreset("minimal"); Settings:Refresh() end, 120 },
+    })
+    b:Note("Presets switch groups of modules at once. After choosing a preset, type /reload in chat to activate. Message history and progression data are never deleted by changing modules.")
+
+    b:Section("Individual modules")
+    for _, key in ipairs(CC.featureOrder or {}) do
+        local displayName = (CC.featureDisplayNames and CC.featureDisplayNames[key]) or key
+        b:HalfToggle(
+            displayName,
+            function() return CC:IsFeatureEnabled(key) end,
+            function(v) CC:SetFeatureEnabled(key, v) end
+        )
+    end
+    b:Note("Dependency cascades apply automatically: disabling Games also disables Multiplayer Games, Game Progression and Battle Pass; disabling Chat also disables Voice. Type /reload after any individual change.")
+
+    b:Finish()
+end
+
 function Settings:BuildAdvanced(page)
     local b = self:NewBuilder(page, "Advanced and Maintenance", "Native slash-command routing, diagnostic tools and safe UI resets.")
     b:Section("Blizzard command compatibility")
@@ -1514,7 +1555,7 @@ function Settings:Build()
     self.pageWidth = max(340, frameWidth - self.sidebarWidth - 54)
 
     local categories = {
-        { "GENERAL", "General" }, { "CONSOLE", "Console" }, { "DOCK", "C Dock" }, { "WINDOWS", "Windows" },
+        { "GENERAL", "General" }, { "MODULES", "Modules" }, { "CONSOLE", "Console" }, { "DOCK", "C Dock" }, { "WINDOWS", "Windows" },
         { "ALERTS", "Notifications" }, { "THEMES", "Themes" },
         { "GUILD", "Guild" }, { "CHANNELS", "Channels" }, { "PROFILES", "Profiles" }, { "ADVANCED", "Advanced" },
     }
@@ -1531,6 +1572,7 @@ function Settings:Build()
     end
 
     self:BuildGeneral(self.pages.GENERAL)
+    self:BuildModules(self.pages.MODULES)
     self:BuildConsole(self.pages.CONSOLE)
     self:BuildDock(self.pages.DOCK)
     self:BuildWindows(self.pages.WINDOWS)

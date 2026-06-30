@@ -584,6 +584,18 @@ function Games:BuildHub(parent)
     hub.scan:SetPoint("RIGHT", hub.banner, "RIGHT", -10, 0)
     setButtonAccent(hub.scan, colors.accent)
 
+    hub.settings = createButton(hub.banner, "SET", 40, 26, function()
+        if CC.UI and CC.UI.OpenSettings then CC.UI:OpenSettings() end
+    end)
+    hub.settings:SetPoint("RIGHT", hub.scan, "LEFT", -6, 0)
+    hub.settings:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+        GameTooltip:SetText("CreshChat Settings", 1, 1, 1)
+        GameTooltip:AddLine("Open Settings to configure modules and launcher.", 0.8, 0.8, 0.8, true)
+        GameTooltip:Show()
+    end)
+    hub.settings:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
     hub.targetButton = createButton(hub, "TARGET", 310, 30, function(_, mouseButton)
         Games:CycleTarget(mouseButton == "RightButton" and -1 or 1)
     end)
@@ -2732,7 +2744,7 @@ eventFrame:SetScript("OnEvent", function(_, event, ...)
         Games:RegisterPrefix()
         if _G.C_Timer and type(_G.C_Timer.After) == "function" then _G.C_Timer.After(2, function() Games:RefreshHub() end) end
     elseif event == "CHAT_MSG_ADDON" then
-        Games:HandleAddonMessage(...)
+        if CC:IsFeatureEnabled("multiplayerGames") then Games:HandleAddonMessage(...) end
     elseif event == "FRIENDLIST_UPDATE" or event == "GROUP_ROSTER_UPDATE" or event == "GUILD_ROSTER_UPDATE" or event == "PLAYER_TARGET_CHANGED" then
         if CC.UI and CC.UI.RefreshGameDrawer then CC.UI:RefreshGameDrawer(true) end
     elseif event == "PLAYER_LOGOUT" then

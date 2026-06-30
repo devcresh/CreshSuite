@@ -330,6 +330,7 @@ eventFrame:RegisterEvent("PLAYER_LOGIN")
 eventFrame:RegisterEvent("CHAT_MSG_ADDON")
 pcall(function() eventFrame:RegisterEvent("VOICE_CHAT_CHANNEL_JOINED") end)
 eventFrame:SetScript("OnEvent", function(_, event, ...)
+    if not CC:IsFeatureEnabled("voice") then return end
     if event == "PLAYER_LOGIN" then
         Voice:Register()
         Voice:Ensure()

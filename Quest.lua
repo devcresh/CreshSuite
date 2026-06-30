@@ -349,6 +349,7 @@ frame:SetScript("OnEvent", function(_, event, ...)
         return
     end
     if not CC.db then return end
+    if not CC:IsFeatureEnabled("questCapture") then return end
 
     if event == "GOSSIP_SHOW" then Quest:CaptureGossip()
     elseif event == "QUEST_GREETING" then Quest:CaptureGreeting()

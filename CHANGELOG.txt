@@ -1,3 +1,47 @@
+CreshChat v0.2.3 - Modular Feature System and Games-Only Mode (Unreleased)
+
+- Added FeatureManager.lua: 11 feature flags (chat, games, multiplayerGames,
+  gameProgression, battlePass, worldProgression, combatTracking, questCapture,
+  friendsPresence, voice, notifications) that let players genuinely disable major
+  subsystems. Disabled modules stop processing events and polling rather than just
+  hiding their UI. All flags default to true, so upgrading players see no change.
+- Added automatic dependency cascades (e.g. disabling Games also disables
+  Multiplayer Games, Game Progression and Battle Pass; disabling Chat also
+  disables Voice) and four named presets (full, games, chat, minimal).
+- Added a "Modules" tab in Settings with per-feature toggles and one-click presets,
+  plus /cc modules and /cc preset <full|games|chat|minimal> slash commands.
+- Added Games-Only mode: when Chat is disabled, the main chat frame is replaced by
+  an invisible positioning anchor (UI:BuildGamesAnchor) so the games hub, Battle
+  Pass and Achievements still work without any chat capture, redirects or hooks.
+- Added an adaptive C launcher: the launcher button now appears whenever Chat,
+  Games, Game Progression or the Progress Hub is enabled (previously it required
+  Chat). Added Gm / Ach / Prg satellite quick-buttons and a smart toggle that
+  switches the open drawer's mode instead of closing and reopening it.
+- Added the Progress Hub (ProgressHub.lua): a standalone panel for World
+  Progression, Quest Capture and Combat Tracking stats, reachable via /cc progress
+  even when Chat and Games are both disabled.
+- Added an "Enabled Modules Only" filter to the Achievements browser, and disabled-
+  module messaging in the Battle Pass drawer's exploration goals and level
+  requirement panel, so players are told why a goal can't progress instead of
+  seeing silently frozen progress bars.
+- Upgraded SavedVariables to schema 79: adds an account-wide `features` table,
+  backfilled to all-true for existing accounts (nil-checked, never overwrites an
+  existing choice). Schema 78 data (per-character combat tracking, class
+  achievement keys) is unaffected.
+- Fixed: World Progression's background position/zone polling (Progression.lua
+  OnUpdate) now stops when the worldProgression feature is disabled; previously
+  only the event-driven kill/zone-change handler respected the flag, so disabling
+  the module didn't fully stop its background work.
+- Fixed: AchievementExpansion:RecordQuestTurnIn now accepts an optional sourceGame
+  argument and rejects non-WOW sources, matching the existing guard on RecordBoss.
+  (Not currently reachable from another source; this closes the structural gap.)
+- Note: ProgressRouter.lua's validated routing layer remains a diagnostics/testing
+  tool (/cc progress test|log|clear|on|off) rather than a mandatory path -- live
+  WOW/Dungeon-Dweller progression isolation is enforced by the existing sourceGame
+  guards and DungeonDwellersProgression's event registration, not by routing
+  through it. Wiring BattlePass.lua / DungeonDwellersProgression.lua through the
+  router is a larger follow-up, not done in this release.
+
 CreshChat v0.2.2 - Per-Character Combat Tracking and Class Achievement Key Migration (2026-06-30)
 
 - Added per-character combat tracking alongside account-aggregate tracking; CombatTracker

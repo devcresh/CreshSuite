@@ -466,6 +466,18 @@ function Solo:BuildWindow()
     frame.home:SetPoint("RIGHT", frame.header, "RIGHT", -42, 0)
     setButtonAccent(frame.home, colors.accent)
 
+    frame.settings = createButton(frame.header, "SET", 40, 26, function()
+        if CC.UI and CC.UI.OpenSettings then CC.UI:OpenSettings() end
+    end)
+    frame.settings:SetPoint("RIGHT", frame.home, "LEFT", -6, 0)
+    frame.settings:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+        GameTooltip:SetText("CreshChat Settings", 1, 1, 1)
+        GameTooltip:AddLine("Open Settings to configure modules and launcher.", 0.8, 0.8, 0.8, true)
+        GameTooltip:Show()
+    end)
+    frame.settings:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
     frame.close = createButton(frame.header, "X", 28, 26, function() frame:Hide() end)
     frame.close:SetPoint("RIGHT", frame.header, "RIGHT", -7, 0)
     setButtonAccent(frame.close, colors.red)

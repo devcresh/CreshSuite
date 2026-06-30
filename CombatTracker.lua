@@ -94,6 +94,7 @@ end
 --                            p4=amount  p5=overheal  p6=absorbed  p7=critical
 
 local function onCombatLog()
+    if not CC:IsFeatureEnabled("combatTracking") then return end
     if not statsRef or not playerGUID then return end
 
     local _, sub, _, src, _, _, _, dst, _, _, _,
