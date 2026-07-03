@@ -79,6 +79,7 @@ local function ensureTables()
     CC.db.ui.consoleTabs = CC.db.ui.consoleTabs or {}
     CC.db.notifications = CC.db.notifications or {}
     CC.db.notificationPriorities = CC.db.notificationPriorities or {}
+    CC.db.notificationSources = CC.db.notificationSources or {}
     CC.db.sounds = CC.db.sounds or { master = true, whisper = true, guild = true, party = true, partyInvite = true, partyMessage = true, quest = true, mentions = true, friends = true, game = true, system = false }
     CC.db.soundChoices = CC.db.soundChoices or {}
     CC.db.soundVolumes = CC.db.soundVolumes or {}
@@ -1009,6 +1010,42 @@ function Settings:BuildAlerts(page)
             b:Note("Hides only Blizzard's ‘No player named … is currently online/playing’ line. The attempted CreshChat whisper remains visible and is marked failed instead.")
         end
         b:Note(description)
+    end
+
+    -- CreshGames and CreshCollect: per-category toggles built from the live
+    -- registry.  Settings:Build() is called lazily on first open, so all
+    -- addon stubs have already loaded and registered their categories.
+    if CC.Notifications then
+        local extSources = {
+            { "CRESHGAMES",   "CreshGames" },
+            { "CRESHCOLLECT", "CreshCollect" },
+        }
+        for _, srcItem in ipairs(extSources) do
+            local srcKey, srcLabel = srcItem[1], srcItem[2]
+            if CC.Notifications:GetRegisteredSources()[srcKey] then
+                local cats     = CC.Notifications:GetRegisteredCategories(srcKey)
+                local catOrder = {}
+                for catKey in pairs(cats) do catOrder[#catOrder + 1] = catKey end
+                table.sort(catOrder)
+                b:Section(srcLabel .. " notifications")
+                for _, catKey in ipairs(catOrder) do
+                    local info    = cats[catKey]
+                    local cSrc    = srcKey
+                    local cCat    = catKey
+                    b:HalfToggle(info.label,
+                        function()
+                            local s = CC.db.notificationSources and CC.db.notificationSources[cSrc]
+                            return not s or s[cCat] ~= false
+                        end,
+                        function(v)
+                            CC.db.notificationSources = CC.db.notificationSources or {}
+                            CC.db.notificationSources[cSrc] = CC.db.notificationSources[cSrc] or {}
+                            CC.db.notificationSources[cSrc][cCat] = v and true or false
+                        end
+                    )
+                end
+            end
+        end
     end
 
     b:Section("C launcher visibility")

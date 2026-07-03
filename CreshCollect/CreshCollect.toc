@@ -1,0 +1,8 @@
+## Interface: 20505
+## Title: CreshCollect
+## Notes: CreshChat collection and achievements module.
+## Author: creshor
+## Version: 0.2.3
+## Dependencies: CreshChat
+
+CreshCollect.lua

@@ -1,0 +1,8 @@
+## Interface: 20505
+## Title: CreshGames
+## Notes: CreshChat multiplayer and solo games module.
+## Author: creshor
+## Version: 0.2.3
+## Dependencies: CreshChat
+
+CreshGames.lua
