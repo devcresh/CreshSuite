@@ -50,10 +50,12 @@ $ScriptDir  = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot   = Split-Path -Parent $ScriptDir
 $WoWAddOns  = "D:\Battlenet\World of Warcraft\_anniversary_\Interface\AddOns"
 
+$AddonsDir = Join-Path $RepoRoot "addons"
+
 $AddonDefs = @(
-    [ordered]@{ Name = "CreshChat";    Src = Join-Path $RepoRoot "CreshChat"    }
-    [ordered]@{ Name = "CreshGames";   Src = Join-Path $RepoRoot "CreshGames"   }
-    [ordered]@{ Name = "CreshCollect"; Src = Join-Path $RepoRoot "CreshCollect" }
+    [ordered]@{ Name = "CreshChat";    Src = Join-Path $AddonsDir "CreshChat"    }
+    [ordered]@{ Name = "CreshGames";   Src = Join-Path $AddonsDir "CreshGames"   }
+    [ordered]@{ Name = "CreshCollect"; Src = Join-Path $AddonsDir "CreshCollect" }
 )
 
 if ($Addon -ne "All") {
@@ -95,6 +97,20 @@ function Write-Log {
 }
 
 # ---------------------------------------------------------------------------
+# Rule 0: explicit path validation — refuse to touch WoW runtime folders
+# ---------------------------------------------------------------------------
+$forbiddenDests = @("WTF","Cache","Logs","Screenshots","_retail_","_classic_")
+foreach ($f in $forbiddenDests) {
+    if ($WoWAddOns -match [regex]::Escape($f)) {
+        Write-Error "Deployment target '$WoWAddOns' contains a forbidden path segment '$f'."
+        exit 1
+    }
+}
+if (-not ($WoWAddOns -match "AddOns")) {
+    Write-Error "Deployment target '$WoWAddOns' does not look like a WoW AddOns directory."
+    exit 1
+}
+
 # Rule 1: abort if WoW is running
 # ---------------------------------------------------------------------------
 $running = Get-Process "Wow","Wow_classic_era" -ErrorAction SilentlyContinue

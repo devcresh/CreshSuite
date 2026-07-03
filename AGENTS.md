@@ -16,27 +16,44 @@ Live deployment folder (read by WoW):
 Edits are made in the repository and deployed to WoW with Deploy-Local.ps1.
 Do NOT edit files inside the live AddOns directories directly.
 
-## Addon source directories
+## Monorepo layout
 
-All three addon source trees live as siblings under the repo root:
+    addons\
+      CreshChat\    — chat windows, UI, notifications, friends, voice, settings
+      CreshGames\   — multiplayer/solo games, Battle Pass, dungeon games, audio
+      CreshCollect\ — achievements, collection tracking, progression statistics
+    shared\         — cross-addon shared utilities (no code yet; deployment copies to each addon)
+    tests\          — validation and in-game test harnesses (no code yet)
+    tools\          — build, deploy, validate and package scripts
+    ArtSource\      — design source files (NOT deployed)
+    Docs\           — architecture and reference documentation (NOT deployed)
+    quarantine\     — accidentally-created files holding area (NOT deployed)
+    release\        — built ZIP packages (gitignored)
 
-    CreshChat\     — chat windows, UI, notifications, friends, voice, settings
-    CreshGames\    — multiplayer/solo games, Battle Pass, dungeon games, audio
-    CreshCollect\  — achievements, collection tracking, progression statistics
+Development files that are NEVER deployed:
 
-Development files that are NOT deployed (stay at repo root only):
+    ArtSource\  Docs\  tools\  quarantine\  release\  shared\  tests\
+    AGENTS.md  CLAUDE.md  .gitignore  .gitattributes  *.code-workspace
 
-    ArtSource\  Docs\  tools\  quarantine\  release\
-    AGENTS.md  CLAUDE.md  .gitignore  .gitattributes
+Each addon is an incomplete split of the original monolithic CreshChat.
+CreshGames and CreshCollect are stubs only; the Lua code extraction is
+deferred to later phases. The current working implementation lives in
+addons/CreshChat and must not be broken during scaffolding.
 
-## Live deployment
+## Live deployment and tooling
 
-To push source changes to WoW, close WoW first, then run:
+Close WoW first, then run from D:\CreshSuite\:
 
-    cd D:\CreshSuite
-    .\tools\Deploy-Local.ps1             # deploys all three addons
-    .\tools\Deploy-Local.ps1 -Addon CreshChat   # one addon only
+    .\tools\Deploy-Local.ps1             # deploy all three addons to WoW
+    .\tools\Deploy-Local.ps1 -Addon CreshChat   # deploy one addon only
     .\tools\Deploy-Local.ps1 -WhatIf     # dry run, no writes
+
+    .\tools\Validate-Addons.ps1          # validate repo structure
+    .\tools\Build-Release.ps1 -StageOnly # stage files, no ZIP
+    .\tools\Build-Release.ps1            # stage + build release ZIPs
+
+Or use VS Code tasks (Ctrl+Shift+B / Terminal → Run Task):
+    Validate | Stage all addons | Deploy locally | Deploy locally (dry run) | Build release packages
 
 Live addon destinations:
 

@@ -2,15 +2,19 @@
 	"folders": [
 		{
 			"name": "CreshChat",
-			"path": "CreshChat"
+			"path": "addons/CreshChat"
 		},
 		{
 			"name": "CreshGames",
-			"path": "CreshGames"
+			"path": "addons/CreshGames"
 		},
 		{
 			"name": "CreshCollect",
-			"path": "CreshCollect"
+			"path": "addons/CreshCollect"
+		},
+		{
+			"name": "shared",
+			"path": "shared"
 		},
 		{
 			"name": "Docs",
