@@ -32,7 +32,7 @@
     .\tools\Deploy-Local.ps1 -WhatIf
 #>
 
-[CmdletBinding(SupportsShouldProcess)]
+[CmdletBinding()]
 param(
     [ValidateSet("CreshChat", "CreshGames", "CreshCollect", "All")]
     [string]$Addon = "All",
