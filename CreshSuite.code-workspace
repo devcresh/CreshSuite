@@ -1,0 +1,25 @@
+{
+	"folders": [
+		{
+			"name": "CreshChat",
+			"path": "CreshChat"
+		},
+		{
+			"name": "CreshGames",
+			"path": "CreshGames"
+		},
+		{
+			"name": "CreshCollect",
+			"path": "CreshCollect"
+		},
+		{
+			"name": "Docs",
+			"path": "Docs"
+		},
+		{
+			"name": "tools",
+			"path": "tools"
+		}
+	],
+	"settings": {}
+}
