@@ -342,6 +342,18 @@ function Games:RecordResult(result, detail, roundKey)
         else stats.draws = (tonumber(stats.draws) or 0) + 1 end
         CC.db.multiplayerStats[active.game] = stats
     end
+    if CC.Notifications and CC:IsFeatureEnabled("notifications") then
+        local n = self:GetGameName(active.game)
+        CC.Notifications:Push({
+            sourceAddon = "CRESHGAMES",
+            category    = "GAME_RESULT",
+            priority    = "NORMAL",
+            status      = result == "WIN" and "SUCCESS" or (result == "LOSS" and "ERROR" or "INFO"),
+            title       = result == "WIN" and "You won!" or (result == "LOSS" and "You lost" or "Draw"),
+            detail      = n .. " vs " .. shortName(active.opponent) .. (detail and (" · " .. detail) or ""),
+            coalesceKey = "GAME_RESULT:" .. tostring(active.id or "match"),
+        })
+    end
     return true
 end
 
@@ -695,6 +707,17 @@ function Games:Challenge(target, game)
     end
     CC:Print(self:GetGameName(game) .. " challenge sent to " .. shortName(target) .. ".")
     self:RefreshHub()
+    if CC.Notifications and CC:IsFeatureEnabled("notifications") then
+        CC.Notifications:Push({
+            sourceAddon = "CRESHGAMES",
+            category    = "CHALLENGE",
+            priority    = "NORMAL",
+            status      = "GAME",
+            title       = "Challenge sent",
+            detail      = self:GetGameName(game) .. " · waiting for " .. shortName(target) .. " to respond.",
+            coalesceKey = "CHALLENGE:SENT:" .. tostring(target),
+        })
+    end
     if _G.C_Timer and type(_G.C_Timer.After) == "function" then
         _G.C_Timer.After(15, function()
             local pending = Games.pendingOutgoing
@@ -741,7 +764,28 @@ function Games:ShowChallengePopup(sender, game, id)
         if CC.UI and CC.UI.ApplySafeFrameScale then CC.UI:ApplySafeFrameScale(popup, (CC.db.ui and CC.db.ui.scale) or 1, 22) end
     end
     self.challengePopup.message:SetText(shortName(sender) .. " challenged you to " .. self:GetGameName(game) .. ".")
-    self.challengePopup:Show()
+    local usedNewSystem = false
+    if CC.Notifications and CC:IsFeatureEnabled("notifications") then
+        local pushed = CC.Notifications:Push({
+            sourceAddon  = "CRESHGAMES",
+            category     = "GAME_INVITE",
+            priority     = "CRITICAL",
+            destination  = "ACTIONABLE",
+            status       = "GAME",
+            title        = shortName(sender),
+            detail       = "challenged you to " .. self:GetGameName(game) .. ".",
+            duration     = 30,
+            coalesceKey  = "GAME_INVITE:" .. tostring(sender),
+            actions      = {
+                accept       = function(card) CC.Notifications:DismissCard(card); Games:AcceptChallenge() end,
+                acceptLabel  = "ACCEPT",
+                decline      = function(card) CC.Notifications:DismissCard(card); Games:DeclineChallenge("Declined") end,
+                declineLabel = "DECLINE",
+            },
+        })
+        usedNewSystem = pushed ~= nil and pushed ~= false
+    end
+    if not usedNewSystem then self.challengePopup:Show() end
     if (not CC.IsNotificationEnabled or CC:IsNotificationEnabled("GAME")) and CC.UI and CC.UI.NotifyLauncher then CC.UI:NotifyLauncher("GAME", sender, 12) end
     if CC.PlayAlertSound then CC:PlayAlertSound("GAME") end
 end
@@ -842,6 +886,17 @@ function Games:OnDecline(sender, parts)
     local reason = parts[3] or "Declined"
     self.pendingOutgoing = nil
     self:SetHubStatus(shortName(sender) .. " declined the challenge: " .. reason .. ".", palette().red)
+    if CC.Notifications and CC:IsFeatureEnabled("notifications") then
+        CC.Notifications:Push({
+            sourceAddon = "CRESHGAMES",
+            category    = "CHALLENGE",
+            priority    = "NORMAL",
+            status      = "INFO",
+            title       = "Challenge declined",
+            detail      = shortName(sender) .. " declined: " .. tostring(reason),
+            coalesceKey = "CHALLENGE:DECLINE:" .. tostring(sender),
+        })
+    end
     self:RefreshHub()
 end
 
