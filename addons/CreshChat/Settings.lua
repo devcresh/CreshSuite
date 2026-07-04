@@ -1532,6 +1532,27 @@ function Settings:Refresh()
     end
 end
 
+-- Build settings panels for any suite addon that has registered a page-spec
+-- table via Suite:RegisterSettingsProvider. GamesSettings.lua / CollectSettings.lua
+-- register on ADDON_LOADED, which can happen before OR after the player first
+-- opens Settings (no fixed load order between addons without a Dependencies
+-- directive) -- so this must be safe to call repeatedly, not just once at
+-- Settings:Build() time. BuildProductSettingsPanel is itself idempotent
+-- (Settings.lua's productPanels[key] guard), so re-scanning costs nothing once
+-- a provider is already built.
+function Settings:DiscoverProviders()
+    if not self.frame then return end
+    local _suite = _G.CreshSuite
+    for _, _p in ipairs(PRODUCTS) do
+        if not _p.owned then
+            local _spec = _suite and _suite.GetSettingsProvider and _suite:GetSettingsProvider(_p.addonName)
+            if type(_spec) == "table" and type(_spec.pages) == "table" then
+                self:BuildProductSettingsPanel(_p.key, _spec)
+            end
+        end
+    end
+end
+
 function Settings:Build()
     if self.frame then return end
     ensureTables()
@@ -1656,18 +1677,7 @@ function Settings:Build()
     self:BuildAdvanced(self.pages.ADVANCED)
     self:BuildProductPane()
 
-    -- Build settings panels for any suite addon that has registered a page-spec table.
-    -- GamesSettings.lua / CollectSettings.lua register their specs on ADDON_LOADED,
-    -- before the player can first open Settings, so providers are always available here.
-    local _suite = _G.CreshSuite
-    for _, _p in ipairs(PRODUCTS) do
-        if not _p.owned then
-            local _spec = _suite and _suite.GetSettingsProvider and _suite:GetSettingsProvider(_p.addonName)
-            if type(_spec) == "table" and type(_spec.pages) == "table" then
-                self:BuildProductSettingsPanel(_p.key, _spec)
-            end
-        end
-    end
+    self:DiscoverProviders()
 
     self:SelectProduct("CC")
 
@@ -1687,6 +1697,7 @@ end
 
 function UI:OpenSettings()
     Settings:Build()
+    Settings:DiscoverProviders()
     if not (UI.IsThemePreviewActive and UI:IsThemePreviewActive()) then
         Settings.themePreviewSelection = CC.db and CC.db.ui and CC.db.ui.themePreset or "CRESH_MINIMAL"
     end
@@ -1910,6 +1921,7 @@ function Settings:BuildProductSettingsPanel(productKey, spec)
         sidebar   = pSidebar,
         content   = pContent,
         pages     = {},
+        pageSpecs = {},
         tabs      = {},
         pageOrder = {},
         activePage = nil,
@@ -1953,6 +1965,7 @@ function Settings:BuildProductSettingsPanel(productKey, spec)
         end
         scroll:Hide()
         ps.pages[pKey] = scroll
+        ps.pageSpecs[pKey] = pageSpec
 
         if type(pageSpec.build) == "function" then
             self.currentProductKey = productKey
@@ -1972,6 +1985,36 @@ function Settings:BuildProductSettingsPanel(productKey, spec)
     self.productPanels[productKey] = ps
 end
 
+-- Re-run a single already-built product page's build(builder) closure against
+-- a fresh canvas, so live data (e.g. collection counts) reflects the latest
+-- SavedVariables without rebuilding the whole product panel or requiring the
+-- page to be closed and reopened.
+function Settings:RefreshProductPage(productKey, pageKey)
+    local ps = self.productPanels and self.productPanels[productKey]
+    if not ps then return end
+    local scroll = ps.pages and ps.pages[pageKey]
+    local pageSpec = ps.pageSpecs and ps.pageSpecs[pageKey]
+    if not scroll or not pageSpec or type(pageSpec.build) ~= "function" then return end
+
+    local canvas = CreateFrame("Frame", nil, scroll)
+    raiseFrame(canvas, scroll, 1)
+    canvas:SetSize(self.pageWidth or 400, 520)
+    scroll:SetScrollChild(canvas)
+    scroll.canvas = canvas
+
+    self.currentProductKey = productKey
+    local b = self:NewBuilder(scroll, pageSpec.label, pageSpec.desc or "")
+    local ok, err = pcall(pageSpec.build, b)
+    b:Finish()
+    self.currentProductKey = nil
+    if not ok then
+        local errNote = font(canvas, 9, "LEFT")
+        errNote:SetPoint("TOPLEFT", canvas, "TOPLEFT", 12, -12)
+        errNote:SetTextColor(0.85, 0.35, 0.35, 1)
+        errNote:SetText("Settings error: " .. tostring(err))
+    end
+end
+
 function Settings:SelectProduct(key)
     self.activeProductKey = key
     if key == "CC" then
@@ -1983,6 +2026,10 @@ function Settings:SelectProduct(key)
     else
         if self.sidebar then self.sidebar:Hide() end
         if self.content then self.content:Hide() end
+        -- A provider may have registered after Build() ran (no fixed load order
+        -- between suite addons); pick it up now instead of showing the
+        -- Overview/status fallback forever.
+        self:DiscoverProviders()
         local ps = self.productPanels and self.productPanels[key]
         if ps then
             if self.productPane then self.productPane:Hide() end

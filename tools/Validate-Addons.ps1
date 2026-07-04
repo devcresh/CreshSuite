@@ -384,7 +384,7 @@ foreach ($name in $addonNames) {
             $mediaSrcAddon = Join-Path $AddonsDir $mediaAddon
             $mediaAbsPath  = Join-Path $mediaSrcAddon $mediaRelative
             if (-not (Test-Path $mediaAbsPath)) {
-                Warn "Media file not found: $mediaAddon\$mediaRelative (referenced in $name/$rel)"
+                Fail "Media file not found: $mediaAddon\$mediaRelative (referenced in $name/$rel)"
                 $mediaErrors++
             }
         }
