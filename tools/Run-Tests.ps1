@@ -43,7 +43,8 @@ $Suites = @(
     @{
         Label = "Settings Shell Tests"
         Args  = @(
-            (Join-Path $RepoRoot "tests\SettingsShellTests.lua")
+            (Join-Path $RepoRoot "tests\SettingsShellTests.lua"),
+            (Join-Path $RepoRoot "addons\CreshChat\VersionCompare.lua")
         )
     }
 )

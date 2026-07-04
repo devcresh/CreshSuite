@@ -230,16 +230,20 @@ local SUITE_RELEASES_URL = "https://github.com/devcresh/CreshSuite/releases"
 
 local PRODUCTS = {
     { key = "CC",   label = "CreshChat",    addonName = "CreshChat",  owned = true },
-    { key = "CG",   label = "CreshGames",   addonName = "CreshGames"              },
-    { key = "CCOL", label = "CreshCollect", addonName = "CreshCollect"            },
+    { key = "CG",   label = "CreshGames",   addonName = "CreshGames",   minVer = CC.version },
+    { key = "CCOL", label = "CreshCollect", addonName = "CreshCollect", minVer = CC.version },
 }
 
 local function detectAddonStatus(addonName, minVer)
     if IsAddOnLoaded and IsAddOnLoaded(addonName) then
         if minVer and _G.CreshSuite then
             local p = _G.CreshSuite.GetProduct and _G.CreshSuite:GetProduct(addonName)
-            local ver = p and tonumber(p.version) or 0
-            if ver > 0 and ver < minVer then return "incompatible", tostring(p.version) end
+            local verStr = p and p.version
+            local VC = _G.CreshChatVersionCompare
+            if verStr and VC and not VC.IsUnset(verStr) then
+                local cmp = VC.Compare(verStr, minVer)
+                if cmp and cmp < 0 then return "incompatible", tostring(verStr) end
+            end
         end
         return "loaded"
     end
@@ -1806,7 +1810,7 @@ function Settings:ShowProductStatus(key)
     for _, p in ipairs(PRODUCTS) do if p.key == key then product = p; break end end
     if not product then return end
 
-    local status, detail = detectAddonStatus(product.addonName)
+    local status, detail = detectAddonStatus(product.addonName, product.minVer)
     pane.productTitle:SetText(product.label)
 
     if status == "loaded" then

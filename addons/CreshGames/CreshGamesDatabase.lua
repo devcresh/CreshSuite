@@ -169,8 +169,11 @@ end
 local function InitGamesDB()
     CreshGamesDB = CreshGamesDB or {}
     if not CreshGamesDB.version then CreshGamesDB.version = SCHEMA end
-    mergeDefaults(CreshGamesDB, DEFAULTS)
+    -- Migration must see a table with no defaults pre-filled, otherwise fields
+    -- like selectedTheme already hold a non-empty default string and look
+    -- "already set" to importProgressionValue, so the legacy value is skipped.
     MigrateFromCreshChat(CreshGamesDB)
+    mergeDefaults(CreshGamesDB, DEFAULTS)
 end
 
 -- ============================================================

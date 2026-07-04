@@ -6,6 +6,7 @@
 ## SavedVariables: CreshChatDB
 
 Suite.lua
+VersionCompare.lua
 Core.lua
 FeatureManager.lua
 Notifications.lua

@@ -1,8 +1,12 @@
 -- SettingsShellTests.lua
 -- Tests the addon-presence detection logic used by the Settings product tab shell.
 -- The detection function is inlined here because Settings.lua requires the WoW
--- addon environment (local _, CC = ...) and cannot be loaded standalone.
--- Run: lua tests/SettingsShellTests.lua
+-- addon environment (local _, CC = ...) and cannot be loaded standalone. The
+-- semantic-version comparison it depends on is NOT reimplemented here though:
+-- it dofiles the real addons/CreshChat/VersionCompare.lua so a regression in
+-- production version comparison shows up as a test failure instead of being
+-- masked by a second, independently-maintained copy.
+-- Run: lua tests/SettingsShellTests.lua [path-to-VersionCompare.lua]
 
 -- ============================================================
 -- Test runner
@@ -33,15 +37,27 @@ local function eq(a, b, msg)
 end
 
 -- ============================================================
--- Detection function (mirrors Settings.lua detectAddonStatus exactly)
+-- Shared production helper (real file, not a re-implementation)
+-- ============================================================
+
+local versionComparePath = (arg and arg[1]) or "addons/CreshChat/VersionCompare.lua"
+dofile(versionComparePath)
+local VC = _G.CreshChatVersionCompare
+
+-- ============================================================
+-- Detection function (mirrors Settings.lua detectAddonStatus exactly,
+-- including delegating version comparison to VC instead of tonumber())
 -- ============================================================
 
 local function detectAddonStatus(addonName, minVer)
     if IsAddOnLoaded and IsAddOnLoaded(addonName) then
         if minVer and _G.CreshSuite then
             local p = _G.CreshSuite.GetProduct and _G.CreshSuite:GetProduct(addonName)
-            local ver = p and tonumber(p.version) or 0
-            if ver > 0 and ver < minVer then return "incompatible", tostring(p.version) end
+            local verStr = p and p.version
+            if verStr and not VC.IsUnset(verStr) then
+                local cmp = VC.Compare(verStr, minVer)
+                if cmp and cmp < 0 then return "incompatible", tostring(verStr) end
+            end
         end
         return "loaded"
     end
@@ -97,9 +113,10 @@ resetGlobals()
 mockLoaded("CreshChat", "CreshGames", "CreshCollect")
 mockSuite({ CreshGames = { version = "0.2.3" }, CreshCollect = { version = "0.2.3" } })
 
+-- minVer "0.2.0" here doubles as coverage for "0.2.3 satisfies a 0.2.0 requirement".
 eq(detectAddonStatus("CreshChat"),    "loaded", "CreshChat = loaded")
-eq(detectAddonStatus("CreshGames"),   "loaded", "CreshGames = loaded")
-eq(detectAddonStatus("CreshCollect"), "loaded", "CreshCollect = loaded")
+eq(detectAddonStatus("CreshGames", "0.2.0"),   "loaded", "CreshGames = loaded")
+eq(detectAddonStatus("CreshCollect", "0.2.0"), "loaded", "CreshCollect = loaded")
 
 -- ============================================================
 -- 2. Only CreshChat loaded; others not installed
@@ -168,8 +185,8 @@ resetGlobals()
 mockLoaded("CreshChat", "CreshGames")
 mockSuite({ CreshGames = { version = "0.1.5" } })
 
-local s6, d6 = detectAddonStatus("CreshGames", 0.2)
-eq(s6, "incompatible", "CreshGames = incompatible (0.1.5 < 0.2 required)")
+local s6, d6 = detectAddonStatus("CreshGames", "0.2.0")
+eq(s6, "incompatible", "CreshGames = incompatible (0.1.5 < 0.2.0 required)")
 ok(d6 ~= nil,          "detail returned")
 ok(tostring(d6):find("0.1") ~= nil, "detail contains old version string")
 
@@ -200,17 +217,17 @@ resetGlobals()
 mockLoaded("CreshChat", "CreshGames")
 -- _G.CreshSuite is nil
 
-eq(detectAddonStatus("CreshGames", 0.2), "loaded",
+eq(detectAddonStatus("CreshGames", "0.2.0"), "loaded",
     "CreshGames = loaded (no Suite, version check skipped)")
 
 -- Suite present but product not registered -> still loaded
 mockSuite({})
-eq(detectAddonStatus("CreshGames", 0.2), "loaded",
+eq(detectAddonStatus("CreshGames", "0.2.0"), "loaded",
     "CreshGames = loaded (product absent from Suite, version = 0)")
 
 -- Suite present, version = 0 (unset) -> still loaded (0 < minVer but skipped when ver==0)
 mockSuite({ CreshGames = { version = "0" } })
-eq(detectAddonStatus("CreshGames", 0.2), "loaded",
+eq(detectAddonStatus("CreshGames", "0.2.0"), "loaded",
     "CreshGames = loaded (version=0 treated as unset, not incompatible)")
 
 -- ============================================================
