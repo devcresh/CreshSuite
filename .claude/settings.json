@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(powershell -NoProfile -File tools\\\\Run-Tests.ps1)",
+      "PowerShell(powershell -NoProfile -File tools\\\\Validate-Addons.ps1)",
+      "Bash(git status *)"
+    ]
+  }
+}
