@@ -9,113 +9,67 @@ if not CC then return end
 -- All features default to true so upgrading players see no change in behaviour.
 --
 -- Feature keys:
---   chat             CreshChat message capture, console, composer, Blizzard redirects
---   games            Games hub, solo games, Dungeon Dwellers, game audio
---   multiplayerGames Addon-message game protocol and invites
---   gameProgression  Game XP, records, Cresh Coins, game achievements
---   battlePass       Battle Pass rewards track and level progression
---   worldProgression Zone, exploration, dungeon, profession, class achievements
---   combatTracking   COMBAT_LOG_EVENT_UNFILTERED stat collection (CombatTracker.lua)
---   questCapture     Quest dialogue capture from NPC gossip / quest windows
---   friendsPresence  Online/offline monitoring and presence notification cards
---   voice            CreshChat voice call system
---   notifications    Notification card (toast) system
+--   chat            CreshChat message capture, console, composer, Blizzard redirects
+--   questCapture    Quest dialogue capture from NPC gossip / quest windows
+--   friendsPresence Online/offline monitoring and presence notification cards
+--   voice           CreshChat voice call system
+--   notifications   Notification card (toast) system
+-- Games, Progression and Collection features are owned by CreshGames/CreshCollect.
 
 CC.defaultFeatures = {
-    chat             = true,
-    games            = true,
-    multiplayerGames = true,
-    gameProgression  = true,
-    battlePass       = true,
-    worldProgression = true,
-    combatTracking   = true,
-    questCapture     = true,
-    friendsPresence  = true,
-    voice            = true,
-    notifications    = true,
+    chat            = true,
+    questCapture    = true,
+    friendsPresence = true,
+    voice           = true,
+    notifications   = true,
 }
 
 -- When enabling X, these must also be enabled.
 CC.featureDependencies = {
-    battlePass       = { "gameProgression" },
-    multiplayerGames = { "games" },
-    gameProgression  = { "games" },
-    voice            = { "chat" },
+    voice = { "chat" },
 }
 
 -- When disabling X, these are also disabled.
 CC.featureDependents = {
-    games        = { "battlePass", "multiplayerGames", "gameProgression" },
-    gameProgression = { "battlePass" },
-    chat         = { "voice" },
+    chat = { "voice" },
 }
 
 -- Named presets.
 CC.featurePresets = {
     full = {
-        chat=true,  games=true,  multiplayerGames=true,
-        gameProgression=true,  battlePass=true,
-        worldProgression=true, combatTracking=true,
-        questCapture=true,  friendsPresence=true,
-        voice=true,  notifications=true,
-    },
-    games = {
-        chat=false, games=true,  multiplayerGames=true,
-        gameProgression=true,  battlePass=true,
-        worldProgression=false, combatTracking=false,
-        questCapture=false, friendsPresence=false,
-        voice=false, notifications=false,
+        chat=true, questCapture=true, friendsPresence=true,
+        voice=true, notifications=true,
     },
     chat = {
-        chat=true,  games=false, multiplayerGames=false,
-        gameProgression=false, battlePass=false,
-        worldProgression=false, combatTracking=true,
-        questCapture=true,  friendsPresence=true,
-        voice=true,  notifications=true,
+        chat=true, questCapture=true, friendsPresence=true,
+        voice=true, notifications=true,
     },
     minimal = {
-        chat=true,  games=false, multiplayerGames=false,
-        gameProgression=false, battlePass=false,
-        worldProgression=false, combatTracking=false,
-        questCapture=false, friendsPresence=false,
+        chat=true, questCapture=false, friendsPresence=false,
         voice=false, notifications=false,
     },
 }
 
 -- Human-readable strings used by the Settings UI.
 CC.featureDisplayNames = {
-    chat             = "Chat and Console",
-    games            = "Games",
-    multiplayerGames = "Multiplayer Games",
-    gameProgression  = "Game Progression",
-    battlePass       = "Battle Pass",
-    worldProgression = "World Progression",
-    combatTracking   = "Combat Tracking",
-    questCapture     = "Quest Capture",
-    friendsPresence  = "Friends and Presence",
-    voice            = "Voice Calls",
-    notifications    = "Notifications",
+    chat            = "Chat and Console",
+    questCapture    = "Quest Capture",
+    friendsPresence = "Friends and Presence",
+    voice           = "Voice Calls",
+    notifications   = "Notifications",
 }
 
 CC.featureDescriptions = {
-    chat             = "CreshChat message capture, console, quick composer and Blizzard chat redirects. Disable to keep Blizzard chat fully intact.",
-    games            = "Games hub, solo games (Frogger, Tetris, Chess, card games), Dungeon Dwellers and game audio.",
-    multiplayerGames = "Addon-message game protocol for multiplayer invites and gameplay. Requires Games.",
-    gameProgression  = "Game XP, play records, Cresh Coins and game-specific achievements. Requires Games.",
-    battlePass       = "Battle Pass level progression and reward track. Requires Game Progression.",
-    worldProgression = "Exploration steps, zone discovery, dungeon tracking, profession scanning and class achievements.",
-    combatTracking   = "Collects damage, healing and kill statistics from COMBAT_LOG_EVENT_UNFILTERED for achievement goals.",
-    questCapture     = "Captures NPC gossip and quest dialogue into the Quest tab.",
-    friendsPresence  = "Monitors friend online/offline state and shows presence notification cards.",
-    voice            = "CreshChat voice call system. Requires Chat.",
-    notifications    = "Notification cards (toasts) for whispers, guild, quests, party invites and system events.",
+    chat            = "CreshChat message capture, console, quick composer and Blizzard chat redirects. Disable to keep Blizzard chat fully intact.",
+    questCapture    = "Captures NPC gossip and quest dialogue into the Quest tab.",
+    friendsPresence = "Monitors friend online/offline state and shows presence notification cards.",
+    voice           = "CreshChat voice call system. Requires Chat.",
+    notifications   = "Notification cards (toasts) for whispers, guild, quests, party invites and system events.",
 }
 
 -- Display order for the settings page.
 CC.featureOrder = {
-    "chat", "games", "multiplayerGames", "gameProgression", "battlePass",
-    "worldProgression", "combatTracking", "questCapture", "friendsPresence",
-    "voice", "notifications",
+    "chat", "questCapture", "friendsPresence", "voice", "notifications",
 }
 
 -- ── Core API ──────────────────────────────────────────────────────────────────
@@ -182,7 +136,7 @@ function CC:ApplyFeaturePreset(presetName)
     return true
 end
 
--- Returns the last applied preset name ("full", "games", "chat", "minimal")
+-- Returns the last applied preset name ("full", "chat", "minimal")
 -- or "custom" if toggles were changed individually after the last preset.
 function CC:GetFeaturePreset()
     if not self.db then return "custom" end

@@ -3395,11 +3395,10 @@ function UI:AnimateGameDrawer(open, immediate)
 end
 
 function UI:OpenGameDrawer(mode, target)
-    if not CC:IsFeatureEnabled("games") then return end
+    if not CC.Games then return end
     local resolvedMode = string.upper(tostring(mode or "SOLO"))
-    if resolvedMode == "BATTLEPASS" and not CC:IsFeatureEnabled("battlePass") then return end
-    if resolvedMode == "MULTIPLAYER" and not CC:IsFeatureEnabled("multiplayerGames") then return end
-    if resolvedMode == "ACHIEVEMENTS" and not CC:IsFeatureEnabled("gameProgression") then return end
+    if resolvedMode == "BATTLEPASS"  and not CC.BattlePass   then return end
+    if resolvedMode == "ACHIEVEMENTS" and not CC.Achievements then return end
     local gameParent = self:GetGameParent()
     if not gameParent then return end
     if target and CC.Games and CC.Games.SetTarget then CC.Games:SetTarget(target) end
@@ -3959,12 +3958,14 @@ function UI:SetBubbleGroupShown(shown)
     -- Module buttons are always visible when chat is disabled (they become the
     -- primary launcher); otherwise they follow EXPANDED mode + their own toggle.
     local chatOn     = CC.IsFeatureEnabled and CC:IsFeatureEnabled("chat")
-    local gamesOn    = CC.IsFeatureEnabled and CC:IsFeatureEnabled("games")
-    local achieveOn  = CC.IsFeatureEnabled and CC:IsFeatureEnabled("gameProgression")
+    local gamesOn    = CC.Games ~= nil
+    local achieveOn  = CC.Achievements ~= nil
     local progressOn = CC.ProgressHub and CC.ProgressHub:HasAnyEnabled()
-    local showGames    = effectiveShown and gamesOn    and (not chatOn or (expanded and options.showGamesButton        == true))
-    local showAchieve  = effectiveShown and achieveOn  and (not chatOn or (expanded and options.showAchievementsButton == true))
-    local showProgress = effectiveShown and progressOn and (not chatOn or (expanded and options.showProgressButton     == true))
+    local _cgDB  = _G.CreshGamesDB
+    local _colDB = _G.CreshCollectDB
+    local showGames    = effectiveShown and gamesOn    and (not chatOn or (expanded and _cgDB  and _cgDB.launcher  and _cgDB.launcher.showButton        == true))
+    local showAchieve  = effectiveShown and achieveOn  and (not chatOn or (expanded and _colDB and _colDB.launcher and _colDB.launcher.showAchievements == true))
+    local showProgress = effectiveShown and progressOn and (not chatOn or (expanded and _colDB and _colDB.launcher and _colDB.launcher.showProgress     == true))
     if self.gamesButton    then self.gamesButton:SetShown(showGames    == true) end
     if self.achieveButton  then self.achieveButton:SetShown(showAchieve  == true) end
     if self.progressButton then self.progressButton:SetShown(showProgress == true) end
@@ -3987,12 +3988,14 @@ function UI:PositionQuickButtons()
     if expanded and self.combatBubble and options.showCombatButton ~= false then tinsert(ordered, self.combatBubble) end
 
     local chatOn     = CC.IsFeatureEnabled and CC:IsFeatureEnabled("chat")
-    local gamesOn    = CC.IsFeatureEnabled and CC:IsFeatureEnabled("games")
-    local achieveOn  = CC.IsFeatureEnabled and CC:IsFeatureEnabled("gameProgression")
+    local gamesOn    = CC.Games ~= nil
+    local achieveOn  = CC.Achievements ~= nil
     local progressOn = CC.ProgressHub and CC.ProgressHub:HasAnyEnabled()
-    local showGames    = gamesOn    and (not chatOn or (expanded and options.showGamesButton        == true))
-    local showAchieve  = achieveOn  and (not chatOn or (expanded and options.showAchievementsButton == true))
-    local showProgress = progressOn and (not chatOn or (expanded and options.showProgressButton     == true))
+    local _cgDB2  = _G.CreshGamesDB
+    local _colDB2 = _G.CreshCollectDB
+    local showGames    = gamesOn    and (not chatOn or (expanded and _cgDB2  and _cgDB2.launcher  and _cgDB2.launcher.showButton        == true))
+    local showAchieve  = achieveOn  and (not chatOn or (expanded and _colDB2 and _colDB2.launcher and _colDB2.launcher.showAchievements == true))
+    local showProgress = progressOn and (not chatOn or (expanded and _colDB2 and _colDB2.launcher and _colDB2.launcher.showProgress     == true))
     if self.gamesButton    and showGames    then tinsert(ordered, self.gamesButton)    end
     if self.achieveButton  and showAchieve  then tinsert(ordered, self.achieveButton)  end
     if self.progressButton and showProgress then tinsert(ordered, self.progressButton) end
@@ -5139,8 +5142,8 @@ function UI:GetLauncherEffectiveDest()
     local dest = options.launcherDefault or "LAST"
     if dest == "LAST" then dest = options.lastLauncherDest end
     local chatOn     = CC.IsFeatureEnabled and CC:IsFeatureEnabled("chat")
-    local gamesOn    = CC.IsFeatureEnabled and CC:IsFeatureEnabled("games")
-    local achieveOn  = CC.IsFeatureEnabled and CC:IsFeatureEnabled("gameProgression")
+    local gamesOn    = CC.Games ~= nil
+    local achieveOn  = CC.Achievements ~= nil
     local progressOn = CC.ProgressHub and CC.ProgressHub:HasAnyEnabled()
     if dest == "CHAT"         and not chatOn     then dest = nil end
     if dest == "GAMES"        and not gamesOn    then dest = nil end
@@ -5348,9 +5351,9 @@ function UI:BuildBubble()
     bubble:SetScript("OnEnter", function(selfBubble)
         UI.launcherHovered = true
         UI:MarkLauncherActive()
-        local chatOn = CC.IsFeatureEnabled and CC:IsFeatureEnabled("chat")
-        local gamesOn = CC.IsFeatureEnabled and CC:IsFeatureEnabled("games")
-        local achieveOn = CC.IsFeatureEnabled and CC:IsFeatureEnabled("gameProgression")
+        local chatOn    = CC.IsFeatureEnabled and CC:IsFeatureEnabled("chat")
+        local gamesOn   = CC.Games ~= nil
+        local achieveOn = CC.Achievements ~= nil
         GameTooltip:SetOwner(selfBubble, "ANCHOR_LEFT")
         GameTooltip:AddLine("CreshChat", 1, 1, 1)
         if chatOn then
@@ -5690,7 +5693,7 @@ function UI:BuildCombatPanel()
 end
 
 function UI:ToggleCombatPanel()
-    if not CC:IsFeatureEnabled("combatTracking") then return end
+    if not CC.CombatTracker then return end
     if not self.combatPanel then
         return
     end
@@ -8171,8 +8174,8 @@ function UI:Initialize()
     self:SyncThemeColors()
     self:SyncGuildTheme()
     local chatEnabled     = CC.IsFeatureEnabled and CC:IsFeatureEnabled("chat")
-    local gamesEnabled    = CC.IsFeatureEnabled and CC:IsFeatureEnabled("games")
-    local achieveEnabled  = CC.IsFeatureEnabled and CC:IsFeatureEnabled("gameProgression")
+    local gamesEnabled    = CC.Games ~= nil
+    local achieveEnabled  = CC.Achievements ~= nil
     local progressEnabled = CC.ProgressHub and CC.ProgressHub:HasAnyEnabled()
     if chatEnabled then
         self:BuildMainFrame()

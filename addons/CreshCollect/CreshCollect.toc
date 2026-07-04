@@ -3,6 +3,18 @@
 ## Notes: CreshChat collection and achievements module.
 ## Author: creshor
 ## Version: 0.2.3
-## Dependencies: CreshChat
+## SavedVariables: CreshCollectDB
 
+Suite.lua
+CreshCollectDatabase.lua
 CreshCollect.lua
+BattlePass.lua
+Progression.lua
+ProgressRouter.lua
+CombatTracker.lua
+Achievements.lua
+AchievementExpansion.lua
+ClassAchievements.lua
+DungeonAchievements.lua
+ProgressHub.lua
+CollectSettings.lua

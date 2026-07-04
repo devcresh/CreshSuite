@@ -3,6 +3,19 @@
 ## Notes: CreshChat multiplayer and solo games module.
 ## Author: creshor
 ## Version: 0.2.3
-## Dependencies: CreshChat
+## SavedVariables: CreshGamesDB
 
+Suite.lua
+CreshGamesDatabase.lua
 CreshGames.lua
+GameAudio.lua
+CardDeckLibrary.lua
+CardDecks.lua
+ChessTextureManifest.lua
+DungeonDwellersAssetSets.lua
+DungeonCrawlerContent.lua
+TetrisThemes.lua
+Games.lua
+SoloGames.lua
+DungeonDwellersProgression.lua
+GamesSettings.lua

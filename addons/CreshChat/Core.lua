@@ -278,38 +278,6 @@ local defaults = {
     conversations = {},
     questConversations = {},
     whisperRoutes = {},
-    soloGames = {
-        frogger = { unlocked = 1, bestLevel = 0, highScore = 0, games = 0 },
-        holdem = { wins = 0, losses = 0, bestChips = 100, games = 0, bankroll = 100 },
-        blackjack = { wins = 0, losses = 0, pushes = 0, bestBank = 100, games = 0, bankroll = 100 },
-        dungeon = { runs = 0, bestLevel = 0, bestRoom = 0, kills = 0, bosses = 0, minions = 0, highScore = 0, bossCoins = 0, class = "", enemyKillsByType = {}, bossKillsByType = {}, firstBossKills = {}, unlockedArmour = {}, equippedArmour = {}, crateInventory = {}, crateHistory = {}, pendingCrates = {}, permanentDamage = 0, armourPity = 0, voidCratePity = 0, armourShards = 0, portraitTokens = 0, fullBodyTokens = 0, classStats = {}, classStatsMigrated = false, unlockedMinions = {}, minionRecruitsByType = {}, unlockedMinionSkins = {}, minionSkinRecruits = {}, discoveredItems = {}, battlePass = { xp = 0, claimed = {}, buffs = {}, activity = {}, visitedZones = {}, achievements = {}, recent = {} } },
-        chess = { wins = 0, losses = 0, draws = 0, games = 0, level = 3, bestLevel = 0 },
-        higherlower = { wins = 0, losses = 0, draws = 0, games = 0, bankroll = 100, bestBank = 100, bestStreak = 0 },
-        tetris = { wins = 0, losses = 0, games = 0, highScore = 0, bestLines = 0, totalLines = 0, vsWins = 0, vsLosses = 0, endlessRuns = 0, cpuLevel = 3, cpuVersusMode = "ENDLESS", multiplayerMode = "ENDLESS", multiplayerDuration = 10, soloDuration = 10, mode = "ENDLESS", revealLines = 0, revealCompleted = 0, revealThemeKey = "", revealBackgroundKey = "", passXP = 0, passClaimed = {}, unlockedThemes = { CLASSIC_BLOCKS = true }, themeUnlockSources = { CLASSIC_BLOCKS = "DEFAULT" }, selectedTheme = "CLASSIC_BLOCKS", unlockedBackgrounds = {}, backgroundUnlockSources = {}, selectedBackground = "" },
-    },
-    arcadeRewards = {
-        coins = 0,
-        lifetimeCoins = 0,
-        gameCoins = 0,
-        activityCoins = 0,
-        explorationCoins = 0,
-        spentCoins = 0,
-        passXP = 0,
-        claimed = {},
-        unlockedThemes = {},
-        themeUnlockSources = {},
-        recent = {},
-        gamesRewarded = 0,
-        milestoneGoals = {},
-    },
-    gameProgression = {
-        games = {},
-        exploration = { totalSteps = 0, rewardedStepBlocks = 0, distanceRemainder = 0, visitedAreas = {}, visitedZones = {}, newAreas = 0, newZones = 0, dungeonClears = 0, totalKills = 0, coins = 0, passXP = 0 },
-        achievements = {},
-    },
-    gameHistory = {},
-    gameLeaderboards = {},
-    multiplayerStats = {},
     commandHistory = {},
     accountChat = {
         whispers = {},
@@ -325,17 +293,11 @@ local defaults = {
     -- Feature flags: each key enables or disables a major subsystem.
     -- All default to true so upgrades see no behaviour change.
     features = {
-        chat             = true,
-        games            = true,
-        multiplayerGames = true,
-        gameProgression  = true,
-        battlePass       = true,
-        worldProgression = true,
-        combatTracking   = true,
-        questCapture     = true,
-        friendsPresence  = true,
-        voice            = true,
-        notifications    = true,
+        chat            = true,
+        questCapture    = true,
+        friendsPresence = true,
+        voice           = true,
+        notifications   = true,
     },
 }
 
@@ -3275,7 +3237,7 @@ function CC:ShowHelp()
     self:Print("/cc clear - clear saved CreshChat history")
     self:Print("/cc reset - reset window positions")
     self:Print("/cc modules - show which features are currently enabled or disabled")
-    self:Print("/cc preset full|games|chat|minimal - apply a feature preset")
+    self:Print("/cc preset full|chat|minimal - apply a feature preset")
     self:Print("/cc settings then Modules tab - per-feature toggle panel")
 end
 
@@ -3556,11 +3518,11 @@ function CC:HandleSlashCommand(input)
         local presetKey = string.lower(tostring(rawRest or rest or ""))
         if presetKey == "" then
             self:Print("Current preset: " .. string.upper(self:GetFeaturePreset()))
-            self:Print("Available presets: full, games, chat, minimal")
+            self:Print("Available presets: full, chat, minimal")
             return
         end
         if not self.ApplyFeaturePreset or not self:ApplyFeaturePreset(presetKey) then
-            self:Print("Unknown preset '" .. presetKey .. "'. Use: full, games, chat, minimal.")
+            self:Print("Unknown preset '" .. presetKey .. "'. Use: full, chat, minimal.")
             return
         end
         self:Print("Applied preset: " .. string.upper(presetKey) .. ". Reload (/reload) to fully apply all changes.")
