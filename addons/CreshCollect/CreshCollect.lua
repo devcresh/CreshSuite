@@ -19,8 +19,31 @@ do
     if Suite then
         Suite:RegisterProduct("CreshCollect", COL.version, {})
 
+        -- Formal "open this feature" contract for CreshChat's commands and
+        -- launcher buttons, so they can ask "is CreshCollect able to do this?"
+        -- via the Suite instead of reaching into CC.ProgressHub / CC.Achievements /
+        -- CC.BattlePass directly. Progress Hub owns its own frame, so it opens
+        -- directly; Achievements and Battle Pass are panels of CreshChat's own
+        -- game drawer, so those services call back into CreshChat's UI through
+        -- the same CC proxy this file already uses.
+        Suite:RegisterService("OpenProgressHub", function()
+            if COL.ProgressHub and COL.ProgressHub.Toggle then COL.ProgressHub:Toggle() end
+        end)
+        Suite:RegisterService("OpenAchievements", function()
+            if CC.UI and CC.UI.LauncherToggleMode then CC.UI:LauncherToggleMode("ACHIEVEMENTS") end
+        end)
+        Suite:RegisterService("OpenBattlePass", function()
+            if CC.UI and CC.UI.OpenGameDrawer then CC.UI:OpenGameDrawer("BATTLEPASS") end
+        end)
+
         -- Mirror cosmetic unlocks from CreshGames into CreshCollectDB.collections.
         -- Idempotent: existing keys are never overwritten.
+        local UNLOCK_TYPES = {
+            TETRIS_THEME      = { bucket = "themes",        label = "Theme" },
+            TETRIS_BACKGROUND = { bucket = "backgrounds",   label = "Background" },
+            CARD_DECK         = { bucket = "cardDecks",     label = "Card Deck" },
+            DUNGEON_PASS      = { bucket = "dungeonArmour", label = "Dungeon Armour" },
+        }
         Suite:Subscribe("CRESHGAMES_COLLECTION_UNLOCK", function(payload)
             if type(payload) ~= "table" then return end
             if not CreshCollectDB then return end
@@ -28,10 +51,32 @@ do
             if type(col) ~= "table" then return end
             local key, uType = payload.key, payload.type
             if not key then return end
-            if uType == "TETRIS_THEME"      then col.themes[key]        = col.themes[key]        or true end
-            if uType == "TETRIS_BACKGROUND" then col.backgrounds[key]   = col.backgrounds[key]   or true end
-            if uType == "CARD_DECK"         then col.cardDecks[key]     = col.cardDecks[key]     or true end
-            if uType == "DUNGEON_PASS"      then col.dungeonArmour[key] = col.dungeonArmour[key] or true end
+            local info = UNLOCK_TYPES[uType]
+            if not info then return end
+            local isNewUnlock = col[info.bucket][key] == nil
+            col[info.bucket][key] = col[info.bucket][key] or true
+
+            -- Feedback below is best-effort: the unlock above already
+            -- persisted silently and correctly even if CreshChat is absent.
+            local cc = _G.CreshChat
+            if not cc then return end
+
+            local settingsModule = cc.GetModule and cc:GetModule("Settings")
+            if settingsModule and settingsModule.frame and settingsModule.frame:IsShown()
+                and settingsModule.activeProductKey == "COL" then
+                settingsModule:RefreshProductPage("COL", "COLLECTIONS")
+            end
+
+            if isNewUnlock and cc.Notifications then
+                cc.Notifications:Push({
+                    sourceAddon = "CRESHCOLLECT",
+                    category    = "COLLECTION_UNLOCK",
+                    priority    = "NORMAL",
+                    title       = "Collection Unlocked",
+                    detail      = info.label .. " unlocked: " .. tostring(key),
+                    coalesceKey = "COLLECTION_UNLOCK:" .. tostring(key),
+                })
+            end
         end)
     end
 end

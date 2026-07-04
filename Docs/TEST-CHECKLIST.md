@@ -43,8 +43,17 @@ Disable: CreshGames, CreshCollect
 - `/run print(CreshCollectDB == nil and "absent" or "unexpected")` — prints "absent".
 
 ### Notifications
-- `/cc test` — two test cards appear.
+- `/cc notifytest` — two test cards appear.
 - Cards dismiss on click or after timeout.
+
+### Developer diagnostics
+These are separate from the user-facing commands above and are not part of the
+golden path — they exist for debugging CreshChat itself.
+- `/cc test on` — enables developer test mode (snapshots the DB).
+- `/cc test run` — runs the L1-L26 developer test suite; no red Lua errors.
+- `/cc test off` — disables developer test mode and restores the DB snapshot.
+- `/cc test status` — prints current mode/verbose/snapshot state.
+- `/cc devprogress` — prints ProgressRouter diagnostics (not the Progress Hub UI).
 
 ---
 
@@ -186,7 +195,8 @@ Disable: CreshChat
 
 ### Suite event bridge
 - `/run CreshSuite:Publish("CRESHGAMES_COLLECTION_UNLOCK", {key="TEST_DECK", type="CARD_DECK"})` — no error.
-- `/run print(CreshCollectDB.collections and CreshCollectDB.collections.cardDecks and CreshCollectDB.collections.cardDecks.TEST_DECK and "bridged" or "not bridged")` — "bridged".
+- DB state: `/run print(CreshCollectDB.collections and CreshCollectDB.collections.cardDecks and CreshCollectDB.collections.cardDecks.TEST_DECK and "bridged" or "not bridged")` — "bridged".
+- Popup behaviour: N/A for this combination — CreshChat is not loaded, so there is no notification UI to check. The unlock must still apply to the database above with no Lua error.
 
 ---
 
@@ -233,13 +243,14 @@ This is the golden path. Every feature should work together.
 - `/cc battlepass` — Battle Pass level bar and tiers visible.
 
 ### Notifications
-- `/cc test` — test cards appear for all enabled sources (CreshChat, CreshGames, CreshCollect).
+- `/cc notifytest` — test cards appear for all enabled sources (CreshChat, CreshGames, CreshCollect).
 - `/cc notifcards on` then trigger an in-game achievement or game event — notification card appears.
 
 ### Cross-addon unlock (requires playing a game first)
 - Complete a Tetris game to unlock a zone background:
   - `/run CreshSuite:Publish("CRESHGAMES_COLLECTION_UNLOCK", {key="ZONE_ELWYNN",type="TETRIS_BACKGROUND"})` (simulated unlock)
-  - Open `/cc settings` → Collections → Collections page — ZONE_ELWYNN listed.
+  - DB state: open `/cc settings` → Collections → Collections page — ZONE_ELWYNN listed.
+  - Popup behaviour: a "Collection Unlocked" notification card appears immediately after the unlock (no need to have Settings open). If Settings is already open on the Collections page, its counts update in place without closing/reopening Settings.
 
 ### Voice
 - `/cc call PlayerName` (with another CreshChat user online) — voice call initiates.
@@ -250,11 +261,6 @@ This is the golden path. Every feature should work together.
 - `/reload` a second time — all settings and data survive the reload without error.
 
 ---
-
-## Known warnings (not failures)
-
-- `Validate-Addons.ps1` emits 19 "Undeclared Lua file in CreshChat" warnings — these are Phase 7 stale files still on disk but not in the TOC and not deployed. They are harmless.
-- `Deploy-Local.ps1` warns "deployed ~1623 files but expected ~922" for CreshChat — this is because `Get-ChildItem -Recurse` follows the CreshGames and CreshCollect junction symlinks inside the CreshChat folder. The actual deployed files are correct.
 
 ## Reporting results
 

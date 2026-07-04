@@ -5168,6 +5168,10 @@ function UI:LauncherToggleMode(dest)
         self:ToggleMain()
         options.lastLauncherDest = "CHAT"
     elseif dest == "GAMES" then
+        if not (_G.CreshSuite and _G.CreshSuite:GetService("OpenGames")) then
+            CC:Print("CreshGames is not installed or loaded.")
+            return
+        end
         local drawer = self.gameDrawer
         local drawerOpen = drawer and drawer.creshOpen and drawer:IsShown()
         local isGamesMode = drawerOpen and drawer.mode ~= "ACHIEVEMENTS" and drawer.mode ~= "THEMES"
@@ -5186,6 +5190,10 @@ function UI:LauncherToggleMode(dest)
         end
         options.lastLauncherDest = "GAMES"
     elseif dest == "ACHIEVEMENTS" then
+        if not (_G.CreshSuite and _G.CreshSuite:GetService("OpenAchievements")) then
+            CC:Print("CreshCollect is not installed or loaded.")
+            return
+        end
         local drawer = self.gameDrawer
         local drawerOpen = drawer and drawer.creshOpen and drawer:IsShown()
         if drawerOpen and drawer.mode == "ACHIEVEMENTS" then
@@ -5197,9 +5205,9 @@ function UI:LauncherToggleMode(dest)
         end
         options.lastLauncherDest = "ACHIEVEMENTS"
     elseif dest == "PROGRESS" then
-        if CC.ProgressHub then
-            CC.ProgressHub:Toggle()
-        end
+        local svc = _G.CreshSuite and _G.CreshSuite:GetService("OpenProgressHub")
+        if svc then svc()
+        else CC:Print("CreshCollect is not installed or loaded.") end
         options.lastLauncherDest = "PROGRESS"
     elseif dest == "SETTINGS" then
         self:OpenSettings()

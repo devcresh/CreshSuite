@@ -1191,7 +1191,7 @@ function CC:HandleSlashCommand(input)
     elseif command == "assets" then
         Developer:PrintAssets()
         return
-    elseif command == "progress" then
+    elseif command == "devprogress" then
         local arg = string.lower(string.match(tostring(input or ""), "^%S+%s+(%S*)") or "")
         Developer:HandleProgressCommand(arg)
         return
@@ -1215,7 +1215,7 @@ function CC:ShowHelp()
     self:Print("/cc devreport - show build, module, database and asset status")
     self:Print("/cc modules - list loaded CreshChat modules")
     self:Print("/cc assets - report registered themes and media libraries")
-    self:Print("/cc progress [test|log|clear|on|off] - ProgressRouter diagnostics")
+    self:Print("/cc devprogress [test|log|clear|on|off] - ProgressRouter diagnostics")
     self:Print("/cc combat - print combat tracker stats and achievement counts")
     self:Print("/cc test on/off/run/verbose/status - developer test suite (L1-L20)")
     self:Print("/cc dbstatus - show migration status for all three suite databases")

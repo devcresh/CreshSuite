@@ -46,6 +46,14 @@ $Suites = @(
             (Join-Path $RepoRoot "tests\SettingsShellTests.lua"),
             (Join-Path $RepoRoot "addons\CreshChat\VersionCompare.lua")
         )
+    },
+    @{
+        Label = "Slash Command Tests"
+        Args  = @(
+            (Join-Path $RepoRoot "tests\SlashCommandTests.lua"),
+            (Join-Path $RepoRoot "addons\CreshChat\Core.lua"),
+            (Join-Path $RepoRoot "addons\CreshChat\Developer.lua")
+        )
     }
 )
 

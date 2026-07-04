@@ -3205,7 +3205,7 @@ end
 
 function CC:ShowHelp()
     self:Print("/cc - open or close CreshChat")
-    self:Print("/cc test - create test alerts")
+    self:Print("/cc notifytest - create test alerts")
     self:Print("/cc settings - open Themes, Cards, Composer, commands, colours, sizes, features and sounds")
     self:Print("/cc version - verify the loaded QC build and Enter redirect")
     self:Print("/cc preview - open the main chat and composer together")
@@ -3280,7 +3280,7 @@ function CC:HandleSlashCommand(input)
         return
     end
 
-    if command == "test" then
+    if command == "notifytest" then
         self:RunTest()
         return
     end
@@ -3309,22 +3309,30 @@ function CC:HandleSlashCommand(input)
     end
 
     if command == "games" or command == "game" then
-        if self.Games and self.Games.OpenHub then self.Games:OpenHub(self.UI and self.UI.currentTarget) end
+        local svc = _G.CreshSuite and _G.CreshSuite:GetService("OpenGames")
+        if svc then svc(self.UI and self.UI.currentTarget)
+        else self:Print("CreshGames is not installed or loaded.") end
         return
     end
 
     if command == "achievements" or command == "achievement" or command == "achieve" then
-        if self.UI and self.UI.LauncherToggleMode then self.UI:LauncherToggleMode("ACHIEVEMENTS") end
+        local svc = _G.CreshSuite and _G.CreshSuite:GetService("OpenAchievements")
+        if svc then svc()
+        else self:Print("CreshCollect is not installed or loaded.") end
         return
     end
 
     if command == "battlepass" or command == "pass" or command == "bp" then
-        if self.UI and self.UI.OpenGameDrawer then self.UI:OpenGameDrawer("BATTLEPASS") end
+        local svc = _G.CreshSuite and _G.CreshSuite:GetService("OpenBattlePass")
+        if svc then svc()
+        else self:Print("CreshCollect is not installed or loaded.") end
         return
     end
 
     if command == "progress" or command == "hub" or command == "tracking" then
-        if self.ProgressHub and self.ProgressHub.Toggle then self.ProgressHub:Toggle() end
+        local svc = _G.CreshSuite and _G.CreshSuite:GetService("OpenProgressHub")
+        if svc then svc()
+        else self:Print("CreshCollect is not installed or loaded.") end
         return
     end
 
@@ -3354,7 +3362,9 @@ function CC:HandleSlashCommand(input)
     end
 
     if command == "solo" or command == "arcade" then
-        if self.SoloGames and self.SoloGames.OpenHub then self.SoloGames:OpenHub() end
+        local svc = _G.CreshSuite and _G.CreshSuite:GetService("OpenSoloGames")
+        if svc then svc()
+        else self:Print("CreshGames is not installed or loaded.") end
         return
     end
 
@@ -3394,12 +3404,16 @@ function CC:HandleSlashCommand(input)
     end
 
     if command == "leaderboard" or command == "leaderboards" or command == "scores" then
-        if self.SoloGames and self.SoloGames.OpenLeaderboard then self.SoloGames:OpenLeaderboard() end
+        local svc = _G.CreshSuite and _G.CreshSuite:GetService("OpenLeaderboard")
+        if svc then svc()
+        else self:Print("CreshGames is not installed or loaded.") end
         return
     end
 
     if command == "gamehistory" or command == "matchhistory" then
-        if self.SoloGames and self.SoloGames.OpenHistory then self.SoloGames:OpenHistory() end
+        local svc = _G.CreshSuite and _G.CreshSuite:GetService("OpenGameHistory")
+        if svc then svc()
+        else self:Print("CreshGames is not installed or loaded.") end
         return
     end
 

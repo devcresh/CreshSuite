@@ -32,6 +32,24 @@ end
 local Suite = _G.CreshSuite
 if Suite then
     Suite:RegisterProduct("CreshGames", CG.version, {})
+
+    -- Formal "open this feature" contract for CreshChat's commands and launcher
+    -- buttons, so they can ask "is CreshGames able to do this?" via the Suite
+    -- instead of reaching into CC.Games / CC.SoloGames directly. Lazily checks
+    -- CG.Games / CG.SoloGames at call time, so registration order versus the
+    -- rest of CreshGames' own TOC load order does not matter.
+    Suite:RegisterService("OpenGames", function(target)
+        if CG.Games and CG.Games.OpenHub then CG.Games:OpenHub(target) end
+    end)
+    Suite:RegisterService("OpenSoloGames", function()
+        if CG.SoloGames and CG.SoloGames.OpenHub then CG.SoloGames:OpenHub() end
+    end)
+    Suite:RegisterService("OpenLeaderboard", function()
+        if CG.SoloGames and CG.SoloGames.OpenLeaderboard then CG.SoloGames:OpenLeaderboard() end
+    end)
+    Suite:RegisterService("OpenGameHistory", function()
+        if CG.SoloGames and CG.SoloGames.OpenHistory then CG.SoloGames:OpenHistory() end
+    end)
 end
 
 -- -----------------------------------------------------------------------
