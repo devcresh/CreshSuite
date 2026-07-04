@@ -1133,6 +1133,52 @@ function Developer:HandleTestCommand(arg)
     end
 end
 
+function Developer:PrintDBStatus()
+    if not CC.Print then return end
+    local function p(msg) CC:Print(msg) end
+
+    -- CreshChatDB
+    local chatSchema = _G.CreshChatDB and tonumber(_G.CreshChatDB.version) or 0
+    local chatProgSchema = 0
+    if _G.CreshChatDB and type(_G.CreshChatDB.accountProgression) == "table" then
+        chatProgSchema = tonumber(_G.CreshChatDB.accountProgression.migratedSchema) or 0
+    end
+    p("CreshChatDB    schema=" .. chatSchema
+        .. "  accountProgression.migratedSchema=" .. chatProgSchema)
+
+    -- CreshGamesDB
+    if type(_G.CreshGamesDB) == "table" then
+        local m  = type(_G.CreshGamesDB._migration) == "table" and _G.CreshGamesDB._migration or {}
+        local v1 = type(m.v1) == "table" and m.v1 or {}
+        local info = "CreshGamesDB   schema=" .. (tonumber(_G.CreshGamesDB.version) or 0)
+            .. "  v1.done=" .. (v1.done and "yes" or "no")
+        if v1.done then
+            info = info .. "  sourceDB=" .. tostring(v1.sourceDB or "?")
+                .. "  sourceSchema=" .. tostring(v1.sourceSchema or 0)
+                .. "  usedAccountProgression=" .. (v1.usedAccountProgression and "yes" or "no")
+        end
+        p(info)
+    else
+        p("CreshGamesDB   not loaded (CreshGames addon may be disabled)")
+    end
+
+    -- CreshCollectDB
+    if type(_G.CreshCollectDB) == "table" then
+        local m  = type(_G.CreshCollectDB._migration) == "table" and _G.CreshCollectDB._migration or {}
+        local v1 = type(m.v1) == "table" and m.v1 or {}
+        local info = "CreshCollectDB schema=" .. (tonumber(_G.CreshCollectDB.version) or 0)
+            .. "  v1.done=" .. (v1.done and "yes" or "no")
+        if v1.done then
+            info = info .. "  sourceDB=" .. tostring(v1.sourceDB or "?")
+                .. "  sourceSchema=" .. tostring(v1.sourceSchema or 0)
+                .. "  usedAccountProgression=" .. (v1.usedAccountProgression and "yes" or "no")
+        end
+        p(info)
+    else
+        p("CreshCollectDB not loaded (CreshCollect addon may be disabled)")
+    end
+end
+
 local originalHandleSlashCommand = CC.HandleSlashCommand
 function CC:HandleSlashCommand(input)
     local command = string.lower(string.match(tostring(input or ""), "^(%S*)") or "")
@@ -1156,6 +1202,9 @@ function CC:HandleSlashCommand(input)
         local arg = string.lower(string.match(tostring(input or ""), "^%S+%s+(.+)$") or "")
         Developer:HandleTestCommand(arg)
         return
+    elseif command == "dbstatus" or command == "dbs" then
+        Developer:PrintDBStatus()
+        return
     end
     return originalHandleSlashCommand(self, input)
 end
@@ -1169,4 +1218,5 @@ function CC:ShowHelp()
     self:Print("/cc progress [test|log|clear|on|off] - ProgressRouter diagnostics")
     self:Print("/cc combat - print combat tracker stats and achievement counts")
     self:Print("/cc test on/off/run/verbose/status - developer test suite (L1-L20)")
+    self:Print("/cc dbstatus - show migration status for all three suite databases")
 end

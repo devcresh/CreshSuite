@@ -5,36 +5,18 @@
 ## Version: 0.2.3
 ## SavedVariables: CreshChatDB
 
+Suite.lua
 Core.lua
 FeatureManager.lua
 Notifications.lua
-ProgressRouter.lua
 SoundLibrary.lua
 Quest.lua
 Friends.lua
 Voice.lua
 Themes.lua
-CardDeckLibrary.lua
-CardDecks.lua
 UI.lua
 NotificationCard.lua
 NotificationsAdapter.lua
-ChessTextureManifest.lua
-DungeonDwellersAssetSets.lua
-DungeonCrawlerContent.lua
-TetrisThemes.lua
-Games.lua
-SoloGames.lua
-BattlePass.lua
-DungeonDwellersProgression.lua
-Progression.lua
-Achievements.lua
-AchievementExpansion.lua
-ClassAchievements.lua
-DungeonAchievements.lua
-CombatTracker.lua
-ProgressHub.lua
-GameAudio.lua
 Quality.lua
 Developer.lua
 Settings.lua

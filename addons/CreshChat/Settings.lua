@@ -221,14 +221,47 @@ end
 
 local Settings = { version = CC.version }
 local SETTINGS_FRAME_LEVEL = 7000
+
+-- ============================================================
+-- Phase 5 - Product tab shell
+-- ============================================================
+
+local SUITE_RELEASES_URL = "https://github.com/devcresh/CreshSuite/releases"
+
+local PRODUCTS = {
+    { key = "CC",   label = "CreshChat",    addonName = "CreshChat",  owned = true },
+    { key = "CG",   label = "CreshGames",   addonName = "CreshGames"              },
+    { key = "CCOL", label = "CreshCollect", addonName = "CreshCollect"            },
+}
+
+local function detectAddonStatus(addonName, minVer)
+    if IsAddOnLoaded and IsAddOnLoaded(addonName) then
+        if minVer and _G.CreshSuite then
+            local p = _G.CreshSuite.GetProduct and _G.CreshSuite:GetProduct(addonName)
+            local ver = p and tonumber(p.version) or 0
+            if ver > 0 and ver < minVer then return "incompatible", tostring(p.version) end
+        end
+        return "loaded"
+    end
+    if GetAddOnInfo then
+        local name, _, _, loadable, reason = GetAddOnInfo(addonName)
+        if name == nil then return "missing" end
+        if reason == "DISABLED" then return "disabled" end
+        if reason == "MISSING"  then return "missing"  end
+        if not loadable and reason then return "incompatible", reason end
+        if not loadable then return "disabled" end
+    end
+    return "missing"
+end
 local SETTINGS_DROPDOWN_LEVEL = 500
 UI.FullSettings = Settings
 if CC.RegisterModule then CC:RegisterModule("Settings", Settings) end
 UI.fullSettings = Settings
 
 function Settings:RegisterLayout(control, kind, column)
-    control.creshLayoutKind = kind or "full"
+    control.creshLayoutKind   = kind or "full"
     control.creshLayoutColumn = column or 1
+    control.creshProductKey   = self.currentProductKey
     if control.HookScript then
         control:HookScript("OnMouseDown", function()
             if Settings.frame and UI.FocusWindow then UI:FocusWindow(Settings.frame) end
@@ -794,17 +827,15 @@ function Settings:BuildGeneral(page)
     b:HalfToggle("Whisper quick button", function() return CC.db.ui.showWhisperButton == true end, function(v) CC.db.ui.showWhisperButton = v end)
     b:HalfToggle("General quick button", function() return CC.db.ui.showGeneralButton == true end, function(v) CC.db.ui.showGeneralButton = v end)
     b:HalfToggle("Combat quick button", function() return CC.db.ui.showCombatButton == true end, function(v) CC.db.ui.showCombatButton = v end)
-    b:HalfToggle("Games quick button", function() return CC.db.ui.showGamesButton == true end, function(v) CC.db.ui.showGamesButton = v end)
-    b:HalfToggle("Achievements quick button", function() return CC.db.ui.showAchievementsButton == true end, function(v) CC.db.ui.showAchievementsButton = v end)
-    b:HalfToggle("Progress Hub quick button", function() return CC.db.ui.showProgressButton == true end, function(v) CC.db.ui.showProgressButton = v end)
-    b:Note("Games, Achievements and Progress Hub quick buttons always show next to C when chat is disabled in Modules, regardless of this toggle.")
     b:HalfToggle("Group consecutive messages", function() return CC.db.ui.groupedMessages ~= false end, function(v) CC.db.ui.groupedMessages = v end)
 
-    b:Section("Progress Hub")
-    b:Note("World Progression, Quest Capture and Combat Tracking run in the background. Open /cc progress (or the Prg quick button) any time to see exploration, quest and combat stats, even if Chat and Games are disabled.")
-    b:Buttons({
-        { "OPEN PROGRESS HUB", function() if CC.ProgressHub then CC.ProgressHub:Toggle() end end, 160 },
-    })
+    if CC.ProgressHub then
+        b:Section("Progress Hub")
+        b:Note("Open /cc progress (or the Prg quick button) to see exploration, quest and combat stats collected by CreshCollect.")
+        b:Buttons({
+            { "OPEN PROGRESS HUB", function() CC.ProgressHub:Toggle() end, 160 },
+        })
+    end
 
     b:Section("Portraits and scale")
     b:HalfToggle("Show player portraits", function() return CC.db.ui.showPortraits ~= false end, function(v) CC.db.ui.showPortraits = v end)
@@ -815,13 +846,6 @@ function Settings:BuildGeneral(page)
     b:Slider("Message text scale", 0.80, 1.35, 0.05, function() return CC.db.ui.messageScale or 1 end, function(v) CC.db.ui.messageScale = v end, pct)
     b:Slider("Player icon size", 22, 44, 2, function() return CC.db.ui.iconSize or 26 end, function(v) CC.db.ui.iconSize = v end, px)
 
-    b:Section("Game audio")
-    CC.db.gameAudio = CC.db.gameAudio or { musicEnabled=true,musicVolume=0.35,effectsEnabled=true,effectsVolume=0.55 }
-    b:HalfToggle("Background music", function() return CC.db.gameAudio.musicEnabled ~= false end, function(v) CC.db.gameAudio.musicEnabled=v; if CC.GameAudio then if v then CC.GameAudio:RestartMusic() else CC.GameAudio:StopMusic() end end end)
-    b:HalfToggle("Game sound effects", function() return CC.db.gameAudio.effectsEnabled ~= false end, function(v) CC.db.gameAudio.effectsEnabled=v end)
-    b:Slider("Game music volume", 0, 1, 0.05, function() return CC.db.gameAudio.musicVolume or 0.35 end, function(v) CC.db.gameAudio.musicVolume=v; if CC.GameAudio then CC.GameAudio:RestartMusic() end end, pct)
-    b:Slider("Game effects volume", 0, 1, 0.05, function() return CC.db.gameAudio.effectsVolume or 0.55 end, function(v) CC.db.gameAudio.effectsVolume=v; if CC.GameAudio then CC.GameAudio:PlayEffect("CLICK") end end, pct)
-    b:Note("Mini-game music and gameplay effects live here. Notification-card sounds are controlled only from the Notifications page.")
     b:Finish()
 end
 
@@ -1010,42 +1034,6 @@ function Settings:BuildAlerts(page)
             b:Note("Hides only Blizzard's ‘No player named … is currently online/playing’ line. The attempted CreshChat whisper remains visible and is marked failed instead.")
         end
         b:Note(description)
-    end
-
-    -- CreshGames and CreshCollect: per-category toggles built from the live
-    -- registry.  Settings:Build() is called lazily on first open, so all
-    -- addon stubs have already loaded and registered their categories.
-    if CC.Notifications then
-        local extSources = {
-            { "CRESHGAMES",   "CreshGames" },
-            { "CRESHCOLLECT", "CreshCollect" },
-        }
-        for _, srcItem in ipairs(extSources) do
-            local srcKey, srcLabel = srcItem[1], srcItem[2]
-            if CC.Notifications:GetRegisteredSources()[srcKey] then
-                local cats     = CC.Notifications:GetRegisteredCategories(srcKey)
-                local catOrder = {}
-                for catKey in pairs(cats) do catOrder[#catOrder + 1] = catKey end
-                table.sort(catOrder)
-                b:Section(srcLabel .. " notifications")
-                for _, catKey in ipairs(catOrder) do
-                    local info    = cats[catKey]
-                    local cSrc    = srcKey
-                    local cCat    = catKey
-                    b:HalfToggle(info.label,
-                        function()
-                            local s = CC.db.notificationSources and CC.db.notificationSources[cSrc]
-                            return not s or s[cCat] ~= false
-                        end,
-                        function(v)
-                            CC.db.notificationSources = CC.db.notificationSources or {}
-                            CC.db.notificationSources[cSrc] = CC.db.notificationSources[cSrc] or {}
-                            CC.db.notificationSources[cSrc][cCat] = v and true or false
-                        end
-                    )
-                end
-            end
-        end
     end
 
     b:Section("C launcher visibility")
@@ -1281,7 +1269,6 @@ function Settings:BuildModules(page)
     b:Section("Presets")
     b:Buttons({
         { "Full CreshChat", function() CC:ApplyFeaturePreset("full");    Settings:Refresh() end, 120 },
-        { "Games Only",     function() CC:ApplyFeaturePreset("games");   Settings:Refresh() end, 120 },
         { "Chat Only",      function() CC:ApplyFeaturePreset("chat");    Settings:Refresh() end, 120 },
         { "Minimal",        function() CC:ApplyFeaturePreset("minimal"); Settings:Refresh() end, 120 },
     })
@@ -1296,7 +1283,7 @@ function Settings:BuildModules(page)
             function(v) CC:SetFeatureEnabled(key, v) end
         )
     end
-    b:Note("Dependency cascades apply automatically: disabling Games also disables Multiplayer Games, Game Progression and Battle Pass; disabling Chat also disables Voice. Type /reload after any individual change.")
+    b:Note("Dependency cascades apply automatically: disabling Chat also disables Voice. Type /reload after any individual change.")
 
     b:Finish()
 end
@@ -1407,7 +1394,8 @@ function Settings:Relayout()
     local sidebarWidth = self.sidebarWidth or 132
     local frameWidth, frameHeight = self.frame:GetWidth(), self.frame:GetHeight()
     local contentWidth = max(360, frameWidth - sidebarWidth - 30)
-    local contentHeight = max(300, frameHeight - 88)
+    local productBarOffset = self.productBar and (self.productBar:GetHeight() + 4) or 0
+    local contentHeight = max(300, frameHeight - 88 - productBarOffset)
     if self.compactLabel then self.compactLabel:SetShown(frameWidth >= 650) end
     self.sidebar:SetSize(sidebarWidth, contentHeight)
     self.content:SetSize(contentWidth, contentHeight)
@@ -1418,14 +1406,37 @@ function Settings:Relayout()
         page:SetSize(contentWidth, contentHeight)
         page.canvas:SetWidth(self.pageWidth)
     end
+    -- Product panel pages use a slightly wider content area (no CC sidebar offset).
+    local pSidebarWidth = 130
+    local pContentWidth = max(360, frameWidth - 16 - pSidebarWidth - 8)
+    local pPageWidth    = max(340, pContentWidth - 24)
+    local pFullWidth    = max(320, pPageWidth - 24)
+    local pHalfWidth    = max(150, (pFullWidth - 8) / 2)
+    for _, ps in pairs(self.productPanels or {}) do
+        for _, page in pairs(ps.pages) do
+            page:SetSize(pContentWidth, contentHeight)
+            page.canvas:SetWidth(pPageWidth)
+        end
+    end
     for _, control in ipairs(self.layoutControls or {}) do
-        if control.creshLayoutKind == "half" then
-            control:SetWidth(halfWidth)
-            local x = 12 + ((control.creshLayoutColumn or 1) - 1) * (halfWidth + 8)
-            local point, relativeTo, relativePoint, _, y = control:GetPoint(1)
-            control:ClearAllPoints(); control:SetPoint(point or "TOPLEFT", relativeTo or control:GetParent(), relativePoint or "TOPLEFT", x, y or 0)
+        if control.creshProductKey then
+            if control.creshLayoutKind == "half" then
+                control:SetWidth(pHalfWidth)
+                local x = 12 + ((control.creshLayoutColumn or 1) - 1) * (pHalfWidth + 8)
+                local point, relativeTo, relativePoint, _, y = control:GetPoint(1)
+                control:ClearAllPoints(); control:SetPoint(point or "TOPLEFT", relativeTo or control:GetParent(), relativePoint or "TOPLEFT", x, y or 0)
+            else
+                control:SetWidth(pFullWidth)
+            end
         else
-            control:SetWidth(fullWidth)
+            if control.creshLayoutKind == "half" then
+                control:SetWidth(halfWidth)
+                local x = 12 + ((control.creshLayoutColumn or 1) - 1) * (halfWidth + 8)
+                local point, relativeTo, relativePoint, _, y = control:GetPoint(1)
+                control:ClearAllPoints(); control:SetPoint(point or "TOPLEFT", relativeTo or control:GetParent(), relativePoint or "TOPLEFT", x, y or 0)
+            else
+                control:SetWidth(fullWidth)
+            end
         end
         if control.Relayout then control:Relayout() end
     end
@@ -1455,6 +1466,13 @@ function Settings:RestorePageVisibility()
         if page.canvas and page.canvas.SetAlpha then page.canvas:SetAlpha(1) end
         restoreFontAlpha(page, 0)
     end
+    for _, ps in pairs(self.productPanels or {}) do
+        for _, page in pairs(ps.pages) do
+            if page.SetAlpha then page:SetAlpha(1) end
+            if page.canvas and page.canvas.SetAlpha then page.canvas:SetAlpha(1) end
+            restoreFontAlpha(page, 0)
+        end
+    end
 end
 
 function Settings:KeepOnTop()
@@ -1477,6 +1495,16 @@ function Settings:KeepOnTop()
         if page.canvas then raiseFrame(page.canvas, page, 2) end
         if page.ScrollBar then raiseFrame(page.ScrollBar, page, 4) end
     end
+    for _, ps in pairs(self.productPanels or {}) do
+        raiseFrame(ps.panel, frame, 2)
+        raiseFrame(ps.sidebar, ps.panel, 2)
+        raiseFrame(ps.content, ps.panel, 2)
+        for _, page in pairs(ps.pages) do
+            raiseFrame(page, ps.content, 6)
+            if page.canvas then raiseFrame(page.canvas, page, 2) end
+            if page.ScrollBar then raiseFrame(page.ScrollBar, page, 4) end
+        end
+    end
     self:RestorePageVisibility()
 end
 
@@ -1496,6 +1524,7 @@ function Settings:Refresh()
             self.status:SetText("Build " .. tostring(CC.version or "") .. "  ·  schema " .. tostring(CC.db.version or "?") .. "  ·  profile " .. tostring(profile))
         end
         self:SetPage(self.activePage or "GENERAL")
+        self:RefreshProductTabs()
     end
 end
 
@@ -1576,9 +1605,11 @@ function Settings:Build()
     local close = button(header, "X", 28, 27, function() frame:Hide() end)
     close:SetPoint("RIGHT", header, "RIGHT", -7, 0)
 
+    self:BuildProductBar()
+
     local sidebar = CreateFrame("Frame", nil, frame, templateName())
     raiseFrame(sidebar, frame, 2)
-    sidebar:SetPoint("TOPLEFT", frame, "TOPLEFT", 8, -44)
+    sidebar:SetPoint("TOPLEFT", self.productBar, "BOTTOMLEFT", 0, -4)
     sidebar:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 8, 27)
     backdrop(sidebar, 0.045, 0.055, 0.075, 0.98, 0.13, 0.16, 0.21, 1)
     self.sidebar = sidebar
@@ -1619,6 +1650,22 @@ function Settings:Build()
     self:BuildChannels(self.pages.CHANNELS)
     self:BuildProfiles(self.pages.PROFILES)
     self:BuildAdvanced(self.pages.ADVANCED)
+    self:BuildProductPane()
+
+    -- Build settings panels for any suite addon that has registered a page-spec table.
+    -- GamesSettings.lua / CollectSettings.lua register their specs on ADDON_LOADED,
+    -- before the player can first open Settings, so providers are always available here.
+    local _suite = _G.CreshSuite
+    for _, _p in ipairs(PRODUCTS) do
+        if not _p.owned then
+            local _spec = _suite and _suite.GetSettingsProvider and _suite:GetSettingsProvider(_p.addonName)
+            if type(_spec) == "table" and type(_spec.pages) == "table" then
+                self:BuildProductSettingsPanel(_p.key, _spec)
+            end
+        end
+    end
+
+    self:SelectProduct("CC")
 
     local status = font(frame, 9, "LEFT")
     status:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 11, 7)
@@ -1648,4 +1695,301 @@ function UI:OpenSettings()
         Settings:KeepOnTop()
         if UI.FocusWindow then UI:FocusWindow(Settings.frame) end
     end
+end
+
+-- ============================================================
+-- Phase 5 - Product tab methods
+-- ============================================================
+
+function Settings:BuildProductBar()
+    local frame = self.frame
+    local bar = CreateFrame("Frame", nil, frame, templateName())
+    bar:SetPoint("TOPLEFT", frame, "TOPLEFT", 8, -44)
+    bar:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -8, -44)
+    bar:SetHeight(30)
+    backdrop(bar, 0.040, 0.048, 0.065, 0.88, 0.12, 0.15, 0.20, 1)
+    raiseFrame(bar, frame, 3)
+    self.productBar  = bar
+    self.productTabs = {}
+    local previous
+    for _, p in ipairs(PRODUCTS) do
+        local tab = button(bar, p.label, 110, 22, function() Settings:SelectProduct(p.key) end)
+        if previous then
+            tab:SetPoint("TOPLEFT", previous, "TOPRIGHT", 4, 0)
+        else
+            tab:SetPoint("TOPLEFT", bar, "TOPLEFT", 6, -4)
+        end
+        self.productTabs[p.key] = tab
+        previous = tab
+    end
+end
+
+function Settings:BuildProductPane()
+    local frame = self.frame
+    local pane = CreateFrame("Frame", nil, frame, templateName())
+    pane:SetPoint("TOPLEFT", self.productBar, "BOTTOMLEFT", 0, -4)
+    pane:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -8, 27)
+    backdrop(pane, 0.055, 0.067, 0.090, 0.99, 0.13, 0.16, 0.21, 1)
+    raiseFrame(pane, frame, 2)
+    pane:Hide()
+    self.productPane = pane
+
+    local titleLabel = font(pane, 22, "LEFT")
+    titleLabel:SetPoint("TOPLEFT", pane, "TOPLEFT", 28, -28)
+    pane.productTitle = titleLabel
+
+    local statusLabel = font(pane, 11, "LEFT")
+    statusLabel:SetPoint("TOPLEFT", titleLabel, "BOTTOMLEFT", 0, -8)
+    pane.statusLabel = statusLabel
+
+    local descLabel = font(pane, 11, "LEFT")
+    descLabel:SetPoint("TOPLEFT", statusLabel, "BOTTOMLEFT", 0, -16)
+    descLabel:SetPoint("RIGHT", pane, "RIGHT", -28, 0)
+    if descLabel.SetWordWrap then descLabel:SetWordWrap(true) end
+    if descLabel.SetJustifyV then descLabel:SetJustifyV("TOP") end
+    descLabel:SetTextColor(0.78, 0.82, 0.90, 1)
+    pane.descriptionLabel = descLabel
+
+    local urlFrame = CreateFrame("Frame", nil, pane)
+    urlFrame:SetSize(440, 54)
+    urlFrame:SetPoint("TOPLEFT", descLabel, "BOTTOMLEFT", 0, -16)
+    urlFrame:Hide()
+    pane.urlFrame = urlFrame
+
+    local urlHint = font(urlFrame, 9, "LEFT")
+    urlHint:SetPoint("TOPLEFT", urlFrame, "TOPLEFT", 0, 0)
+    urlHint:SetText("Click to select, then Ctrl+A, Ctrl+C to copy:")
+    urlHint:SetTextColor(0.52, 0.65, 0.82, 1)
+
+    local urlBox = CreateFrame("EditBox", "CreshSettingsURLBox", urlFrame, "InputBoxTemplate")
+    urlBox:SetAutoFocus(false)
+    urlBox:SetWidth(400)
+    urlBox:SetHeight(22)
+    urlBox:SetPoint("TOPLEFT", urlHint, "BOTTOMLEFT", 0, -4)
+    urlBox:SetText(SUITE_RELEASES_URL)
+    urlBox:SetCursorPosition(0)
+    urlBox:SetScript("OnEditFocusGained", function(self)
+        if self.HighlightText then self:HighlightText() end
+    end)
+    urlBox:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+    urlBox:SetScript("OnEnterPressed",  function(self) self:ClearFocus() end)
+    pane.urlBox = urlBox
+end
+
+function Settings:RefreshProductTabs()
+    if not self.productTabs then return end
+    local key = self.activeProductKey or "CC"
+    local accent = CC.db and CC.db.colors and CC.db.colors.accent or { 0.11, 0.43, 0.95, 1 }
+    for _, p in ipairs(PRODUCTS) do
+        local tab = self.productTabs[p.key]
+        if tab then
+            local active = p.key == key
+            tab.creshActive = active
+            if tab.SetBackdropColor then
+                if active then
+                    tab:SetBackdropColor(accent[1] * 0.55, accent[2] * 0.55, accent[3] * 0.55, 1)
+                else
+                    tab:SetBackdropColor(0.095, 0.108, 0.138, 1)
+                end
+            end
+            if tab.text then
+                tab.text:SetTextColor(active and 1 or 0.72, active and 1 or 0.77, active and 1 or 0.84, 1)
+            end
+        end
+    end
+end
+
+function Settings:ShowProductStatus(key)
+    local pane = self.productPane
+    if not pane then return end
+    local product
+    for _, p in ipairs(PRODUCTS) do if p.key == key then product = p; break end end
+    if not product then return end
+
+    local status, detail = detectAddonStatus(product.addonName)
+    pane.productTitle:SetText(product.label)
+
+    if status == "loaded" then
+        pane.statusLabel:SetText("Loaded")
+        pane.statusLabel:SetTextColor(0.40, 0.90, 0.50, 1)
+        local suite = _G.CreshSuite
+        local hasProv = suite and suite.GetSettingsProvider
+            and suite:GetSettingsProvider(product.addonName) ~= nil
+        if hasProv then
+            pane.descriptionLabel:SetText(product.label .. " is loaded. Settings will appear here once integrated.")
+        else
+            pane.descriptionLabel:SetText(product.label .. " is loaded. Full settings are coming in a future update.")
+        end
+        pane.urlFrame:Hide()
+
+    elseif status == "disabled" then
+        pane.statusLabel:SetText("Installed but not active")
+        pane.statusLabel:SetTextColor(0.95, 0.78, 0.20, 1)
+        pane.descriptionLabel:SetText(
+            product.label .. " is installed but currently disabled.\n\n" ..
+            "To enable it, return to the character selection screen and open the AddOns menu.")
+        pane.urlFrame:Hide()
+
+    elseif status == "missing" then
+        pane.statusLabel:SetText("Not installed")
+        pane.statusLabel:SetTextColor(0.85, 0.35, 0.35, 1)
+        pane.descriptionLabel:SetText(
+            product.label .. " is not installed. Download it from the CreshSuite releases " ..
+            "page and place it in your Interface\\AddOns folder.")
+        if pane.urlBox then pane.urlBox:SetText(SUITE_RELEASES_URL) end
+        pane.urlFrame:Show()
+
+    elseif status == "incompatible" then
+        local verStr = detail and ("version " .. detail) or "an older version"
+        pane.statusLabel:SetText("Incompatible version")
+        pane.statusLabel:SetTextColor(0.85, 0.35, 0.35, 1)
+        pane.descriptionLabel:SetText(
+            product.label .. " is installed (" .. verStr .. ") but is not compatible with " ..
+            "this version of CreshChat. Update " .. product.label .. " from the releases page.")
+        if pane.urlBox then pane.urlBox:SetText(SUITE_RELEASES_URL) end
+        pane.urlFrame:Show()
+    end
+end
+
+-- Switch the visible page within a product panel.
+function Settings:SetProductPage(productKey, pageKey)
+    local ps = self.productPanels and self.productPanels[productKey]
+    if not ps then return end
+    ps.activePage = pageKey
+    local accent = CC.db and CC.db.colors and CC.db.colors.accent or { 0.11, 0.43, 0.95, 1 }
+    for pKey, page in pairs(ps.pages) do
+        page:SetShown(pKey == pageKey)
+    end
+    for pKey, tab in pairs(ps.tabs) do
+        local active = pKey == pageKey
+        tab.creshActive = active
+        if tab.SetBackdropColor then
+            if active then tab:SetBackdropColor(accent[1] * 0.65, accent[2] * 0.65, accent[3] * 0.65, 1)
+            else tab:SetBackdropColor(0.075, 0.086, 0.112, 1) end
+        end
+        if tab.text then tab.text:SetTextColor(active and 1 or 0.72, active and 1 or 0.77, active and 1 or 0.84, 1) end
+    end
+end
+
+-- Build a sidebar+content panel for a suite addon that has registered a page-spec table.
+-- Spec format: { pages = { { key, label, desc, build(builder) }, ... } }
+function Settings:BuildProductSettingsPanel(productKey, spec)
+    if not spec or type(spec.pages) ~= "table" or #spec.pages == 0 then return end
+    self.productPanels = self.productPanels or {}
+    if self.productPanels[productKey] then return end
+
+    local frame        = self.frame
+    local pSidebarWidth = 130
+
+    local panel = CreateFrame("Frame", nil, frame, templateName())
+    panel:SetPoint("TOPLEFT",     self.productBar, "BOTTOMLEFT", 0,  -4)
+    panel:SetPoint("BOTTOMRIGHT", frame,           "BOTTOMRIGHT", -8, 27)
+    backdrop(panel, 0.055, 0.067, 0.090, 0.99, 0.13, 0.16, 0.21, 1)
+    raiseFrame(panel, frame, 2)
+    panel:Hide()
+
+    local pSidebar = CreateFrame("Frame", nil, panel, templateName())
+    pSidebar:SetPoint("TOPLEFT",    panel, "TOPLEFT",    0, 0)
+    pSidebar:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 0, 0)
+    pSidebar:SetWidth(pSidebarWidth)
+    backdrop(pSidebar, 0.045, 0.055, 0.075, 0.98, 0.13, 0.16, 0.21, 1)
+    raiseFrame(pSidebar, panel, 2)
+
+    local pContent = CreateFrame("Frame", nil, panel, templateName())
+    pContent:SetPoint("TOPLEFT",     pSidebar, "TOPRIGHT",    8, 0)
+    pContent:SetPoint("BOTTOMRIGHT", panel,    "BOTTOMRIGHT", 0, 0)
+    backdrop(pContent, 0.078, 0.090, 0.118, 1, 0.13, 0.16, 0.21, 1)
+    raiseFrame(pContent, panel, 2)
+
+    local ps = {
+        panel     = panel,
+        sidebar   = pSidebar,
+        content   = pContent,
+        pages     = {},
+        tabs      = {},
+        pageOrder = {},
+        activePage = nil,
+    }
+
+    local numPages  = #spec.pages
+    local tabHeight = numPages > 9 and 27 or 29
+    local tabGap    = numPages > 9 and 3  or 5
+    local prevTab
+    for _, pageSpec in ipairs(spec.pages) do
+        local pKey = pageSpec.key
+        ps.pageOrder[#ps.pageOrder + 1] = pKey
+
+        local pKeyCapture = pKey
+        local tab = button(pSidebar, pageSpec.label, pSidebarWidth - 12, tabHeight, function()
+            Settings:SetProductPage(productKey, pKeyCapture)
+        end)
+        if prevTab then tab:SetPoint("TOPLEFT", prevTab,   "BOTTOMLEFT", 0, -tabGap)
+        else            tab:SetPoint("TOPLEFT", pSidebar,  "TOPLEFT",    6, -7) end
+        prevTab = tab
+        ps.tabs[pKey] = tab
+
+        local scroll = CreateFrame("ScrollFrame", nil, pContent, "UIPanelScrollFrameTemplate")
+        raiseFrame(scroll, pContent, 6)
+        scroll:SetAllPoints()
+        scroll:EnableMouseWheel(true)
+        scroll:SetScript("OnMouseWheel", function(selfScroll, delta)
+            local current = selfScroll:GetVerticalScroll() or 0
+            local maximum = selfScroll:GetVerticalScrollRange() or 0
+            selfScroll:SetVerticalScroll(max(0, min(maximum, current - delta * 42)))
+        end)
+        local canvas = CreateFrame("Frame", nil, scroll)
+        raiseFrame(canvas, scroll, 1)
+        canvas:SetSize(self.pageWidth or 400, 520)
+        scroll:SetScrollChild(canvas)
+        scroll.canvas = canvas
+        if scroll.ScrollBar then
+            raiseFrame(scroll.ScrollBar, scroll, 3)
+            if scroll.ScrollBarScrollUpButton   then raiseFrame(scroll.ScrollBarScrollUpButton,   scroll.ScrollBar, 1) end
+            if scroll.ScrollBarScrollDownButton then raiseFrame(scroll.ScrollBarScrollDownButton, scroll.ScrollBar, 1) end
+        end
+        scroll:Hide()
+        ps.pages[pKey] = scroll
+
+        if type(pageSpec.build) == "function" then
+            self.currentProductKey = productKey
+            local b = self:NewBuilder(scroll, pageSpec.label, pageSpec.desc or "")
+            local ok, err = pcall(pageSpec.build, b)
+            b:Finish()
+            self.currentProductKey = nil
+            if not ok then
+                local errNote = font(canvas, 9, "LEFT")
+                errNote:SetPoint("TOPLEFT", canvas, "TOPLEFT", 12, -12)
+                errNote:SetTextColor(0.85, 0.35, 0.35, 1)
+                errNote:SetText("Settings error: " .. tostring(err))
+            end
+        end
+    end
+
+    self.productPanels[productKey] = ps
+end
+
+function Settings:SelectProduct(key)
+    self.activeProductKey = key
+    if key == "CC" then
+        if self.sidebar     then self.sidebar:Show() end
+        if self.content     then self.content:Show() end
+        if self.productPane then self.productPane:Hide() end
+        for _, ps in pairs(self.productPanels or {}) do ps.panel:Hide() end
+        self:SetPage(self.activePage or "GENERAL")
+    else
+        if self.sidebar then self.sidebar:Hide() end
+        if self.content then self.content:Hide() end
+        local ps = self.productPanels and self.productPanels[key]
+        if ps then
+            if self.productPane then self.productPane:Hide() end
+            for pKey, p in pairs(self.productPanels) do p.panel:SetShown(pKey == key) end
+            local activePage = ps.activePage or (ps.pageOrder and ps.pageOrder[1])
+            if activePage then self:SetProductPage(key, activePage) end
+        else
+            for _, p in pairs(self.productPanels or {}) do p.panel:Hide() end
+            if self.productPane then self.productPane:Show() end
+            self:ShowProductStatus(key)
+        end
+    end
+    self:RefreshProductTabs()
 end

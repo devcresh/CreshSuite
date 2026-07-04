@@ -51,7 +51,7 @@ $AddonNames = @("CreshChat","CreshGames","CreshCollect")
 if ($Addon -ne "All") { $AddonNames = @($Addon) }
 
 # ---------------------------------------------------------------------------
-# Forbidden patterns — never land in staged output or ZIP
+# Forbidden patterns -never land in staged output or ZIP
 # ---------------------------------------------------------------------------
 $Denied = @(
     "\.git", "AGENTS\.md", "CLAUDE\.md",
@@ -83,7 +83,7 @@ if (-not $SkipValidation) {
     }
     & $validateScript -Addon $Addon
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "Validation failed — aborting build."
+        Write-Error "Validation failed -aborting build."
         exit 1
     }
     Write-Host ""
@@ -172,7 +172,7 @@ foreach ($name in $AddonNames) {
         Copy-Item $src $dst -Force
     }
 
-    Write-Host "  Staged: $($allowList.Count) files → $stageDir"
+    Write-Host "  Staged: $($allowList.Count) files -> $stageDir"
 
     if ($StageOnly) {
         $results += [PSCustomObject]@{ Name = $name; Version = $version; Files = $allowList.Count; Zip = $null }
@@ -226,6 +226,6 @@ foreach ($name in $AddonNames) {
 # ---------------------------------------------------------------------------
 Write-Host "=== Build complete ===" -ForegroundColor Green
 foreach ($r in $results) {
-    if ($r.Zip) { Write-Host "  $($r.Name) v$($r.Version) — $($r.Files) files — $($r.Zip)" }
-    else         { Write-Host "  $($r.Name) v$($r.Version) — $($r.Files) staged files" }
+    if ($r.Zip) { Write-Host "  $($r.Name) v$($r.Version) -$($r.Files) files -$($r.Zip)" }
+    else         { Write-Host "  $($r.Name) v$($r.Version) -$($r.Files) staged files" }
 }
