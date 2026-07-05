@@ -202,7 +202,18 @@ function Pass:Ensure()
             save.themeUnlockSources[themeKey] = save.themeUnlockSources[themeKey] or ("PASS:" .. tostring(level))
         end
     end
-    if CC.CardDecks and CC.CardDecks.BackfillFromClaimed then CC.CardDecks:BackfillFromClaimed(save.claimed) end
+    -- Re-entrancy guard: CardDecks:BackfillFromClaimed -> CardDecks:Ensure ->
+    -- CreshCollectAPI.IsBattlePassRewardClaimed -> Pass:IsRewardClaimed calls
+    -- straight back into Pass:Ensure. Without this guard that is unbounded
+    -- mutual recursion (confirmed via in-game stack overflow); with it, the
+    -- re-entrant call just reads the already-normalized `save` above instead
+    -- of looping, and the backfill/publish side effect still runs exactly
+    -- once per top-level Ensure() call.
+    if not self._ensuring and CC.CardDecks and CC.CardDecks.BackfillFromClaimed then
+        self._ensuring = true
+        CC.CardDecks:BackfillFromClaimed(save.claimed)
+        self._ensuring = false
+    end
     return save
 end
 
@@ -548,6 +559,18 @@ function Pass:ClaimAllAvailable()
     return claimed, total
 end
 
+-- Returns claimed, total -- how many of the maxLevel reward levels have
+-- actually been claimed. Pure/read-only (no side effects), so the Progress
+-- Overview window can show "rewards unlocked" without recomputing claim
+-- state itself.
+function Pass:GetClaimedRewardCount()
+    local claimed = 0
+    for level = 1, self.maxLevel do
+        if self:IsRewardClaimed(level) then claimed = claimed + 1 end
+    end
+    return claimed, self.maxLevel
+end
+
 -- DORMANT: no callers as of the Phase 3 progression-routing audit (2026-06-30).
 -- SoloGames:RecordHistory used to call this alongside GameProgression:OnGameCompleted,
 -- double-funding Cresh Coins/Pass XP from a single game result. GameProgression's
@@ -642,6 +665,12 @@ end
 function Pass:RefreshDrawer()
     if CC.UI and CC.UI.RefreshConsoleEconomy then CC.UI:RefreshConsoleEconomy() end
     if CC.UI and CC.UI.RefreshGameDrawer then CC.UI:RefreshGameDrawer(true) end
+    -- Single centralized refresh point for every Battle Pass display surface
+    -- (the CreshChat drawer panel above, the standalone window, and the
+    -- Progress Overview's Battle Pass card) -- extended here rather than
+    -- adding a second, parallel event hook.
+    self:RefreshWindow()
+    if COL.ProgressOverview and COL.ProgressOverview.RefreshWindow then COL.ProgressOverview:RefreshWindow() end
 end
 
 function Pass:OpenThemeUnlock(theme)
@@ -1080,6 +1109,17 @@ function Pass:RefreshDrawerPanel(drawer, api)
     local level, current, required, ratio = self:GetProgress()
     drawer.passHero.level:SetText("LEVEL " .. level .. " / " .. self.maxLevel)
     drawer.passHero.wallet:SetText(self:GetWalletText() .. " CRESH COINS")
+    -- Reward rows can't say which levels specifically grant a card deck or
+    -- Tetris theme without CreshGames' own reward-tier data (see GetReward),
+    -- so rather than guess, this single always-visible line names the addon
+    -- those specific extras require whenever it isn't loaded.
+    if drawer.passHero.subtitle then
+        if _G.CreshSuite and _G.CreshSuite:IsProductLoaded("CreshGames") then
+            drawer.passHero.subtitle:SetText(tostring(self.maxLevel) .. " levels · play any solo or multiplayer game to earn Pass Points, coins and themes.")
+        else
+            drawer.passHero.subtitle:SetText(tostring(self.maxLevel) .. " levels · card deck and Tetris theme rewards require CreshGames.")
+        end
+    end
     drawer.passHero.progress:SetMinMaxValues(0, max(1, required))
     drawer.passHero.progress:SetValue(level >= self.maxLevel and required or current)
     drawer.passHero.progressText:SetText(level >= self.maxLevel and "BATTLE PASS COMPLETE" or (formatNumber(current) .. " / " .. formatNumber(required) .. " POINTS TO LEVEL " .. (level + 1)))
@@ -1235,3 +1275,408 @@ function Pass:RefreshDrawerPanel(drawer, api)
 end
 
 Pass.formatNumber = formatNumber
+
+-- ============================================================
+-- Standalone Battle Pass window (opened by /cc battlepass and its aliases)
+-- ============================================================
+-- Self-contained: uses its own local widget helpers (same convention as
+-- ProgressHub.lua) instead of CreshChat's UI.lua drawer helpers, so this
+-- window has no dependency on the CreshChat game drawer and never forces it
+-- open. Every number/state shown below is read from the functions already
+-- defined above (GetProgress, GetReward, IsLevelReached, IsRewardClaimed,
+-- GetRequirement, ClaimReward, ClaimAllAvailable, BuildPassLevelList,
+-- PopulatePassRow) -- nothing here recomputes a level, reward or claim
+-- state independently. Rows are pooled (POOL_SIZE, reused from the drawer's
+-- own constant above) rather than one frame per level, since building 200
+-- static rows would be wasteful and this window is built once, not rebuilt
+-- on every open.
+
+local WBACKDROP = {
+    bgFile = "Interface\\Buttons\\WHITE8X8",
+    edgeFile = "Interface\\Buttons\\WHITE8X8",
+    tile = false, edgeSize = 1,
+    insets = { left = 1, right = 1, top = 1, bottom = 1 },
+}
+local WFALLBACK = {
+    panel       = { 0.022, 0.026, 0.034, 0.98 },
+    panelSoft   = { 0.038, 0.044, 0.056, 0.98 },
+    panelRaised = { 0.066, 0.074, 0.092, 1 },
+    border      = { 0.105, 0.120, 0.145, 1 },
+    text        = { 0.93,  0.95,  0.98,  1 },
+    muted       = { 0.56,  0.61,  0.69,  1 },
+    green       = { 0.18,  0.78,  0.36,  1 },
+    gold        = { 0.95,  0.70,  0.20,  1 },
+    quest       = { 1.00,  0.82,  0.26,  1 },
+    blue        = { 0.13,  0.62,  0.95,  1 },
+}
+
+local function winPalette()
+    local c = CC.db and CC.db.colors or {}
+    return {
+        panel       = c.panel       or WFALLBACK.panel,
+        panelSoft   = c.panelSoft   or WFALLBACK.panelSoft,
+        panelRaised = c.panelRaised or WFALLBACK.panelRaised,
+        border      = c.border      or WFALLBACK.border,
+        text        = WFALLBACK.text,
+        muted       = WFALLBACK.muted,
+        green       = WFALLBACK.green,
+        gold        = WFALLBACK.gold,
+        quest       = c.quest       or WFALLBACK.quest,
+        blue        = c.blue        or WFALLBACK.blue,
+    }
+end
+
+local function winTemplateName()
+    return _G.BackdropTemplateMixin and "BackdropTemplate" or nil
+end
+
+local function winApplyBackdrop(frame, bg, border)
+    if not frame then return end
+    if frame.SetBackdrop then frame:SetBackdrop(WBACKDROP) end
+    bg = bg or WFALLBACK.panel
+    border = border or WFALLBACK.border
+    if frame.SetBackdropColor then frame:SetBackdropColor(bg[1], bg[2], bg[3], bg[4] or 1) end
+    if frame.SetBackdropBorderColor then frame:SetBackdropBorderColor(border[1], border[2], border[3], border[4] or 1) end
+end
+
+local function winCreateText(parent, size, color, justify)
+    local f = parent:CreateFontString(nil, "OVERLAY")
+    f:SetFont(_G.STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", size or 11, "")
+    color = color or WFALLBACK.text
+    f:SetTextColor(color[1], color[2], color[3], color[4] or 1)
+    f:SetJustifyH(justify or "LEFT")
+    f:SetJustifyV("MIDDLE")
+    return f
+end
+
+local function winDarken(color, amount)
+    amount = tonumber(amount) or 0.18
+    return {
+        max(0, (color[1] or 0) - amount),
+        max(0, (color[2] or 0) - amount),
+        max(0, (color[3] or 0) - amount),
+        color[4] or 1,
+    }
+end
+
+local function winCreateButton(parent, label, width, height, callback)
+    local btn = CreateFrame("Button", nil, parent, winTemplateName())
+    btn:SetSize(width or 80, height or 24)
+    local colors = winPalette()
+    winApplyBackdrop(btn, colors.panelRaised, colors.border)
+    btn.label = winCreateText(btn, 9, colors.text, "CENTER")
+    btn.label:SetAllPoints()
+    btn.label:SetText(label or "")
+    btn:SetScript("OnClick", function(selfBtn, ...) if callback then callback(selfBtn, ...) end end)
+    btn:SetScript("OnEnter", function(selfBtn)
+        local c = winPalette()
+        winApplyBackdrop(selfBtn, winDarken(c.quest or c.blue, 0.22), c.quest or c.blue)
+    end)
+    btn:SetScript("OnLeave", function(selfBtn)
+        local c = winPalette()
+        winApplyBackdrop(selfBtn, c.panelRaised, c.border)
+    end)
+    return btn
+end
+
+local function winSetAccent(button, color)
+    if not button then return end
+    winApplyBackdrop(button, winDarken(color, 0.55), color)
+    if button.label then button.label:SetTextColor(1, 1, 1, 1) end
+end
+
+function Pass:IsWindowOpen()
+    return self.window and self.window:IsShown()
+end
+
+function Pass:ToggleWindow()
+    if not self:BuildWindow() then return end
+    if self.window:IsShown() then self:CloseWindow() else self:OpenWindow() end
+end
+
+function Pass:OpenWindow()
+    if not self:BuildWindow() then return end
+    self.window:Show()
+    self:RefreshWindow()
+    if CC.UI and CC.UI.FocusWindow then CC.UI:FocusWindow(self.window) end
+    if CC.UI and CC.UI.RefreshLauncherButtonStates then CC.UI:RefreshLauncherButtonStates() end
+end
+
+function Pass:CloseWindow()
+    if self.window then self.window:Hide() end
+    if CC.UI and CC.UI.RefreshLauncherButtonStates then CC.UI:RefreshLauncherButtonStates() end
+end
+
+function Pass:SelectWindowLevel(level)
+    self.windowSelectedLevel = floor(clamp(level, 1, self.maxLevel))
+    self:RefreshWindow()
+end
+
+function Pass:BuildWindow()
+    if self.window then return self.window end
+    local colors = winPalette()
+
+    local frame = CreateFrame("Frame", "CreshCollectBattlePassFrame", UIParent, winTemplateName())
+    frame:SetSize(460, 600)
+    local savedPos = CC.db and CC.db.positions and CC.db.positions.battlePassWindow
+    if savedPos then
+        frame:SetPoint(savedPos.point or "CENTER", UIParent, savedPos.relPoint or "CENTER",
+            tonumber(savedPos.x) or 0, tonumber(savedPos.y) or 0)
+    else
+        frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    end
+    frame:SetFrameStrata("HIGH")
+    frame:SetClampedToScreen(true)
+    frame:SetMovable(true)
+    frame:EnableMouse(true)
+    winApplyBackdrop(frame, colors.panel, colors.border)
+    frame:Hide()
+    self.window = frame
+
+    frame:SetScript("OnMouseDown", function(selfFrame, btn)
+        if btn == "LeftButton" then
+            if CC.UI and CC.UI.FocusWindow then CC.UI:FocusWindow(selfFrame) end
+            selfFrame:StartMoving()
+        end
+    end)
+    frame:SetScript("OnMouseUp", function(selfFrame)
+        selfFrame:StopMovingOrSizing()
+        if CC.db then
+            CC.db.positions = CC.db.positions or {}
+            local point, _, relPoint, x, y = selfFrame:GetPoint()
+            CC.db.positions.battlePassWindow = { point = point, relPoint = relPoint, x = floor(x or 0), y = floor(y or 0) }
+        end
+    end)
+    frame:SetScript("OnHide", function()
+        if CC.UI and CC.UI.RefreshLauncherButtonStates then CC.UI:RefreshLauncherButtonStates() end
+    end)
+    if CC.UI and CC.UI.InstallWindowFocus then CC.UI:InstallWindowFocus(frame) end
+
+    -- Header
+    local header = CreateFrame("Frame", nil, frame, winTemplateName())
+    header:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+    header:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
+    header:SetHeight(34)
+    winApplyBackdrop(header, winDarken(colors.quest, 0.32), colors.quest)
+    local titleLabel = winCreateText(header, 11, colors.text, "LEFT")
+    titleLabel:SetPoint("TOPLEFT", header, "TOPLEFT", 10, -10)
+    titleLabel:SetText("BATTLE PASS")
+    local closeBtn = CreateFrame("Button", nil, header, winTemplateName())
+    closeBtn:SetSize(22, 22)
+    closeBtn:SetPoint("TOPRIGHT", header, "TOPRIGHT", -4, -6)
+    winApplyBackdrop(closeBtn, colors.panelRaised, colors.border)
+    local closeLbl = winCreateText(closeBtn, 9, colors.muted, "CENTER")
+    closeLbl:SetAllPoints()
+    closeLbl:SetText("X")
+    closeBtn:SetScript("OnClick", function() Pass:CloseWindow() end)
+
+    -- Hero: level, wallet, progress bar, CreshGames notice
+    local hero = CreateFrame("Frame", nil, frame, winTemplateName())
+    hero:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -1)
+    hero:SetPoint("TOPRIGHT", header, "BOTTOMRIGHT", 0, -1)
+    hero:SetHeight(78)
+    winApplyBackdrop(hero, winDarken(colors.blue, 0.42), colors.blue)
+    self.windowHero = hero
+    hero.level = winCreateText(hero, 20, colors.text, "LEFT")
+    hero.level:SetPoint("TOPLEFT", hero, "TOPLEFT", 12, -8)
+    hero.level:SetText("LEVEL 1 / " .. self.maxLevel)
+    hero.wallet = winCreateText(hero, 10, colors.gold, "RIGHT")
+    hero.wallet:SetPoint("TOPRIGHT", hero, "TOPRIGHT", -12, -12)
+    hero.wallet:SetText("0 COINS")
+    hero.progressBack = CreateFrame("Frame", nil, hero, winTemplateName())
+    hero.progressBack:SetPoint("BOTTOMLEFT", hero, "BOTTOMLEFT", 12, 26)
+    hero.progressBack:SetPoint("BOTTOMRIGHT", hero, "BOTTOMRIGHT", -12, 26)
+    hero.progressBack:SetHeight(18)
+    winApplyBackdrop(hero.progressBack, colors.panel, colors.border)
+    hero.progress = CreateFrame("StatusBar", nil, hero.progressBack)
+    hero.progress:SetPoint("TOPLEFT", hero.progressBack, "TOPLEFT", 2, -2)
+    hero.progress:SetPoint("BOTTOMRIGHT", hero.progressBack, "BOTTOMRIGHT", -2, 2)
+    hero.progress:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+    hero.progress:SetStatusBarColor(colors.blue[1], colors.blue[2], colors.blue[3], 0.95)
+    hero.progress:SetMinMaxValues(0, 1)
+    hero.progress:SetValue(0)
+    hero.progressText = winCreateText(hero.progressBack, 9, colors.text, "CENTER")
+    hero.progressText:SetAllPoints()
+    hero.notice = winCreateText(hero, 8, colors.muted, "LEFT")
+    hero.notice:SetPoint("BOTTOMLEFT", hero, "BOTTOMLEFT", 12, 8)
+    hero.notice:SetPoint("BOTTOMRIGHT", hero, "BOTTOMRIGHT", -12, 8)
+    hero.notice:SetWordWrap(true)
+
+    -- Requirement / selected-level detail box
+    local req = CreateFrame("Frame", nil, frame, winTemplateName())
+    req:SetPoint("TOPLEFT", hero, "BOTTOMLEFT", 0, -1)
+    req:SetPoint("TOPRIGHT", hero, "BOTTOMRIGHT", 0, -1)
+    req:SetHeight(70)
+    winApplyBackdrop(req, colors.panelSoft, colors.quest)
+    self.windowRequirement = req
+    req.title = winCreateText(req, 11, colors.text, "LEFT")
+    req.title:SetPoint("TOPLEFT", req, "TOPLEFT", 10, -9)
+    req.title:SetPoint("RIGHT", req, "RIGHT", -108, 0)
+    req.detail = winCreateText(req, 8, colors.muted, "LEFT")
+    req.detail:SetPoint("TOPLEFT", req.title, "BOTTOMLEFT", 0, -5)
+    req.detail:SetPoint("BOTTOMRIGHT", req, "BOTTOMRIGHT", -108, 8)
+    req.detail:SetWordWrap(true)
+    req.action = winCreateButton(req, "VIEW", 92, 29, function()
+        local level = Pass.windowSelectedLevel or 1
+        if Pass:IsLevelReached(level) and not Pass:IsRewardClaimed(level) then
+            Pass:ClaimReward(level)
+        end
+    end)
+    req.action:SetPoint("RIGHT", req, "RIGHT", -8, 0)
+
+    -- Filter bar + claim-all
+    local filterBar = CreateFrame("Frame", nil, frame, winTemplateName())
+    filterBar:SetPoint("TOPLEFT", req, "BOTTOMLEFT", 8, -8)
+    filterBar:SetPoint("TOPRIGHT", req, "BOTTOMRIGHT", -8, -8)
+    filterBar:SetHeight(26)
+    self.windowFilterButtons = {}
+    local filters = { { "ALL", "ALL", 54 }, { "READY", "READY", 64 }, { "CLAIMED", "CLAIMED", 76 }, { "LOCKED", "LOCKED", 68 } }
+    local previousFilter
+    for _, filterDef in ipairs(filters) do
+        local key, label, width = filterDef[1], filterDef[2], filterDef[3]
+        local btn = winCreateButton(filterBar, label, width, 24, function()
+            Pass.windowFilter = key
+            Pass:RefreshWindow()
+        end)
+        if previousFilter then btn:SetPoint("LEFT", previousFilter, "RIGHT", 4, 0)
+        else btn:SetPoint("LEFT", filterBar, "LEFT", 0, 0) end
+        self.windowFilterButtons[key] = btn
+        previousFilter = btn
+    end
+    local claimAll = winCreateButton(filterBar, "CLAIM ALL READY", 132, 24, function() Pass:ClaimAllAvailable() end)
+    claimAll:SetPoint("RIGHT", filterBar, "RIGHT", 0, 0)
+    self.windowClaimAll = claimAll
+
+    -- Scroll + pooled rows (POOL_SIZE / ROW_HEIGHT reused from the drawer's
+    -- own virtualization constants above -- same row size, same pool count).
+    local scroll = CreateFrame("ScrollFrame", nil, frame)
+    scroll:SetPoint("TOPLEFT", filterBar, "BOTTOMLEFT", 0, -8)
+    scroll:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -8, 8)
+    scroll:EnableMouseWheel(true)
+    local content = CreateFrame("Frame", nil, scroll)
+    content:SetWidth(430)
+    content:SetHeight(600)
+    scroll:SetScrollChild(content)
+    scroll:SetScript("OnMouseWheel", function(selfScroll, delta)
+        local current = selfScroll:GetVerticalScroll() or 0
+        local maximum = selfScroll:GetVerticalScrollRange() or 0
+        selfScroll:SetVerticalScroll(max(0, min(maximum, current - delta * 42)))
+    end)
+    scroll:SetScript("OnVerticalScroll", function() Pass:UpdateWindowPool(false) end)
+    self.windowScroll = scroll
+    self.windowContent = content
+
+    self.windowPool = {}
+    local windowApi = { colors = colors, applyBackdrop = winApplyBackdrop, darken = winDarken, setAccent = winSetAccent }
+    self.windowApi = windowApi
+    for i = 1, POOL_SIZE do
+        local row = CreateFrame("Button", nil, content, winTemplateName())
+        row:SetWidth(430)
+        row:SetHeight(49)
+        row.assignedLevel = nil
+        row.badge = CreateFrame("Frame", nil, row, winTemplateName())
+        row.badge:SetSize(38, 34)
+        row.badge:SetPoint("LEFT", row, "LEFT", 7, 0)
+        row.badgeText = winCreateText(row.badge, 11, colors.muted, "CENTER")
+        row.badgeText:SetAllPoints()
+        row.title = winCreateText(row, 10, colors.text, "LEFT")
+        row.title:SetPoint("TOPLEFT", row, "TOPLEFT", 53, -8)
+        row.title:SetPoint("RIGHT", row, "RIGHT", -98, 0)
+        row.detail = winCreateText(row, 8, colors.muted, "LEFT")
+        row.detail:SetPoint("TOPLEFT", row.title, "BOTTOMLEFT", 0, -3)
+        row.detail:SetPoint("RIGHT", row, "RIGHT", -98, 0)
+        row.button = winCreateButton(row, "LOCKED", 82, 26, function()
+            if not row.assignedLevel then return end
+            if Pass:IsLevelReached(row.assignedLevel) and not Pass:IsRewardClaimed(row.assignedLevel) then
+                Pass:ClaimReward(row.assignedLevel)
+            else
+                Pass:SelectWindowLevel(row.assignedLevel)
+            end
+        end)
+        row.button:SetPoint("RIGHT", row, "RIGHT", -7, 0)
+        row:SetScript("OnClick", function()
+            if row.assignedLevel then Pass:SelectWindowLevel(row.assignedLevel) end
+        end)
+        row:Hide()
+        self.windowPool[i] = row
+    end
+
+    self.windowFilter = self.windowFilter or "ALL"
+    return frame
+end
+
+function Pass:UpdateWindowPool(forceRepopulate)
+    local list = self.windowLevelList
+    local pool = self.windowPool
+    local api = self.windowApi
+    if not list or not pool or not api then return end
+    local save = self:Ensure()
+    if not save then return end
+    local scrollY = self.windowScroll and (self.windowScroll:GetVerticalScroll() or 0) or 0
+    local firstIdx = max(0, floor(scrollY / ROW_HEIGHT))
+    firstIdx = min(firstIdx, max(0, #list - POOL_SIZE))
+    for poolI = 1, POOL_SIZE do
+        local listIdx = firstIdx + poolI - 1
+        local level = list[listIdx + 1]
+        local rowFrame = pool[poolI]
+        if level then
+            local absY = -(listIdx * ROW_HEIGHT)
+            rowFrame:ClearAllPoints()
+            rowFrame:SetPoint("TOPLEFT", self.windowContent, "TOPLEFT", 0, absY)
+            rowFrame:SetPoint("TOPRIGHT", self.windowContent, "TOPRIGHT", 0, absY)
+            if forceRepopulate or rowFrame.assignedLevel ~= level then
+                rowFrame.assignedLevel = level
+                self:PopulatePassRow(rowFrame, level, save, api)
+            end
+            rowFrame:Show()
+        else
+            rowFrame.assignedLevel = nil
+            rowFrame:Hide()
+        end
+    end
+end
+
+function Pass:RefreshWindow()
+    if not self.window or not self.window:IsShown() then return end
+    local save = self:Ensure()
+    if not save then return end
+    local colors = winPalette()
+
+    local level, current, required = self:GetProgress()
+    self.windowHero.level:SetText("LEVEL " .. level .. " / " .. self.maxLevel)
+    self.windowHero.wallet:SetText(self:GetWalletText() .. " CRESH COINS")
+    self.windowHero.progress:SetMinMaxValues(0, max(1, required))
+    self.windowHero.progress:SetValue(level >= self.maxLevel and required or current)
+    self.windowHero.progressText:SetText(level >= self.maxLevel and "BATTLE PASS COMPLETE"
+        or (formatNumber(current) .. " / " .. formatNumber(required) .. " POINTS TO LEVEL " .. (level + 1)))
+    if _G.CreshSuite and _G.CreshSuite:IsProductLoaded("CreshGames") then
+        self.windowHero.notice:SetText("")
+    else
+        self.windowHero.notice:SetText("Card deck and Tetris theme rewards require CreshGames.")
+    end
+
+    if not self.windowSelectedLevel then
+        self.windowSelectedLevel = min(self.maxLevel, max(1, level + (self:IsRewardClaimed(level) and 1 or 0)))
+    end
+    local requirement = self:GetRequirement(self.windowSelectedLevel)
+    self.windowRequirement.title:SetText("LEVEL " .. requirement.level .. " REQUIREMENT · " .. requirement.reward.title)
+    self.windowRequirement.detail:SetText(requirement.detail)
+    local alreadyClaimed = self:IsRewardClaimed(requirement.level)
+    self.windowRequirement.action.label:SetText(requirement.reached and (alreadyClaimed and "CLAIMED" or "UNLOCK NOW") or "IN PROGRESS")
+    setButtonEnabled(self.windowRequirement.action, requirement.reached and not alreadyClaimed)
+    winApplyBackdrop(self.windowRequirement, winDarken(requirement.reached and colors.green or colors.quest, 0.78),
+        requirement.reached and colors.green or colors.quest)
+
+    local ready = 0
+    for rewardLevel = 1, self.maxLevel do
+        if self:IsLevelReached(rewardLevel) and not self:IsRewardClaimed(rewardLevel) then ready = ready + 1 end
+    end
+    setButtonEnabled(self.windowClaimAll, ready > 0)
+    for key, btn in pairs(self.windowFilterButtons or {}) do
+        winSetAccent(btn, (self.windowFilter or "ALL") == key and colors.quest or colors.panelRaised)
+    end
+
+    self.windowLevelList = self:BuildPassLevelList({ passFilter = self.windowFilter or "ALL" })
+    self.windowContent:SetHeight(max(1, #self.windowLevelList * ROW_HEIGHT))
+    self:UpdateWindowPool(true)
+end

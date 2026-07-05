@@ -2836,10 +2836,59 @@ local function setDrawerButtonEnabled(button, enabled)
     if enabled then button:Enable() else button:Disable() end
 end
 
--- Returns self.main when chat is enabled, or self.gamesAnchor in Games Only mode.
--- Used by game-drawer functions so they work without the main chat frame.
+-- Shows `label` (e.g. "Requires CreshGames") on hover, but only while the
+-- button is actually disabled (button.creshDisabled, set by
+-- setDrawerButtonEnabled above) — a normal enabled tab gets no tooltip.
+local function attachRequiresTooltip(button, label)
+    if not button then return end
+    button:SetScript("OnEnter", function(btn)
+        if not btn.creshDisabled then return end
+        GameTooltip:SetOwner(btn, "ANCHOR_BOTTOM")
+        GameTooltip:SetText(label, 1, 1, 1)
+        GameTooltip:Show()
+    end)
+    button:SetScript("OnLeave", function() GameTooltip:Hide() end)
+end
+
+-- Centralized addon-presence checks. Use these instead of scattering fresh
+-- `CC.Games ~= nil` / `CC.Achievements ~= nil` checks — those only prove a
+-- specific bridged module happened to be copied over, which lags behind the
+-- addon's own Suite:RegisterProduct call by however long that addon's own
+-- bridging code takes to run. CreshSuite:IsProductLoaded reflects the
+-- addon's Suite registration directly, which happens first, deterministically.
+function UI:IsCreshGamesLoaded()
+    return (_G.CreshSuite and _G.CreshSuite:IsProductLoaded("CreshGames")) == true
+end
+
+function UI:IsCreshCollectLoaded()
+    return (_G.CreshSuite and _G.CreshSuite:IsProductLoaded("CreshCollect")) == true
+end
+
+-- Pure decision logic for UI:OpenGameDrawer — no frame/global access, so it
+-- can be unit tested directly (see tests/GameDrawerAvailabilityTests.lua)
+-- without needing to stub the WoW widget API. Exposed on UI purely as a test
+-- hook; production code should call it only through OpenGameDrawer.
+-- Returns resolvedMode (one of SOLO/MULTIPLAYER/BATTLEPASS/ACHIEVEMENTS/THEMES)
+-- and allowed (true if the addon that owns resolvedMode is loaded).
+local function resolveGameDrawerMode(mode, gamesLoaded, collectLoaded)
+    local resolvedMode = string.upper(tostring(mode or "SOLO"))
+    if resolvedMode ~= "MULTIPLAYER" and resolvedMode ~= "BATTLEPASS"
+        and resolvedMode ~= "ACHIEVEMENTS" and resolvedMode ~= "THEMES" then
+        resolvedMode = "SOLO"
+    end
+    local needsGames   = (resolvedMode == "SOLO" or resolvedMode == "MULTIPLAYER")
+    local needsCollect = (resolvedMode == "BATTLEPASS" or resolvedMode == "ACHIEVEMENTS" or resolvedMode == "THEMES")
+    local allowed = (not needsGames or gamesLoaded) and (not needsCollect or collectLoaded)
+    return resolvedMode, allowed
+end
+UI._TESTONLY_ResolveGameDrawerMode = resolveGameDrawerMode
+
+-- Returns self.main only when it is already shown; otherwise returns the
+-- persistent invisible anchor frame. Used by game-drawer functions so opening
+-- the drawer never forces the main chat window open as a side effect.
 function UI:GetGameParent()
-    return self.main or self.gamesAnchor
+    if self.main and self.main:IsShown() then return self.main end
+    return self:BuildGamesAnchor()
 end
 
 -- Creates an invisible anchor frame positioned where the main frame would be.
@@ -2943,14 +2992,19 @@ function UI:BuildGameDrawer(parent)
     drawer.modeBar:SetHeight(60)
     drawer.soloMode = createButton(drawer.modeBar, "SOLO", 52, 28, function() UI:SetGameDrawerMode("SOLO") end)
     drawer.soloMode:SetPoint("TOPLEFT", drawer.modeBar, "TOPLEFT", 0, 0)
+    attachRequiresTooltip(drawer.soloMode, "Requires CreshGames")
     drawer.multiMode = createButton(drawer.modeBar, "MULTI", 68, 28, function() UI:SetGameDrawerMode("MULTIPLAYER") end)
     drawer.multiMode:SetPoint("LEFT", drawer.soloMode, "RIGHT", 4, 0)
+    attachRequiresTooltip(drawer.multiMode, "Requires CreshGames")
     drawer.passMode = createButton(drawer.modeBar, "BATTLE PASS", 84, 28, function() UI:SetGameDrawerMode("BATTLEPASS") end)
     drawer.passMode:SetPoint("LEFT", drawer.multiMode, "RIGHT", 4, 0)
+    attachRequiresTooltip(drawer.passMode, "Requires CreshCollect")
     drawer.achievementMode = createButton(drawer.modeBar, "ACH 0/0", 106, 28, function() UI:SetGameDrawerMode("ACHIEVEMENTS") end)
     drawer.achievementMode:SetPoint("LEFT", drawer.passMode, "RIGHT", 4, 0)
+    attachRequiresTooltip(drawer.achievementMode, "Requires CreshCollect")
     drawer.themesMode = createButton(drawer.modeBar, "UNLOCK THEMES", 326, 26, function() UI:SetGameDrawerMode("THEMES") end)
     drawer.themesMode:SetPoint("TOPLEFT", drawer.modeBar, "TOPLEFT", 0, -32)
+    attachRequiresTooltip(drawer.themesMode, "Requires CreshCollect")
 
     drawer.statusBox = CreateFrame("Frame", nil, drawer, templateName())
     drawer.statusBox:SetPoint("TOPLEFT", drawer.modeBar, "BOTTOMLEFT", 0, -7)
@@ -3164,9 +3218,27 @@ function UI:SetGameDrawerStatus(text, color)
     drawer.status:SetTextColor(color[1], color[2], color[3], 1)
 end
 
+-- Greys out and disables (via setDrawerButtonEnabled, which also blocks
+-- OnClick from ever firing) whichever mode tabs belong to an addon that
+-- isn't currently loaded, and re-enables them the moment it is (e.g. after
+-- a /reload with the addon now present) — this is re-evaluated fresh on
+-- every SetGameDrawerMode call rather than cached once at drawer build time.
+function UI:RefreshGameDrawerAvailability()
+    local drawer = self.gameDrawer
+    if not drawer then return end
+    local gamesOn = self:IsCreshGamesLoaded()
+    local collectOn = self:IsCreshCollectLoaded()
+    setDrawerButtonEnabled(drawer.soloMode, gamesOn)
+    setDrawerButtonEnabled(drawer.multiMode, gamesOn)
+    setDrawerButtonEnabled(drawer.passMode, collectOn)
+    setDrawerButtonEnabled(drawer.achievementMode, collectOn)
+    setDrawerButtonEnabled(drawer.themesMode, collectOn)
+end
+
 function UI:SetGameDrawerMode(mode, preserveScroll)
     local drawer = self:BuildGameDrawer(self:GetGameParent())
     if not drawer then return end
+    self:RefreshGameDrawerAvailability()
     mode = string.upper(tostring(mode or "SOLO"))
     if mode ~= "MULTIPLAYER" and mode ~= "BATTLEPASS" and mode ~= "ACHIEVEMENTS" and mode ~= "THEMES" then mode = "SOLO" end
     local previousMode = drawer.mode
@@ -3253,7 +3325,11 @@ function UI:RefreshGameDrawer(silent)
         }
         for key, card in pairs(drawer.soloCards) do
             card.details:SetText(stats[key] or (card.info and card.info.desc) or "Single-player game")
-            if CC.GameProgression then CC.GameProgression:UpdateBar(card.levelBar, card.levelText, key) end
+            if CC.GameProgression then
+                CC.GameProgression:UpdateBar(card.levelBar, card.levelText, key)
+            elseif card.levelText then
+                card.levelText:SetText("Requires CreshCollect")
+            end
         end
     end
 
@@ -3296,7 +3372,11 @@ function UI:RefreshGameDrawer(silent)
         local canChallenge = selected ~= nil and not games.active and not games.pendingOutgoing
         for key, card in pairs(drawer.multiCards or {}) do
             setDrawerButtonEnabled(card.challenge, canChallenge)
-            if CC.GameProgression then CC.GameProgression:UpdateBar(card.levelBar, card.levelText, key) end
+            if CC.GameProgression then
+                CC.GameProgression:UpdateBar(card.levelBar, card.levelText, key)
+            elseif card.levelText then
+                card.levelText:SetText("Requires CreshCollect")
+            end
         end
         for index, row in ipairs(drawer.playerRows or {}) do
             local item = targets[index]
@@ -3395,18 +3475,18 @@ function UI:AnimateGameDrawer(open, immediate)
 end
 
 function UI:OpenGameDrawer(mode, target)
-    if not CC.Games then return end
-    local resolvedMode = string.upper(tostring(mode or "SOLO"))
-    if resolvedMode == "BATTLEPASS"  and not CC.BattlePass   then return end
-    if resolvedMode == "ACHIEVEMENTS" and not CC.Achievements then return end
+    -- SOLO/MULTIPLAYER are CreshGames' content; BATTLEPASS/ACHIEVEMENTS/THEMES
+    -- are CreshCollect's. Only refuse to open when the addon that actually
+    -- owns the requested tab isn't installed — this used to hard-require
+    -- CreshGames for every mode, which wrongly blocked Achievements/Battle
+    -- Pass/Themes whenever only CreshCollect (not CreshGames) was present.
+    local resolvedMode, allowed = resolveGameDrawerMode(mode, self:IsCreshGamesLoaded(), self:IsCreshCollectLoaded())
+    if not allowed then return end
     local gameParent = self:GetGameParent()
     if not gameParent then return end
     if target and CC.Games and CC.Games.SetTarget then CC.Games:SetTarget(target) end
-    if self.main and not self.main:IsShown() then
-        local openMode = self.mode
-        if openMode == "GAMES" or not openMode then openMode = "FRIENDS" end
-        self:OpenChannel(openMode, self.currentTarget)
-    end
+    -- Does not force self.main open: GetGameParent() already falls back to an
+    -- anchor frame when main is hidden, so the drawer can open on its own.
     self:BuildGameDrawer(gameParent)
     self:SetGameDrawerMode(resolvedMode)
     self:RefreshGameDrawer()
@@ -3956,16 +4036,20 @@ function UI:SetBubbleGroupShown(shown)
     if self.generalBubble then self.generalBubble:SetShown(effectiveShown and expanded and options.showGeneralButton ~= false) end
     if self.combatBubble then self.combatBubble:SetShown(effectiveShown and expanded and options.showCombatButton ~= false) end
     -- Module buttons are always visible when chat is disabled (they become the
-    -- primary launcher); otherwise they follow EXPANDED mode + their own toggle.
+    -- primary launcher); otherwise they follow EXPANDED mode + their own toggle,
+    -- or the transient click-to-reveal state set by LauncherPrimaryClick.
     local chatOn     = CC.IsFeatureEnabled and CC:IsFeatureEnabled("chat")
     local gamesOn    = CC.Games ~= nil
     local achieveOn  = CC.Achievements ~= nil
     local progressOn = CC.ProgressHub and CC.ProgressHub:HasAnyEnabled()
+    local revealed = self.launcherExpanded == true
     local _cgDB  = _G.CreshGamesDB
     local _colDB = _G.CreshCollectDB
-    local showGames    = effectiveShown and gamesOn    and (not chatOn or (expanded and _cgDB  and _cgDB.launcher  and _cgDB.launcher.showButton        == true))
-    local showAchieve  = effectiveShown and achieveOn  and (not chatOn or (expanded and _colDB and _colDB.launcher and _colDB.launcher.showAchievements == true))
-    local showProgress = effectiveShown and progressOn and (not chatOn or (expanded and _colDB and _colDB.launcher and _colDB.launcher.showProgress     == true))
+    local showChat     = effectiveShown and chatOn     and revealed
+    local showGames    = effectiveShown and gamesOn    and (not chatOn or revealed or (expanded and _cgDB  and _cgDB.launcher  and _cgDB.launcher.showButton        == true))
+    local showAchieve  = effectiveShown and achieveOn  and (not chatOn or revealed or (expanded and _colDB and _colDB.launcher and _colDB.launcher.showAchievements == true))
+    local showProgress = effectiveShown and progressOn and (not chatOn or revealed or (expanded and _colDB and _colDB.launcher and _colDB.launcher.showProgress     == true))
+    if self.chatButton     then self.chatButton:SetShown(showChat     == true) end
     if self.gamesButton    then self.gamesButton:SetShown(showGames    == true) end
     if self.achieveButton  then self.achieveButton:SetShown(showAchieve  == true) end
     if self.progressButton then self.progressButton:SetShown(showProgress == true) end
@@ -3991,11 +4075,14 @@ function UI:PositionQuickButtons()
     local gamesOn    = CC.Games ~= nil
     local achieveOn  = CC.Achievements ~= nil
     local progressOn = CC.ProgressHub and CC.ProgressHub:HasAnyEnabled()
+    local revealed = self.launcherExpanded == true
     local _cgDB2  = _G.CreshGamesDB
     local _colDB2 = _G.CreshCollectDB
-    local showGames    = gamesOn    and (not chatOn or (expanded and _cgDB2  and _cgDB2.launcher  and _cgDB2.launcher.showButton        == true))
-    local showAchieve  = achieveOn  and (not chatOn or (expanded and _colDB2 and _colDB2.launcher and _colDB2.launcher.showAchievements == true))
-    local showProgress = progressOn and (not chatOn or (expanded and _colDB2 and _colDB2.launcher and _colDB2.launcher.showProgress     == true))
+    local showChat     = chatOn     and revealed
+    local showGames    = gamesOn    and (not chatOn or revealed or (expanded and _cgDB2  and _cgDB2.launcher  and _cgDB2.launcher.showButton        == true))
+    local showAchieve  = achieveOn  and (not chatOn or revealed or (expanded and _colDB2 and _colDB2.launcher and _colDB2.launcher.showAchievements == true))
+    local showProgress = progressOn and (not chatOn or revealed or (expanded and _colDB2 and _colDB2.launcher and _colDB2.launcher.showProgress     == true))
+    if self.chatButton     and showChat     then tinsert(ordered, self.chatButton)     end
     if self.gamesButton    and showGames    then tinsert(ordered, self.gamesButton)    end
     if self.achieveButton  and showAchieve  then tinsert(ordered, self.achieveButton)  end
     if self.progressButton and showProgress then tinsert(ordered, self.progressButton) end
@@ -5190,19 +5277,13 @@ function UI:LauncherToggleMode(dest)
         end
         options.lastLauncherDest = "GAMES"
     elseif dest == "ACHIEVEMENTS" then
-        if not (_G.CreshSuite and _G.CreshSuite:GetService("OpenAchievements")) then
-            CC:Print("CreshCollect is not installed or loaded.")
-            return
-        end
-        local drawer = self.gameDrawer
-        local drawerOpen = drawer and drawer.creshOpen and drawer:IsShown()
-        if drawerOpen and drawer.mode == "ACHIEVEMENTS" then
-            self:CloseGameDrawer()
-        elseif drawerOpen then
-            self:SetGameDrawerMode("ACHIEVEMENTS")
-        else
-            self:OpenGameDrawer("ACHIEVEMENTS")
-        end
+        -- Routes through the Suite service to the Phase 6 standalone
+        -- Achievements window, matching PROGRESS below. The game drawer's
+        -- own internal ACH tab (see OpenGameDrawer/SetGameDrawerMode) is a
+        -- separate, secondary preview surface and is untouched.
+        local svc = _G.CreshSuite and _G.CreshSuite:GetService("OpenAchievements")
+        if svc then svc()
+        else CC:Print("Requires CreshCollect.") end
         options.lastLauncherDest = "ACHIEVEMENTS"
     elseif dest == "PROGRESS" then
         local svc = _G.CreshSuite and _G.CreshSuite:GetService("OpenProgressHub")
@@ -5220,14 +5301,58 @@ function UI:LauncherDefaultAction()
     self:LauncherToggleMode(self:GetLauncherEffectiveDest())
 end
 
+-- Left-click handler for the C bubble itself. With zero or one installed
+-- destination there is nothing to choose between, so the click opens that
+-- destination directly (unchanged single-addon behaviour). With two or more,
+-- the click instead reveals one small satellite button per installed
+-- destination next to C ("click the circle, circles come out"); clicking C
+-- again while revealed collapses the satellites and opens the default
+-- destination, so the primary action stays reachable with one more click.
+function UI:LauncherPrimaryClick()
+    local chatOn     = CC.IsFeatureEnabled and CC:IsFeatureEnabled("chat")
+    local gamesOn    = CC.Games ~= nil
+    local achieveOn  = CC.Achievements ~= nil
+    local progressOn = CC.ProgressHub and CC.ProgressHub:HasAnyEnabled()
+    local destCount = (chatOn and 1 or 0) + (gamesOn and 1 or 0) + (achieveOn and 1 or 0) + (progressOn and 1 or 0)
+    if destCount <= 1 then
+        self.launcherExpanded = false
+        self:RefreshLauncherExpansion()
+        self:LauncherDefaultAction()
+        return
+    end
+    local wasExpanded = self.launcherExpanded == true
+    self.launcherExpanded = not wasExpanded
+    self:RefreshLauncherExpansion()
+    if wasExpanded then
+        self:LauncherDefaultAction()
+    end
+end
+
+-- A revealed satellite button was clicked: perform its destination action,
+-- then collapse the reveal so the cluster stays minimal instead of
+-- remaining permanently open.
+function UI:LauncherSatelliteClick(dest)
+    self.launcherExpanded = false
+    self:LauncherToggleMode(dest)
+    self:RefreshLauncherExpansion()
+end
+
+-- Recomputes which quick-access buttons should be visible, honouring both
+-- the persistent Settings-driven EXPANDED mode and the transient
+-- click-to-reveal state above. Single source of truth lives in
+-- SetBubbleGroupShown/PositionQuickButtons; this just re-triggers it.
+function UI:RefreshLauncherExpansion()
+    self:SetBubbleGroupShown(CC.db.bubbleVisible)
+end
+
 -- Update active-state highlight on satellite launcher buttons.
 function UI:RefreshLauncherButtonStates()
     local drawer = self.gameDrawer
     local drawerOpen   = drawer and drawer.creshOpen and drawer:IsShown()
     local drawerMode   = drawer and drawer.mode or "SOLO"
     local gamesActive  = drawerOpen and drawerMode ~= "ACHIEVEMENTS" and drawerMode ~= "THEMES"
-    local achieveActive= drawerOpen and drawerMode == "ACHIEVEMENTS"
-    local progressActive = CC.ProgressHub and CC.ProgressHub:IsOpen()
+    local achieveActive = CC.Achievements and CC.Achievements.IsWindowOpen and CC.Achievements:IsWindowOpen()
+    local progressActive = CC.ProgressOverview and CC.ProgressOverview.IsWindowOpen and CC.ProgressOverview:IsWindowOpen()
     if self.gamesButton then
         applyBackdrop(self.gamesButton, gamesActive and COLORS.blue or COLORS.panelRaised, COLORS.border)
     end
@@ -5340,7 +5465,7 @@ function UI:BuildBubble()
             UI:OpenSettings()
             return
         end
-        UI:LauncherDefaultAction()
+        UI:LauncherPrimaryClick()
     end)
     bubble:SetScript("OnDragStart", function(selfBubble)
         UI:MarkLauncherActive()
@@ -5359,21 +5484,29 @@ function UI:BuildBubble()
     bubble:SetScript("OnEnter", function(selfBubble)
         UI.launcherHovered = true
         UI:MarkLauncherActive()
-        local chatOn    = CC.IsFeatureEnabled and CC:IsFeatureEnabled("chat")
-        local gamesOn   = CC.Games ~= nil
-        local achieveOn = CC.Achievements ~= nil
+        local chatOn     = CC.IsFeatureEnabled and CC:IsFeatureEnabled("chat")
+        local gamesOn    = CC.Games ~= nil
+        local achieveOn  = CC.Achievements ~= nil
+        local progressOn = CC.ProgressHub and CC.ProgressHub:HasAnyEnabled()
+        local destCount = (chatOn and 1 or 0) + (gamesOn and 1 or 0) + (achieveOn and 1 or 0) + (progressOn and 1 or 0)
         GameTooltip:SetOwner(selfBubble, "ANCHOR_LEFT")
         GameTooltip:AddLine("CreshChat", 1, 1, 1)
-        if chatOn then
+        if destCount >= 2 then
+            if self.launcherExpanded then
+                GameTooltip:AddLine("Left-click: open default destination", 0.75, 0.8, 0.9)
+            else
+                GameTooltip:AddLine("Left-click: show quick-access buttons", 0.75, 0.8, 0.9)
+            end
+        elseif chatOn then
             GameTooltip:AddLine("Left-click: open chat + typing bar", 0.75, 0.8, 0.9)
-            GameTooltip:AddLine("Right-drag: move C and its composer", 0.75, 0.8, 0.9)
         elseif gamesOn then
             GameTooltip:AddLine("Left-click: open the games hub", 0.75, 0.8, 0.9)
-            GameTooltip:AddLine("Right-drag: move this launcher", 0.75, 0.8, 0.9)
         elseif achieveOn then
             GameTooltip:AddLine("Left-click: open Achievements", 0.75, 0.8, 0.9)
-            GameTooltip:AddLine("Right-drag: move this launcher", 0.75, 0.8, 0.9)
+        elseif progressOn then
+            GameTooltip:AddLine("Left-click: open Progress", 0.75, 0.8, 0.9)
         end
+        GameTooltip:AddLine("Right-drag: move this launcher", 0.75, 0.8, 0.9)
         GameTooltip:AddLine("Shift+click: open Settings", 0.75, 0.8, 0.9)
         if chatOn then
             GameTooltip:AddLine("Enter: open the bar; typing reveals chat", 0.75, 0.8, 0.9)
@@ -5402,8 +5535,19 @@ function UI:BuildBubble()
         UI:ToggleCombatPanel()
     end)
 
+    -- Satellite for CreshChat itself: only ever revealed by the click-to-expand
+    -- gesture (LauncherPrimaryClick), since a single installed addon still
+    -- opens directly with no satellites involved.
+    self.chatButton = makeQuickButton("CreshChatChatButton", "Cht", "CreshChat", "Open the CreshChat window", function()
+        UI:LauncherSatelliteClick("CHAT")
+    end)
+    self.chatButton:SetScript("OnLeave", function()
+        UI:RefreshLauncherButtonStates()
+        GameTooltip:Hide()
+    end)
+
     self.gamesButton = makeQuickButton("CreshChatGamesButton", "Gm", "Games Hub", "Toggle the CreshChat games hub", function()
-        UI:LauncherToggleMode("GAMES")
+        UI:LauncherSatelliteClick("GAMES")
     end)
     self.gamesButton:SetScript("OnLeave", function()
         UI:RefreshLauncherButtonStates()
@@ -5411,7 +5555,7 @@ function UI:BuildBubble()
     end)
 
     self.achieveButton = makeQuickButton("CreshChatAchievementsButton", "Ach", "Achievements", "Toggle the Achievements panel", function()
-        UI:LauncherToggleMode("ACHIEVEMENTS")
+        UI:LauncherSatelliteClick("ACHIEVEMENTS")
     end)
     self.achieveButton:SetScript("OnLeave", function()
         UI:RefreshLauncherButtonStates()
@@ -5419,7 +5563,7 @@ function UI:BuildBubble()
     end)
 
     self.progressButton = makeQuickButton("CreshChatProgressButton", "Prg", "Progress Hub", "Toggle the Progress Hub (World · Quests · Combat)", function()
-        UI:LauncherToggleMode("PROGRESS")
+        UI:LauncherSatelliteClick("PROGRESS")
     end)
     self.progressButton:SetScript("OnLeave", function()
         UI:RefreshLauncherButtonStates()

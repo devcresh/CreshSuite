@@ -28,7 +28,7 @@ local floor, min, max = math.floor, math.min, math.max
 local upper = string.upper
 
 local PIECES = { "I", "O", "T", "S", "Z", "J", "L" }
-local TETRIS_BACKGROUND_ROOT = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Tetris\\Backgrounds\\"
+local TETRIS_BACKGROUND_ROOT = "Interface\\AddOns\\CreshGames\\Media\\Games\\Tetris\\Backgrounds\\"
 
 -- Official-style gravity reference points from the common Tetris Worlds /
 -- Guideline curve. CreshChat stretches the relative curve across 1,000 game
@@ -524,10 +524,16 @@ function Tetris:SyncUnlocks(showToast)
             if self:UnlockTheme(key, "TETRIS_PASS:" .. tostring(level), false, true) then unlocked = unlocked + 1 end
         end
     end
-    local mainClaimed = CreshGamesDB.arcadeRewards and CreshGamesDB.arcadeRewards.claimed or {}
-    for level, key in pairs(self.mainPassThemeRewards) do
-        if mainClaimed[tostring(level)] then
-            if self:UnlockTheme(key, "MAIN_PASS:" .. tostring(level), false, true) then unlocked = unlocked + 1 end
+    -- Main Battle Pass claim state is authoritative in CreshCollect, not a
+    -- local copy here. Query it live through the guarded CreshCollectAPI so
+    -- this never drifts from a stale snapshot; if CreshCollect isn't
+    -- installed, these theme unlocks simply stay unsynced until it is.
+    local collectAPI = _G.CreshCollectAPI
+    if collectAPI then
+        for level, key in pairs(self.mainPassThemeRewards) do
+            if collectAPI.IsBattlePassRewardClaimed(level) then
+                if self:UnlockTheme(key, "MAIN_PASS:" .. tostring(level), false, true) then unlocked = unlocked + 1 end
+            end
         end
     end
     if unlocked > 0 and CG.SoloGames and CG.SoloGames.RefreshTetrisPanels then CG.SoloGames:RefreshTetrisPanels() end

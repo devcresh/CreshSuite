@@ -13,27 +13,97 @@ function COL:RegisterModule(name, obj)
     self._modules[name] = obj
 end
 
+-- ----------------------------------------------------------------------------
+-- Public API — CreshCollect is the authoritative owner of achievement
+-- definitions/completion state, Battle Pass definitions/level/XP/reward state,
+-- and collection definitions/unlock state. This table is the only supported
+-- way for another addon to query that data; COL.Achievements / COL.BattlePass /
+-- COL.* internal module tables are not a public contract and may change shape.
+--
+-- Every function resolves the underlying module lazily (at call time, not at
+-- registration time) and returns a safe default if that module, CreshCollectDB,
+-- or CreshCollect itself is not yet loaded — so callers never need to guard
+-- anything beyond checking that _G.CreshCollectAPI exists.
+--
+-- Exposed via two equivalent, guarded access paths:
+--   _G.CreshCollectAPI                                (direct global)
+--   CreshSuite:GetProduct("CreshCollect").api          (Suite product registry)
+-- ----------------------------------------------------------------------------
+local API = {}
+
+function API.IsLoaded()
+    return true
+end
+
+function API.GetVersion()
+    return COL.version
+end
+
+-- Achievements ----------------------------------------------------------------
+function API.IsAchievementUnlocked(key)
+    if not COL.Achievements then return false end
+    return COL.Achievements:IsUnlocked(key)
+end
+
+-- Returns unlocked, total. (0, 0) when achievements aren't loaded yet.
+function API.GetAchievementCounts(category)
+    if not COL.Achievements then return 0, 0 end
+    return COL.Achievements:GetCounts(category)
+end
+
+-- Battle Pass -------------------------------------------------------------
+-- Returns level, currentXP, requiredXP, ratio. (1, 0, 50, 0) when not loaded.
+function API.GetBattlePassProgress()
+    if not COL.BattlePass then return 1, 0, 50, 0 end
+    return COL.BattlePass:GetProgress()
+end
+
+function API.IsBattlePassRewardClaimed(level)
+    if not COL.BattlePass then return false end
+    return COL.BattlePass:IsRewardClaimed(level)
+end
+
+-- Collections -------------------------------------------------------------
+-- bucket is one of: themes, backgrounds, cardDecks, dungeonArmour, cosmetics.
+function API.IsCollectionUnlocked(bucket, key)
+    if type(bucket) ~= "string" or key == nil then return false end
+    if type(CreshCollectDB) ~= "table" then return false end
+    local col = CreshCollectDB.collections
+    if type(col) ~= "table" or type(col[bucket]) ~= "table" then return false end
+    return col[bucket][key] == true
+end
+
+_G.CreshCollectAPI = API
+
 -- Suite registration
 do
     local Suite = _G.CreshSuite
     if Suite then
-        Suite:RegisterProduct("CreshCollect", COL.version, {})
+        Suite:RegisterProduct("CreshCollect", COL.version, API)
 
         -- Formal "open this feature" contract for CreshChat's commands and
         -- launcher buttons, so they can ask "is CreshCollect able to do this?"
         -- via the Suite instead of reaching into CC.ProgressHub / CC.Achievements /
-        -- CC.BattlePass directly. Progress Hub owns its own frame, so it opens
-        -- directly; Achievements and Battle Pass are panels of CreshChat's own
-        -- game drawer, so those services call back into CreshChat's UI through
-        -- the same CC proxy this file already uses.
+        -- CC.BattlePass directly. ProgressHub, Achievements and Battle Pass
+        -- each own their own standalone window (see ProgressHub.lua,
+        -- Achievements.lua, BattlePass.lua) -- none of these route through
+        -- CreshChat's shared game drawer, so opening them never opens an
+        -- unrelated CreshChat window.
+        --
+        -- "OpenProgressHub" (the service backing /cc progress, /cc hub and
+        -- /cc tracking) now opens the dedicated ProgressOverview window
+        -- (Phase 7) instead of the older, generic ProgressHub -- that older
+        -- window (World/Quest/Combat tracking) is untouched and still
+        -- reachable via a nav button inside ProgressOverview itself, so
+        -- nothing becomes unreachable.
         Suite:RegisterService("OpenProgressHub", function()
-            if COL.ProgressHub and COL.ProgressHub.Toggle then COL.ProgressHub:Toggle() end
+            if COL.ProgressOverview and COL.ProgressOverview.ToggleWindow then COL.ProgressOverview:ToggleWindow() end
         end)
         Suite:RegisterService("OpenAchievements", function()
-            if CC.UI and CC.UI.LauncherToggleMode then CC.UI:LauncherToggleMode("ACHIEVEMENTS") end
+            if COL.Achievements and COL.Achievements.ToggleWindow then COL.Achievements:ToggleWindow() end
         end)
         Suite:RegisterService("OpenBattlePass", function()
-            if CC.UI and CC.UI.OpenGameDrawer then CC.UI:OpenGameDrawer("BATTLEPASS") end
+            if COL.BattlePass and COL.BattlePass.ToggleWindow then COL.BattlePass:ToggleWindow() end
         end)
 
         -- Mirror cosmetic unlocks from CreshGames into CreshCollectDB.collections.
@@ -50,11 +120,23 @@ do
             local col = CreshCollectDB.collections
             if type(col) ~= "table" then return end
             local key, uType = payload.key, payload.type
-            if not key then return end
+            -- key must be a real, non-empty string: a collection item name,
+            -- not a number/boolean/table. Without this, a malformed publish
+            -- (e.g. a stray numeric or table key) would insert a bogus entry
+            -- into an otherwise all-string-keyed SavedVariables table instead
+            -- of being rejected as an unknown/invalid unlock.
+            if type(key) ~= "string" or key == "" then return end
+            if type(uType) ~= "string" then return end
             local info = UNLOCK_TYPES[uType]
             if not info then return end
+            if type(col[info.bucket]) ~= "table" then return end
             local isNewUnlock = col[info.bucket][key] == nil
             col[info.bucket][key] = col[info.bucket][key] or true
+
+            -- Same single centralized refresh point extended for the
+            -- Progress Overview's Collections card, rather than adding a
+            -- second, parallel event hook.
+            if COL.ProgressOverview and COL.ProgressOverview.RefreshWindow then COL.ProgressOverview:RefreshWindow() end
 
             -- Feedback below is best-effort: the unlock above already
             -- persisted silently and correctly even if CreshChat is absent.
@@ -90,7 +172,7 @@ local function bridgeToCreshChat()
     local keys = {
         "BattlePass", "GameProgression", "ProgressRouter",
         "Achievements", "AchievementExpansion", "ClassAchievements",
-        "DungeonAchievements", "ProgressHub", "CombatTracker",
+        "DungeonAchievements", "ProgressHub", "ProgressOverview", "CombatTracker",
     }
     for _, k in ipairs(keys) do
         if COL[k] then cc[k] = COL[k] end

@@ -3315,24 +3315,26 @@ function CC:HandleSlashCommand(input)
         return
     end
 
-    if command == "achievements" or command == "achievement" or command == "achieve" then
+    -- "achievemnts" is a compatibility alias for a common misspelling; keep
+    -- it alongside "achieve" (both pre-date this command's current spec).
+    if command == "achievements" or command == "achievement" or command == "achieve" or command == "achievemnts" then
         local svc = _G.CreshSuite and _G.CreshSuite:GetService("OpenAchievements")
         if svc then svc()
-        else self:Print("CreshCollect is not installed or loaded.") end
+        else self:Print("Requires CreshCollect.") end
         return
     end
 
     if command == "battlepass" or command == "pass" or command == "bp" then
         local svc = _G.CreshSuite and _G.CreshSuite:GetService("OpenBattlePass")
         if svc then svc()
-        else self:Print("CreshCollect is not installed or loaded.") end
+        else self:Print("Requires CreshCollect.") end
         return
     end
 
     if command == "progress" or command == "hub" or command == "tracking" then
         local svc = _G.CreshSuite and _G.CreshSuite:GetService("OpenProgressHub")
         if svc then svc()
-        else self:Print("CreshCollect is not installed or loaded.") end
+        else self:Print("Requires CreshCollect.") end
         return
     end
 

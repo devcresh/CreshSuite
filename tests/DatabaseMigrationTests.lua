@@ -63,6 +63,7 @@ local function resetState()
     _G.CreshGamesDB     = nil
     _G.CreshCollectDB   = nil
     _G.CreshChatDB      = nil
+    _G.CreshSuite       = nil
     _G.CreshGamesDatabase  = nil
     _G.CreshCollectDatabase = nil
     _frames = {}
@@ -80,6 +81,40 @@ end
 
 local function fireAddonLoaded(frame, addonName)
     if frame then frame:Fire("ADDON_LOADED", addonName) end
+end
+
+local function firePlayerLogin(frame)
+    if frame then frame:Fire("PLAYER_LOGIN") end
+end
+
+-- Mirrors CreshGames.lua's real "GetLegacyProgressionSnapshot" Suite service:
+-- turns a raw CreshGamesDB-shaped fixture into the flat snapshot the service
+-- returns, so tests exercise the same shape the real migration consumes
+-- (never CreshGamesDB directly — CreshCollect must go through the service).
+local function snapshotFromGamesDBFixture(fixture)
+    local arcade = fixture.arcadeRewards
+    local achievements = fixture.gameProgression and fixture.gameProgression.achievements
+    return {
+        arcadeRewardsClaimed        = arcade and arcade.claimed,
+        arcadeRewardsUnlockedThemes = arcade and arcade.unlockedThemes,
+        arcadeRewardsThemeSources   = arcade and arcade.themeUnlockSources,
+        achievementsUnlocked        = achievements and achievements.unlocked,
+        achievementsProgress        = achievements and achievements.progress,
+        achievementsStats           = achievements and achievements.stats,
+    }
+end
+
+-- Stubs _G.CreshSuite with just enough of the real bridge's surface
+-- (GetService) for runV3Migration to fetch a snapshot through it.
+local function stubSuiteWithSnapshot(snapshot)
+    _G.CreshSuite = {
+        GetService = function(_, name)
+            if name == "GetLegacyProgressionSnapshot" then
+                return function() return snapshot end
+            end
+            return nil
+        end,
+    }
 end
 
 -- ============================================================
@@ -482,6 +517,156 @@ fireAddonLoaded(cFrame5b, "CreshCollect")
 ok(CreshCollectDB.achievements.unlocked.FAKE_NEW ~= nil,
     "manually added unlock not removed on second load")
 ok(CreshCollectDB._migration.v1.done, "v1.done still true after second load")
+
+-- ============================================================
+-- Fixture: a CreshGamesDB that already completed its own one-time v1 import
+-- from CreshChatDB and has independently captured some achievement/Battle
+-- Pass state that CreshCollectDB may not have (simulating CreshGames and
+-- CreshCollect being installed at different times).
+-- ============================================================
+local FIXTURE_GAMESDB_WITH_EXTRAS = {
+    version = 1,
+    _migration = { v1 = { done = true, sourceDB = "CreshChatDB" } },
+    arcadeRewards = {
+        coins = 100, lifetimeCoins = 500, passXP = 300,
+        claimed = { ["10"] = true, ["20"] = true },
+        unlockedThemes = { WESTFALL = true },
+        themeUnlockSources = { WESTFALL = "PASS:10" },
+    },
+    gameProgression = {
+        games = {},
+        exploration = {},
+        achievements = {
+            unlocked = {
+                ACH_WOW_STEPS_001 = { at = 800000, value = 1000, sourceId = "ACH_WOW_STEPS_001" },
+                ACH_ONLY_IN_GAMESDB = { at = 810000, value = 1, sourceId = "ACH_ONLY_IN_GAMESDB" },
+            },
+            progress = {
+                ACH_ONLY_PROGRESS_IN_GAMESDB = { value = 42, lastAt = 820000 },
+            },
+            stats = { totalKillsSeen = 55 },
+        },
+    },
+}
+
+-- ============================================================
+-- 11. CreshCollectDB - v3 safety net: ADDON_LOADED alone does not finalize
+-- ============================================================
+-- CreshGames may not have loaded yet when CreshCollect's own ADDON_LOADED
+-- fires (no Dependencies between the two addons), so the first pass must
+-- not permanently record sourceDB = "none" — only PLAYER_LOGIN may do that.
+section("CollectDB: v3 not finalized by ADDON_LOADED alone")
+
+resetState()
+local cFrame6 = loadCollectDB()
+fireAddonLoaded(cFrame6, "CreshCollect")
+
+ok(CreshCollectDB._migration.v3 == nil or not CreshCollectDB._migration.v3.done,
+    "v3 not marked done after ADDON_LOADED alone (CreshGames might load later)")
+
+firePlayerLogin(cFrame6)
+
+local cm3_11 = CreshCollectDB._migration.v3
+ok(cm3_11 ~= nil and cm3_11.done, "v3 migration marked done after PLAYER_LOGIN")
+eq(cm3_11.sourceDB, "none", "sourceDB = none (no CreshGames service registered)")
+
+-- ============================================================
+-- 12. CreshCollectDB - v3 safety net: backfills from CreshGamesDB
+-- ============================================================
+section("CollectDB: v3 safety net, backfill from CreshGamesDB")
+
+resetState()
+stubSuiteWithSnapshot(snapshotFromGamesDBFixture(FIXTURE_GAMESDB_WITH_EXTRAS))
+local cFrame7 = loadCollectDB()
+fireAddonLoaded(cFrame7, "CreshCollect")
+firePlayerLogin(cFrame7)
+
+local cm3_12 = CreshCollectDB._migration.v3
+ok(cm3_12 ~= nil and cm3_12.done, "v3 migration done")
+eq(cm3_12.sourceDB, "CreshGames", "sourceDB = CreshGames")
+
+ok(CreshCollectDB.arcadeRewards.claimed["10"] == true, "Battle Pass level 10 claim backfilled")
+ok(CreshCollectDB.arcadeRewards.claimed["20"] == true, "Battle Pass level 20 claim backfilled")
+ok(CreshCollectDB.arcadeRewards.unlockedThemes.WESTFALL == true, "WESTFALL theme backfilled")
+eq(CreshCollectDB.arcadeRewards.themeUnlockSources.WESTFALL, "PASS:10", "WESTFALL source backfilled")
+
+local unlocked12 = CreshCollectDB.achievements.unlocked
+ok(unlocked12.ACH_ONLY_IN_GAMESDB ~= nil, "achievement only present in CreshGamesDB is backfilled")
+eq(unlocked12.ACH_ONLY_IN_GAMESDB.value, 1, "backfilled achievement value correct")
+
+local progress12 = CreshCollectDB.achievements.progress
+ok(progress12.ACH_ONLY_PROGRESS_IN_GAMESDB ~= nil, "achievement progress only present in CreshGamesDB is backfilled")
+
+ok(CreshCollectDB.achievements.stats.totalKillsSeen ~= nil, "stats backfilled from CreshGamesDB")
+
+-- ============================================================
+-- 13. CreshCollectDB - v3 safety net: never overwrites existing (newer) data
+-- ============================================================
+section("CollectDB: v3 never overwrites existing CreshCollectDB values")
+
+resetState()
+-- CreshCollectDB already has its own (newer/live) claim + achievement record
+-- for keys that CreshGamesDB's frozen snapshot also has, but with different
+-- (older) values. The existing CreshCollectDB values must win.
+_G.CreshCollectDB = {
+    version = 2,
+    achievements = {
+        unlocked = {
+            ACH_WOW_STEPS_001 = { at = 999999, value = 5000, sourceId = "ACH_WOW_STEPS_001" },
+        },
+        progress = {}, stats = {}, uniqueBosses = {}, professionRanks = {}, visitedZones = {},
+    },
+    collections = { themes = {}, backgrounds = {}, cardDecks = {}, dungeonArmour = {}, cosmetics = {} },
+    arcadeRewards = { claimed = { ["10"] = true }, unlockedThemes = {}, themeUnlockSources = {} },
+    gameProgression = { games = {}, exploration = {} },
+    ddAchievements = { unlocked = {}, activity = {} },
+    _migration = {},
+}
+stubSuiteWithSnapshot(snapshotFromGamesDBFixture(FIXTURE_GAMESDB_WITH_EXTRAS))
+_G.CreshCollectDatabase = nil
+_frames = {}
+local cFrame8 = loadCollectDB()
+fireAddonLoaded(cFrame8, "CreshCollect")
+firePlayerLogin(cFrame8)
+
+eq(CreshCollectDB.achievements.unlocked.ACH_WOW_STEPS_001.at, 999999,
+    "existing CreshCollectDB unlock timestamp NOT overwritten by older CreshGamesDB value")
+eq(CreshCollectDB.achievements.unlocked.ACH_WOW_STEPS_001.value, 5000,
+    "existing CreshCollectDB unlock value NOT overwritten")
+ok(CreshCollectDB.achievements.unlocked.ACH_ONLY_IN_GAMESDB ~= nil,
+    "a genuinely new key from CreshGamesDB is still backfilled alongside the preserved one")
+-- Level 10 was already claimed in CreshCollectDB; level 20 only existed in
+-- CreshGamesDB and must still be added.
+ok(CreshCollectDB.arcadeRewards.claimed["10"] == true, "existing claim preserved")
+ok(CreshCollectDB.arcadeRewards.claimed["20"] == true, "new claim backfilled")
+
+-- ============================================================
+-- 14. CreshCollectDB - v3 idempotency
+-- ============================================================
+section("CollectDB: v3 idempotency")
+
+resetState()
+stubSuiteWithSnapshot(snapshotFromGamesDBFixture(FIXTURE_GAMESDB_WITH_EXTRAS))
+local cFrame9 = loadCollectDB()
+fireAddonLoaded(cFrame9, "CreshCollect")
+firePlayerLogin(cFrame9)
+
+-- Simulate real gameplay: the player claims a new Battle Pass level live in
+-- CreshCollect after the v3 backfill already ran once.
+CreshCollectDB.arcadeRewards.claimed["30"] = true
+
+-- Reload the module (simulate second login) with the same CreshGamesDB
+-- snapshot still present.
+_G.CreshCollectDatabase = nil
+_frames = {}
+local cFrame9b = loadCollectDB()
+fireAddonLoaded(cFrame9b, "CreshCollect")
+firePlayerLogin(cFrame9b)
+
+ok(CreshCollectDB.arcadeRewards.claimed["30"] == true,
+    "live claim made after first v3 run is not lost on second load")
+ok(CreshCollectDB.arcadeRewards.claimed["10"] == true, "earlier backfilled claim still present")
+ok(CreshCollectDB._migration.v3.done, "v3.done still true after second load")
 
 -- ============================================================
 -- Summary

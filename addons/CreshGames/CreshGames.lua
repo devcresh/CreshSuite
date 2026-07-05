@@ -50,6 +50,26 @@ if Suite then
     Suite:RegisterService("OpenGameHistory", function()
         if CG.SoloGames and CG.SoloGames.OpenHistory then CG.SoloGames:OpenHistory() end
     end)
+
+    -- Read-only snapshot of CreshGamesDB's frozen, one-time-migrated legacy
+    -- progression data (arcadeRewards.claimed and gameProgression.achievements
+    -- are never written to again after CreshGames' own one-time import from
+    -- CreshChatDB). Exists solely so CreshCollect's safety-net migration can
+    -- read it without ever touching CreshGamesDB directly — CreshCollect and
+    -- CreshGames must never reach into each other's SavedVariables tables.
+    Suite:RegisterService("GetLegacyProgressionSnapshot", function()
+        if not CreshGamesDB then return nil end
+        local arcade = CreshGamesDB.arcadeRewards
+        local achievements = CreshGamesDB.gameProgression and CreshGamesDB.gameProgression.achievements
+        return {
+            arcadeRewardsClaimed        = arcade and arcade.claimed,
+            arcadeRewardsUnlockedThemes = arcade and arcade.unlockedThemes,
+            arcadeRewardsThemeSources   = arcade and arcade.themeUnlockSources,
+            achievementsUnlocked        = achievements and achievements.unlocked,
+            achievementsProgress        = achievements and achievements.progress,
+            achievementsStats           = achievements and achievements.stats,
+        }
+    end)
 end
 
 -- -----------------------------------------------------------------------

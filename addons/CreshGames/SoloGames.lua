@@ -18,7 +18,7 @@ local upper, lower = string.upper, string.lower
 local format = string.format
 local unpack = unpack or table.unpack
 
-local EIGHTBIT_GAME_ICON_ROOT = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Icons8Bit\\"
+local EIGHTBIT_GAME_ICON_ROOT = "Interface\\AddOns\\CreshGames\\Media\\Games\\Icons8Bit\\"
 
 local function now()
     if type(GetTime) == "function" then return GetTime() end
@@ -422,7 +422,11 @@ function Solo:SetStatus(text, color)
     frame.status:SetText(tostring(text or ""))
     color = color or palette().muted
     frame.status:SetTextColor(color[1], color[2], color[3], 1)
-    if CC.GameProgression then CC.GameProgression:UpdateBar(frame.levelProgress, frame.levelText, self.activeGame) end
+    if CC.GameProgression then
+        CC.GameProgression:UpdateBar(frame.levelProgress, frame.levelText, self.activeGame)
+    elseif frame.levelText then
+        frame.levelText:SetText("Requires CreshCollect")
+    end
 end
 
 function Solo:HideViews()
@@ -853,6 +857,10 @@ function Solo:RefreshHub()
     end
     if CC.GameProgression then
         for key, card in pairs(hub.cards or {}) do CC.GameProgression:UpdateBar(card.levelBar, card.levelText, key) end
+    else
+        for _, card in pairs(hub.cards or {}) do
+            if card.levelText then card.levelText:SetText("Requires CreshCollect") end
+        end
     end
     self:UpdateLocalLeaderboard()
 end
@@ -896,7 +904,11 @@ function Solo:StartGame(game)
     if view and view.frame then view.frame:Show() end
     if view and view.Start then view:Start() end
     if CG.GameAudio and (game == "HOLDEM" or game == "BLACKJACK" or game == "HIGHERLOWER") then CG.GameAudio:PlayEffect("CARD") end
-    if CC.GameProgression then CC.GameProgression:UpdateBar(frame.levelProgress, frame.levelText, game) end
+    if CC.GameProgression then
+        CC.GameProgression:UpdateBar(frame.levelProgress, frame.levelText, game)
+    elseif frame.levelText then
+        frame.levelText:SetText("Requires CreshCollect")
+    end
     frame:Show()
     return true
 end
@@ -4084,18 +4096,18 @@ end
 local SOLO_CHESS_BACK = { "R", "N", "B", "Q", "K", "B", "N", "R" }
 local SOLO_CHESS_VALUE = { P = 100, N = 320, B = 330, R = 500, Q = 900, K = 20000 }
 local SOLO_CHESS_TEXTURES = (_G.CreshGamesChessTextures and _G.CreshGamesChessTextures.Notation) or {
-    WK = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Chess\\White\\King_White.tga",
-    WQ = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Chess\\White\\Queen_White.tga",
-    WR = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Chess\\White\\Rook_White.tga",
-    WB = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Chess\\White\\Bishop_White.tga",
-    WN = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Chess\\White\\Knight_White.tga",
-    WP = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Chess\\White\\Pawn_White.tga",
-    BK = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Chess\\Black\\King_Black.tga",
-    BQ = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Chess\\Black\\Queen_Black.tga",
-    BR = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Chess\\Black\\Rook_Black.tga",
-    BB = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Chess\\Black\\Bishop_Black.tga",
-    BN = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Chess\\Black\\Knight_Black.tga",
-    BP = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Chess\\Black\\Pawn_Black.tga",
+    WK = "Interface\\AddOns\\CreshGames\\Media\\Games\\Chess\\White\\King_White.tga",
+    WQ = "Interface\\AddOns\\CreshGames\\Media\\Games\\Chess\\White\\Queen_White.tga",
+    WR = "Interface\\AddOns\\CreshGames\\Media\\Games\\Chess\\White\\Rook_White.tga",
+    WB = "Interface\\AddOns\\CreshGames\\Media\\Games\\Chess\\White\\Bishop_White.tga",
+    WN = "Interface\\AddOns\\CreshGames\\Media\\Games\\Chess\\White\\Knight_White.tga",
+    WP = "Interface\\AddOns\\CreshGames\\Media\\Games\\Chess\\White\\Pawn_White.tga",
+    BK = "Interface\\AddOns\\CreshGames\\Media\\Games\\Chess\\Black\\King_Black.tga",
+    BQ = "Interface\\AddOns\\CreshGames\\Media\\Games\\Chess\\Black\\Queen_Black.tga",
+    BR = "Interface\\AddOns\\CreshGames\\Media\\Games\\Chess\\Black\\Rook_Black.tga",
+    BB = "Interface\\AddOns\\CreshGames\\Media\\Games\\Chess\\Black\\Bishop_Black.tga",
+    BN = "Interface\\AddOns\\CreshGames\\Media\\Games\\Chess\\Black\\Knight_Black.tga",
+    BP = "Interface\\AddOns\\CreshGames\\Media\\Games\\Chess\\Black\\Pawn_Black.tga",
 }
 local SOLO_CHESS_PIECE_SIZE = 44
 local SOLO_CHESS_MATE = 100000
@@ -5136,7 +5148,7 @@ local function dungeonArmourStatText(stats)
     return #parts > 0 and concat(parts, " · ") or "Cosmetic only"
 end
 
-local DUNGEON_DICE_ROOT = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\DungeonDwellers\\Dice\\"
+local DUNGEON_DICE_ROOT = "Interface\\AddOns\\CreshGames\\Media\\Games\\DungeonDwellers\\Dice\\"
 local function dungeonDiceTexture(value)
     if value == "WEB" then return DUNGEON_DICE_ROOT .. "Dice_Web.tga" end
     value = max(1, min(8, floor(tonumber(value) or 1)))
