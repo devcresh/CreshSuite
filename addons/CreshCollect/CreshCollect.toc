@@ -17,4 +17,5 @@ AchievementExpansion.lua
 ClassAchievements.lua
 DungeonAchievements.lua
 ProgressHub.lua
+ProgressOverview.lua
 CollectSettings.lua

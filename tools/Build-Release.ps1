@@ -60,7 +60,10 @@ $Denied = @(
     "\.ps1$", "\.bat$", "\.cmd$", "\.exe$", "\.dll$", "\.msi$",
     "\.zip$", "\.rar$", "\.7z$",
     "\.log$", "\.tmp$", "\.bak$",
-    "SavedVariables", "WTF", "Cache", "Logs"
+    # Anchored to a full path segment so WoW's own runtime folder names don't
+    # false-positive-match addon asset filenames that merely contain the same
+    # substring (e.g. Media\...\AdventurersCache.tga, ...\RewardIcon_CreshCoinCache.tga).
+    "(^|[/])SavedVariables([/]|$)", "(^|[/])WTF([/]|$)", "(^|[/])Cache([/]|$)", "(^|[/])Logs([/]|$)"
 )
 
 function Test-Denied ([string]$rel) {

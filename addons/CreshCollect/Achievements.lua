@@ -45,6 +45,29 @@ local function isCategoryEnabled(category)
     return false
 end
 
+-- Categories whose content is actually supplied by another addon, as opposed
+-- to merely gated by a user-facing feature toggle. GAMES achievements track
+-- CreshGames activity, so they can only ever be earned when CreshGames is
+-- installed — that's an addon-presence fact, independent of the "games" /
+-- "gameProgression" feature flags isCategoryEnabled checks above (those only
+-- reflect the player's own on/off choice once the addon exists).
+local categoryRequiredAddon = {
+    GAMES = "CreshGames",
+}
+
+-- Returns the addon name (e.g. "CreshGames") if this category's content
+-- requires an addon that isn't currently loaded, or nil otherwise.
+local function categoryMissingAddon(category)
+    local addonName = categoryRequiredAddon[category]
+    if not addonName then return nil end
+    if _G.CreshSuite and _G.CreshSuite:IsProductLoaded(addonName) then return nil end
+    return addonName
+end
+-- Test-only hooks (see tests/AchievementsAvailabilityTests.lua) for the pure
+-- logic above; production code should call it only from RefreshDrawerPanel.
+Achievements._TESTONLY_CategoryMissingAddon = categoryMissingAddon
+Achievements._TESTONLY_IsCategoryEnabled = isCategoryEnabled
+
 local function now()
     if type(_G.GetServerTime) == "function" then return _G.GetServerTime() end
     if type(_G.time) == "function" then return _G.time() end
@@ -501,9 +524,17 @@ function Achievements:EvaluateAll(silent)
         if batch.coins > 0 and COL.BattlePass.AddCoins then COL.BattlePass:AddCoins(batch.coins, "ACHIEVEMENT") end
         if batch.xp > 0 and COL.BattlePass.AddPassXP then COL.BattlePass:AddPassXP(batch.xp, "ACHIEVEMENT", true) end
     end
-    if unlocked > 0 and not silent and CC.UI then
-        if CC.UI.RefreshConsoleEconomy then CC.UI:RefreshConsoleEconomy() end
-        if CC.UI.RefreshGameDrawer then CC.UI:RefreshGameDrawer(true) end
+    if unlocked > 0 and not silent then
+        if CC.UI then
+            if CC.UI.RefreshConsoleEconomy then CC.UI:RefreshConsoleEconomy() end
+            if CC.UI.RefreshGameDrawer then CC.UI:RefreshGameDrawer(true) end
+        end
+        -- Same single centralized refresh point, extended to also cover the
+        -- standalone achievements window (see BuildWindow/RefreshWindow
+        -- below) and the Progress Overview's achievements card, rather than
+        -- adding a second, parallel event hook.
+        self:RefreshWindow()
+        if COL.ProgressOverview and COL.ProgressOverview.RefreshWindow then COL.ProgressOverview:RefreshWindow() end
     end
     return unlocked
 end
@@ -795,8 +826,9 @@ function Achievements:RefreshDrawerPanel(drawer, helpers, resetScroll)
     local y = 0
     for _, row in ipairs(panel.rows or {}) do
         local achievement = row.achievement
+        local missingAddon = categoryMissingAddon(achievement.category)
         local categoryMatch = panel.category == "ALL" or panel.category == achievement.category
-        local enabledMatch = not panel.enabledOnly or isCategoryEnabled(achievement.category)
+        local enabledMatch = not panel.enabledOnly or (isCategoryEnabled(achievement.category) and not missingAddon)
         local haystack = lower(table.concat({ achievement.title, achievement.description, self.categoryNames[achievement.category] or achievement.category }, " "))
         local searchMatch = filter == "" or string.find(haystack, filter, 1, true)
         if categoryMatch and enabledMatch and searchMatch then
@@ -806,9 +838,13 @@ function Achievements:RefreshDrawerPanel(drawer, helpers, resetScroll)
             y = y + 62
             local value = self:GetStat(achievement.stat)
             local complete = save.unlocked[achievement.key] ~= nil
-            local disabled = not isCategoryEnabled(achievement.category)
+            local disabled = missingAddon ~= nil or not isCategoryEnabled(achievement.category)
             local label = (complete and "✓ " or "") .. achievement.title .. "  ·  TIER " .. tostring(achievement.tier) .. "  ·  " .. (self.categoryNames[achievement.category] or achievement.category)
-            if disabled then label = label .. "  ·  MODULE OFF" end
+            if missingAddon then
+                label = label .. "  ·  REQUIRES " .. upper(missingAddon)
+            elseif disabled then
+                label = label .. "  ·  MODULE OFF"
+            end
             row.title:SetText(label)
             row.detail:SetText(achievement.description)
             row.progress:SetText(complete and "UNLOCKED" or (formatNumber(min(value, achievement.goal)) .. "/" .. formatNumber(achievement.goal)))
@@ -879,3 +915,356 @@ eventFrame:SetScript("OnEvent", function(_, event, ...)
         Achievements:RecordBoss("BOSSKILL:" .. tostring(encounterID or encounterName), encounterName)
     end
 end)
+
+-- ============================================================
+-- Standalone Achievements window (opened by /cc achievements and aliases)
+-- ============================================================
+-- Self-contained: uses its own local widget helpers (same convention as
+-- ProgressHub.lua/BattlePass.lua's standalone window) instead of CreshChat's
+-- UI.lua drawer helpers, so this has no dependency on the CreshChat game
+-- drawer and never forces it open. Every value shown is read from the
+-- functions already defined above (GetCounts, GetPoints, IsUnlocked,
+-- GetStat, categoryMissingAddon, isCategoryEnabled) -- nothing here
+-- recomputes an achievement's progress or unlock state independently.
+-- One row per catalog entry, built once (matching the existing drawer
+-- panel's own approach above) -- not rebuilt on every open.
+
+local WBACKDROP = {
+    bgFile = "Interface\\Buttons\\WHITE8X8",
+    edgeFile = "Interface\\Buttons\\WHITE8X8",
+    tile = false, edgeSize = 1,
+    insets = { left = 1, right = 1, top = 1, bottom = 1 },
+}
+local WFALLBACK = {
+    panel       = { 0.022, 0.026, 0.034, 0.98 },
+    panelSoft   = { 0.038, 0.044, 0.056, 0.98 },
+    panelRaised = { 0.066, 0.074, 0.092, 1 },
+    border      = { 0.105, 0.120, 0.145, 1 },
+    text        = { 0.93,  0.95,  0.98,  1 },
+    muted       = { 0.56,  0.61,  0.69,  1 },
+    green       = { 0.18,  0.78,  0.36,  1 },
+    quest       = { 1.00,  0.82,  0.26,  1 },
+    blue        = { 0.13,  0.62,  0.95,  1 },
+}
+
+local function winPalette()
+    local c = CC.db and CC.db.colors or {}
+    return {
+        panel       = c.panel       or WFALLBACK.panel,
+        panelSoft   = c.panelSoft   or WFALLBACK.panelSoft,
+        panelRaised = c.panelRaised or WFALLBACK.panelRaised,
+        border      = c.border      or WFALLBACK.border,
+        text        = WFALLBACK.text,
+        muted       = WFALLBACK.muted,
+        green       = WFALLBACK.green,
+        quest       = c.quest       or WFALLBACK.quest,
+        blue        = c.blue        or WFALLBACK.blue,
+    }
+end
+
+local function winTemplateName()
+    return _G.BackdropTemplateMixin and "BackdropTemplate" or nil
+end
+
+local function winApplyBackdrop(frame, bg, border)
+    if not frame then return end
+    if frame.SetBackdrop then frame:SetBackdrop(WBACKDROP) end
+    bg = bg or WFALLBACK.panel
+    border = border or WFALLBACK.border
+    if frame.SetBackdropColor then frame:SetBackdropColor(bg[1], bg[2], bg[3], bg[4] or 1) end
+    if frame.SetBackdropBorderColor then frame:SetBackdropBorderColor(border[1], border[2], border[3], border[4] or 1) end
+end
+
+local function winCreateText(parent, size, color, justify)
+    local f = parent:CreateFontString(nil, "OVERLAY")
+    f:SetFont(_G.STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", size or 11, "")
+    color = color or WFALLBACK.text
+    f:SetTextColor(color[1], color[2], color[3], color[4] or 1)
+    f:SetJustifyH(justify or "LEFT")
+    f:SetJustifyV("MIDDLE")
+    return f
+end
+
+local function winDarken(color, amount)
+    amount = tonumber(amount) or 0.18
+    return {
+        max(0, (color[1] or 0) - amount),
+        max(0, (color[2] or 0) - amount),
+        max(0, (color[3] or 0) - amount),
+        color[4] or 1,
+    }
+end
+
+local function winCreateButton(parent, label, width, height, callback)
+    local btn = CreateFrame("Button", nil, parent, winTemplateName())
+    btn:SetSize(width or 80, height or 24)
+    local colors = winPalette()
+    winApplyBackdrop(btn, colors.panelRaised, colors.border)
+    btn.label = winCreateText(btn, 9, colors.text, "CENTER")
+    btn.label:SetAllPoints()
+    btn.label:SetText(label or "")
+    btn:SetScript("OnClick", function(selfBtn, ...) if callback then callback(selfBtn, ...) end end)
+    btn:SetScript("OnEnter", function(selfBtn)
+        local c = winPalette()
+        winApplyBackdrop(selfBtn, winDarken(c.quest or c.blue, 0.22), c.quest or c.blue)
+    end)
+    btn:SetScript("OnLeave", function(selfBtn)
+        local c = winPalette()
+        winApplyBackdrop(selfBtn, c.panelRaised, c.border)
+    end)
+    return btn
+end
+
+local function winSetAccent(button, active, colors)
+    if not button then return end
+    if active then
+        winApplyBackdrop(button, winDarken(colors.quest, 0.32), colors.quest)
+        if button.label then button.label:SetTextColor(1, 1, 1, 1) end
+    else
+        winApplyBackdrop(button, colors.panelRaised, colors.border)
+        if button.label then button.label:SetTextColor(colors.muted[1], colors.muted[2], colors.muted[3], 1) end
+    end
+end
+
+function Achievements:IsWindowOpen()
+    return self.window and self.window:IsShown()
+end
+
+function Achievements:ToggleWindow()
+    if not self:BuildWindow() then return end
+    if self.window:IsShown() then self:CloseWindow() else self:OpenWindow() end
+end
+
+function Achievements:OpenWindow()
+    if not self:BuildWindow() then return end
+    self.window:Show()
+    self:RefreshWindow()
+    if CC.UI and CC.UI.FocusWindow then CC.UI:FocusWindow(self.window) end
+    if CC.UI and CC.UI.RefreshLauncherButtonStates then CC.UI:RefreshLauncherButtonStates() end
+end
+
+function Achievements:CloseWindow()
+    if self.window then self.window:Hide() end
+    if CC.UI and CC.UI.RefreshLauncherButtonStates then CC.UI:RefreshLauncherButtonStates() end
+end
+
+function Achievements:BuildWindow()
+    if self.window then return self.window end
+    -- Guarantee self.catalog is populated before the row-creation loop below,
+    -- regardless of whether Ensure() has already run elsewhere (it normally
+    -- has, via the ADDON_LOADED handler, but this must not depend on that
+    -- timing to avoid building a window with zero rows).
+    self:BuildCatalog()
+    local colors = winPalette()
+
+    local frame = CreateFrame("Frame", "CreshCollectAchievementsFrame", UIParent, winTemplateName())
+    frame:SetSize(480, 620)
+    local savedPos = CC.db and CC.db.positions and CC.db.positions.achievementsWindow
+    if savedPos then
+        frame:SetPoint(savedPos.point or "CENTER", UIParent, savedPos.relPoint or "CENTER",
+            tonumber(savedPos.x) or 0, tonumber(savedPos.y) or 0)
+    else
+        frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    end
+    frame:SetFrameStrata("HIGH")
+    frame:SetClampedToScreen(true)
+    frame:SetMovable(true)
+    frame:EnableMouse(true)
+    winApplyBackdrop(frame, colors.panel, colors.border)
+    frame:Hide()
+    self.window = frame
+
+    frame:SetScript("OnMouseDown", function(selfFrame, btn)
+        if btn == "LeftButton" then
+            if CC.UI and CC.UI.FocusWindow then CC.UI:FocusWindow(selfFrame) end
+            selfFrame:StartMoving()
+        end
+    end)
+    frame:SetScript("OnMouseUp", function(selfFrame)
+        selfFrame:StopMovingOrSizing()
+        if CC.db then
+            CC.db.positions = CC.db.positions or {}
+            local point, _, relPoint, x, y = selfFrame:GetPoint()
+            CC.db.positions.achievementsWindow = { point = point, relPoint = relPoint, x = floor(x or 0), y = floor(y or 0) }
+        end
+    end)
+    frame:SetScript("OnHide", function()
+        if CC.UI and CC.UI.RefreshLauncherButtonStates then CC.UI:RefreshLauncherButtonStates() end
+    end)
+    if CC.UI and CC.UI.InstallWindowFocus then CC.UI:InstallWindowFocus(frame) end
+
+    -- Header
+    local header = CreateFrame("Frame", nil, frame, winTemplateName())
+    header:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+    header:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
+    header:SetHeight(34)
+    winApplyBackdrop(header, winDarken(colors.quest, 0.32), colors.quest)
+    local titleLabel = winCreateText(header, 11, colors.text, "LEFT")
+    titleLabel:SetPoint("TOPLEFT", header, "TOPLEFT", 10, -10)
+    titleLabel:SetText("ACHIEVEMENTS")
+    self.windowSummary = winCreateText(header, 9, colors.muted, "RIGHT")
+    self.windowSummary:SetPoint("RIGHT", header, "RIGHT", -32, 0)
+    self.windowSummary:SetText("0 / 0 unlocked")
+    local closeBtn = CreateFrame("Button", nil, header, winTemplateName())
+    closeBtn:SetSize(22, 22)
+    closeBtn:SetPoint("TOPRIGHT", header, "TOPRIGHT", -4, -6)
+    winApplyBackdrop(closeBtn, colors.panelRaised, colors.border)
+    local closeLbl = winCreateText(closeBtn, 9, colors.muted, "CENTER")
+    closeLbl:SetAllPoints()
+    closeLbl:SetText("X")
+    closeBtn:SetScript("OnClick", function() Achievements:CloseWindow() end)
+
+    -- Search box
+    local searchFrame = CreateFrame("Frame", nil, frame, winTemplateName())
+    searchFrame:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -1)
+    searchFrame:SetPoint("TOPRIGHT", header, "BOTTOMRIGHT", 0, -1)
+    searchFrame:SetHeight(28)
+    winApplyBackdrop(searchFrame, colors.panelRaised, colors.border)
+    local search = CreateFrame("EditBox", nil, searchFrame, winTemplateName())
+    search:SetPoint("TOPLEFT", searchFrame, "TOPLEFT", 8, -4)
+    search:SetPoint("BOTTOMRIGHT", searchFrame, "BOTTOMRIGHT", -8, 4)
+    search:SetAutoFocus(false)
+    search:SetFontObject(_G.GameFontNormalSmall or _G.GameFontHighlightSmall)
+    search:SetTextInsets(2, 2, 0, 0)
+    search:SetMaxLetters(40)
+    search:SetScript("OnEscapePressed", function(box) box:ClearFocus() end)
+    search:SetScript("OnEnterPressed", function(box) box:ClearFocus() end)
+    search:SetScript("OnTextChanged", function(box)
+        Achievements.windowSearchText = tostring(box:GetText() or "")
+        Achievements:RefreshWindow()
+    end)
+    self.windowSearch = search
+
+    -- Category filter row (ALL + each category)
+    local filterBar = CreateFrame("Frame", nil, frame, winTemplateName())
+    filterBar:SetPoint("TOPLEFT", searchFrame, "BOTTOMLEFT", 8, -6)
+    filterBar:SetPoint("TOPRIGHT", searchFrame, "BOTTOMRIGHT", -8, -6)
+    filterBar:SetHeight(24)
+    self.windowFilterButtons = {}
+    local previousFilter
+    local filterDefs = { { "ALL", "ALL", 42 } }
+    for _, cat in ipairs(self.categoryOrder) do
+        filterDefs[#filterDefs + 1] = { cat, (self.categoryNames[cat] or cat):upper():sub(1, 8), 64 }
+    end
+    for _, filterDef in ipairs(filterDefs) do
+        local key, label, width = filterDef[1], filterDef[2], filterDef[3]
+        local btn = winCreateButton(filterBar, label, width, 22, function()
+            Achievements.windowCategory = key
+            Achievements:RefreshWindow()
+        end)
+        if previousFilter then btn:SetPoint("LEFT", previousFilter, "RIGHT", 3, 0)
+        else btn:SetPoint("LEFT", filterBar, "LEFT", 0, 0) end
+        self.windowFilterButtons[key] = btn
+        previousFilter = btn
+    end
+
+    -- Enabled-modules-only toggle
+    local toggleRow = CreateFrame("Frame", nil, frame, winTemplateName())
+    toggleRow:SetPoint("TOPLEFT", filterBar, "BOTTOMLEFT", 0, -4)
+    toggleRow:SetPoint("TOPRIGHT", filterBar, "BOTTOMRIGHT", 0, -4)
+    toggleRow:SetHeight(22)
+    self.windowEnabledToggle = winCreateButton(toggleRow, "ENABLED MODULES ONLY", 160, 20, function()
+        Achievements.windowEnabledOnly = not Achievements.windowEnabledOnly
+        Achievements:RefreshWindow()
+    end)
+    self.windowEnabledToggle:SetPoint("RIGHT", toggleRow, "RIGHT", 0, 0)
+
+    -- Scroll + one row per catalog entry (matches the existing drawer
+    -- panel's own approach -- built once here, never rebuilt on open).
+    local scroll = CreateFrame("ScrollFrame", nil, frame)
+    scroll:SetPoint("TOPLEFT", toggleRow, "BOTTOMLEFT", 0, -8)
+    scroll:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -8, 8)
+    scroll:EnableMouseWheel(true)
+    local content = CreateFrame("Frame", nil, scroll)
+    content:SetWidth(450)
+    content:SetHeight(620)
+    scroll:SetScrollChild(content)
+    scroll:SetScript("OnMouseWheel", function(selfScroll, delta)
+        local current = selfScroll:GetVerticalScroll() or 0
+        local maximum = selfScroll:GetVerticalScrollRange() or 0
+        selfScroll:SetVerticalScroll(max(0, min(maximum, current - delta * 42)))
+    end)
+    self.windowContent = content
+
+    self.windowRows = {}
+    for index, achievement in ipairs(self.catalog) do
+        local row = CreateFrame("Frame", nil, content, winTemplateName())
+        row:SetWidth(450)
+        row:SetHeight(52)
+        winApplyBackdrop(row, colors.panelSoft, colors.border)
+        row.title = winCreateText(row, 10, colors.text, "LEFT")
+        row.title:SetPoint("TOPLEFT", row, "TOPLEFT", 8, -6)
+        row.title:SetPoint("RIGHT", row, "RIGHT", -8, 0)
+        row.detail = winCreateText(row, 8, colors.muted, "LEFT")
+        row.detail:SetPoint("TOPLEFT", row.title, "BOTTOMLEFT", 0, -3)
+        row.detail:SetPoint("RIGHT", row, "RIGHT", -78, 0)
+        row.progress = winCreateText(row, 8, colors.muted, "RIGHT")
+        row.progress:SetPoint("TOPRIGHT", row, "TOPRIGHT", -7, -6)
+        row.reward = winCreateText(row, 8, colors.quest, "RIGHT")
+        row.reward:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -7, 6)
+        row.achievement = achievement
+        self.windowRows[index] = row
+    end
+
+    self.windowCategory = self.windowCategory or "ALL"
+    self.windowEnabledOnly = self.windowEnabledOnly or false
+    self.windowSearchText = self.windowSearchText or ""
+    return frame
+end
+
+function Achievements:RefreshWindow()
+    if not self.window or not self.window:IsShown() then return end
+    local colors = winPalette()
+    self:EvaluateAll(true)
+    local save = self:Ensure()
+    if not save then return end
+    local unlockedCount, total = self:GetCounts()
+    self.windowSummary:SetText(unlockedCount .. " / " .. total .. " unlocked · " .. formatNumber(self:GetPoints()) .. " points")
+
+    for key, btn in pairs(self.windowFilterButtons or {}) do
+        winSetAccent(btn, self.windowCategory == key, colors)
+    end
+    winSetAccent(self.windowEnabledToggle, self.windowEnabledOnly, colors)
+
+    local filter = lower(tostring(self.windowSearchText or ""))
+    local y = 0
+    for _, row in ipairs(self.windowRows or {}) do
+        local achievement = row.achievement
+        local missingAddon = categoryMissingAddon(achievement.category)
+        local categoryMatch = self.windowCategory == "ALL" or self.windowCategory == achievement.category
+        local enabledMatch = not self.windowEnabledOnly or (isCategoryEnabled(achievement.category) and not missingAddon)
+        local haystack = lower(table.concat({ achievement.title, achievement.description, self.categoryNames[achievement.category] or achievement.category }, " "))
+        local searchMatch = filter == "" or string.find(haystack, filter, 1, true)
+        if categoryMatch and enabledMatch and searchMatch then
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", self.windowContent, "TOPLEFT", 0, -y)
+            row:SetPoint("TOPRIGHT", self.windowContent, "TOPRIGHT", 0, -y)
+            y = y + 58
+            local value = self:GetStat(achievement.stat)
+            local complete = save.unlocked[achievement.key] ~= nil
+            local disabled = missingAddon ~= nil or not isCategoryEnabled(achievement.category)
+            local label = (complete and "✓ " or "") .. achievement.title .. "  ·  TIER " .. tostring(achievement.tier)
+                .. "  ·  " .. (self.categoryNames[achievement.category] or achievement.category)
+            if missingAddon then
+                label = label .. "  ·  REQUIRES " .. upper(missingAddon)
+            elseif disabled then
+                label = label .. "  ·  MODULE OFF"
+            end
+            row.title:SetText(label)
+            row.detail:SetText(achievement.description)
+            row.progress:SetText(complete and "UNLOCKED" or (formatNumber(min(value, achievement.goal)) .. "/" .. formatNumber(achievement.goal)))
+            row.reward:SetText("+" .. achievement.coins .. " coins · +" .. achievement.xp .. " XP")
+            winApplyBackdrop(row, complete and winDarken(colors.green, 0.58) or colors.panelSoft, complete and colors.green or colors.border)
+            if disabled and not complete then
+                row.title:SetTextColor(colors.muted[1], colors.muted[2], colors.muted[3], 1)
+            else
+                row.title:SetTextColor(complete and colors.green[1] or colors.text[1], complete and colors.green[2] or colors.text[2], complete and colors.green[3] or colors.text[3], 1)
+            end
+            row:SetAlpha(disabled and not complete and 0.55 or 1)
+            row:Show()
+        else
+            row:Hide()
+        end
+    end
+    self.windowContent:SetHeight(max(1, y))
+end

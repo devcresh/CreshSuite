@@ -4,6 +4,30 @@
 -- The v1 migration (achievements + collection unlocks from CreshChatDB) is
 -- preserved.  The v2 migration imports the Battle Pass and game progression
 -- tables from CreshChatDB so no progress is lost on first upgrade.
+--
+-- The v3 migration is a safety net, not a new schema: CreshGamesDB ran its
+-- own one-time import of the same legacy CreshChatDB data (see
+-- CreshGames/CreshGamesDatabase.lua MigrateFromCreshChat) and CreshCollect is
+-- now the sole authoritative owner of achievement/Battle Pass/collection
+-- state going forward. If CreshGames and CreshCollect were installed at
+-- different times, each addon's one-time import could have captured a
+-- different point-in-time snapshot of CreshChatDB. v3 folds anything
+-- CreshGamesDB has that CreshCollectDB is missing back in. CreshGamesDB
+-- itself is never written to again after its own migration, so this is a
+-- one-directional backfill, not an ongoing sync, and it is safe to leave
+-- enabled indefinitely.
+--
+-- CreshCollect never reads CreshGamesDB directly (each addon's SavedVariables
+-- are private — see Validate-Addons.ps1's cross-addon DB check); this reads
+-- through CreshGames' guarded "GetLegacyProgressionSnapshot" Suite service.
+--   Source:      CreshGamesDB.arcadeRewards.{claimed,unlockedThemes,themeUnlockSources}
+--                CreshGamesDB.gameProgression.achievements.{unlocked,progress,stats}
+--                (via CreshSuite:GetService("GetLegacyProgressionSnapshot"))
+--   Destination: CreshCollectDB.arcadeRewards.{claimed,unlockedThemes,themeUnlockSources}
+--                CreshCollectDB.achievements.{unlocked,progress,stats}
+-- Union/max-only (via unionUnlocks / importProgressionValue below): a value
+-- already present in CreshCollectDB is never removed, downgraded, or
+-- replaced by an older CreshGamesDB value.
 
 local SCHEMA = 2
 
@@ -358,6 +382,75 @@ local function runV2Migration(dest)
 end
 
 -- ============================================================
+-- v3 Migration: safety-net import from CreshGamesDB
+-- ============================================================
+-- See the file-header comment above for the full rationale. CreshCollect
+-- must never read CreshGamesDB directly (each addon's SavedVariables are
+-- private to it — see Validate-Addons.ps1's cross-addon DB check), so this
+-- goes through CreshGames' own guarded "GetLegacyProgressionSnapshot" Suite
+-- service instead, which is nil-safe if CreshGames isn't installed.
+--
+-- Load order safety: CreshCollect and CreshGames declare no Dependencies, so
+-- either may finish loading first. If CreshGames hasn't registered the
+-- service yet when CreshCollect's own ADDON_LOADED fires, isFinalAttempt is
+-- false and this returns without marking m.v3.done, so InitCollectDB's
+-- PLAYER_LOGIN safety-net call (which always fires after every addon has
+-- loaded) gets a second try with isFinalAttempt = true. Only that final
+-- attempt is allowed to permanently record sourceDB = "none".
+--
+-- Idempotent: never re-runs once done, and even if it did, unionUnlocks /
+-- importProgressionValue only ever add or raise values, never remove or
+-- lower them, so re-running would be harmless.
+
+local function runV3Migration(dest, isFinalAttempt)
+    local m = dest._migration
+    m.v3 = type(m.v3) == "table" and m.v3 or {}
+    if m.v3.done then return 0 end
+
+    local Suite = _G.CreshSuite
+    local getSnapshot = Suite and Suite.GetService and Suite:GetService("GetLegacyProgressionSnapshot")
+    local snapshot = getSnapshot and getSnapshot() or nil
+
+    if type(snapshot) ~= "table" then
+        if not isFinalAttempt then return 0 end
+        m.v3.done = true; m.v3.at = (time and time() or 0); m.v3.sourceDB = "none"
+        return 0
+    end
+
+    local imported = 0
+
+    if type(snapshot.arcadeRewardsClaimed) == "table" then
+        unionUnlocks(dest.arcadeRewards.claimed, snapshot.arcadeRewardsClaimed)
+        imported = imported + 1
+    end
+    if type(snapshot.arcadeRewardsUnlockedThemes) == "table" then
+        unionUnlocks(dest.arcadeRewards.unlockedThemes, snapshot.arcadeRewardsUnlockedThemes)
+    end
+    if type(snapshot.arcadeRewardsThemeSources) == "table" then
+        for k, v in pairs(snapshot.arcadeRewardsThemeSources) do
+            if dest.arcadeRewards.themeUnlockSources[k] == nil then dest.arcadeRewards.themeUnlockSources[k] = v end
+        end
+    end
+
+    if type(snapshot.achievementsUnlocked) == "table" then
+        unionUnlocks(dest.achievements.unlocked, snapshot.achievementsUnlocked)
+        imported = imported + 1
+    end
+    if type(snapshot.achievementsProgress) == "table" then
+        dest.achievements.progress = importProgressionValue(dest.achievements.progress, snapshot.achievementsProgress)
+    end
+    if type(snapshot.achievementsStats) == "table" then
+        dest.achievements.stats = importProgressionValue(dest.achievements.stats, snapshot.achievementsStats)
+    end
+
+    m.v3.done     = true
+    m.v3.at       = time and time() or 0
+    m.v3.sourceDB = "CreshGames"
+    m.v3.imported = imported
+    return imported
+end
+
+-- ============================================================
 -- Initialisation
 -- ============================================================
 
@@ -368,6 +461,7 @@ local function InitCollectDB()
     CreshCollectDB._migration = type(CreshCollectDB._migration) == "table" and CreshCollectDB._migration or {}
     runV1Migration(CreshCollectDB)
     runV2Migration(CreshCollectDB)
+    runV3Migration(CreshCollectDB, false)
     CreshCollectDB.version = SCHEMA
 end
 
@@ -382,7 +476,11 @@ _G.CreshCollectDatabase = {
     GetMigrationStatus   = function()
         if type(CreshCollectDB) ~= "table" then return nil end
         local m = type(CreshCollectDB._migration) == "table" and CreshCollectDB._migration or {}
-        return { v1 = type(m.v1) == "table" and m.v1 or {}, v2 = type(m.v2) == "table" and m.v2 or {} }
+        return {
+            v1 = type(m.v1) == "table" and m.v1 or {},
+            v2 = type(m.v2) == "table" and m.v2 or {},
+            v3 = type(m.v3) == "table" and m.v3 or {},
+        }
     end,
 }
 
@@ -392,8 +490,18 @@ _G.CreshCollectDatabase = {
 
 local _dbFrame = CreateFrame("Frame", "CreshCollectDatabaseFrame")
 _dbFrame:RegisterEvent("ADDON_LOADED")
-_dbFrame:SetScript("OnEvent", function(_, _, addonName)
-    if addonName == "CreshCollect" then
-        InitCollectDB()
+_dbFrame:RegisterEvent("PLAYER_LOGIN")
+_dbFrame:SetScript("OnEvent", function(_, event, addonName)
+    if event == "ADDON_LOADED" then
+        if addonName == "CreshCollect" then
+            InitCollectDB()
+        end
+    elseif event == "PLAYER_LOGIN" then
+        -- Final-attempt safety net: every addon has finished loading by now
+        -- regardless of TOC/alphabetical load order, so if CreshGames is
+        -- installed its Suite service is guaranteed to be registered here.
+        if type(CreshCollectDB) == "table" then
+            runV3Migration(CreshCollectDB, true)
+        end
     end
 end)

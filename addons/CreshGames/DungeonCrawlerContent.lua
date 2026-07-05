@@ -5,10 +5,10 @@ if not CG then return end
 -- Texture pack v4.0 is live for expansion enemies, active-class armour, milestone chests and reward icons.
 -- All milestone bosses now use integrated art; reserved future Druid/Shaman armour keeps stable placeholder paths until supplied.
 
-local ROOT = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\DungeonDwellers"
+local ROOT = "Interface\\AddOns\\CreshGames\\Media\\Games\\DungeonDwellers"
 
 local Content = {
-    version = CC and CG.version or "0.3.63-account-friends",
+    version = CG.version or "0.3.63-account-friends",
     placeholderArt = true, -- reserved future Druid/Shaman armour placeholders remain
     assetPack = {
         name = "DungeonCrawler Enemies, Class Armor, Chests & Rewards",
@@ -1083,7 +1083,7 @@ end
 
 _G.CreshGamesDungeonCrawlerContent = Content
 if CG then
-    CC.DungeonCrawlerContent = Content
+    CG.DungeonCrawlerContent = Content
     CG.Assets = CG.Assets or {}
     CG.Assets.DungeonCrawlerContent = Content
     if CG.RegisterModule then CG:RegisterModule("DungeonContent", Content) end

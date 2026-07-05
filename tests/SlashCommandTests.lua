@@ -92,17 +92,24 @@ end
 local calls
 
 local function resetSpies()
-    calls = { runTest = 0, handleTest = nil, handleProgress = nil, progressHubToggle = 0, extra = 0 }
+    calls = { runTest = 0, handleTest = nil, handleProgress = nil, progressHubToggle = 0,
+        achievementsToggle = 0, battlePassToggle = 0, extra = 0, printed = {} }
     CC.RunTest = function() calls.runTest = calls.runTest + 1 end
     CC.Developer.HandleTestCommand = function(_, a) calls.handleTest = a end
     CC.Developer.HandleProgressCommand = function(_, a) calls.handleProgress = a end
-    -- /cc progress and /cc hub resolve the real Progress Hub through the
-    -- CreshSuite service registry (Core.lua:GetService("OpenProgressHub")),
-    -- not a direct CC.ProgressHub field access.
+    CC.Print = function(_, msg) calls.printed[#calls.printed + 1] = tostring(msg) end
+    -- /cc progress, /cc achievements and /cc battlepass all resolve the real
+    -- CreshCollect windows through the CreshSuite service registry
+    -- (Core.lua:GetService("OpenProgressHub"/"OpenAchievements"/"OpenBattlePass")),
+    -- not a direct CC.ProgressHub/CC.Achievements/CC.BattlePass field access.
     _G.CreshSuite = {
         GetService = function(_, name)
             if name == "OpenProgressHub" then
                 return function() calls.progressHubToggle = calls.progressHubToggle + 1 end
+            elseif name == "OpenAchievements" then
+                return function() calls.achievementsToggle = calls.achievementsToggle + 1 end
+            elseif name == "OpenBattlePass" then
+                return function() calls.battlePassToggle = calls.battlePassToggle + 1 end
             end
             return nil
         end,
@@ -170,7 +177,64 @@ ok(calls.handleProgress == "test", "HandleProgressCommand invoked with arg 'test
 ok(calls.progressHubToggle == 0, "ProgressHub:Toggle NOT invoked")
 
 -- ============================================================
--- 5. A later-loaded wrapper (same monkey-patch shape Developer.lua uses)
+-- 4b. /cc achievements, /cc achievement and /cc achievemnts all reach the
+--     real Achievements window via the same Suite service; /cc battlepass
+--     reaches the real Battle Pass window. When CreshCollect isn't
+--     registered, each prints "Requires CreshCollect." and invokes nothing.
+-- ============================================================
+section("/cc achievements / achievement / achievemnts -> Achievements:ToggleWindow")
+
+resetSpies()
+CC:HandleSlashCommand("achievements")
+ok(calls.achievementsToggle == 1, "achievements invokes the OpenAchievements service")
+
+resetSpies()
+CC:HandleSlashCommand("achievement")
+ok(calls.achievementsToggle == 1, "achievement (alias) invokes the OpenAchievements service")
+
+resetSpies()
+CC:HandleSlashCommand("achievemnts")
+ok(calls.achievementsToggle == 1, "achievemnts (compat misspelling) invokes the OpenAchievements service")
+
+resetSpies()
+CC:HandleSlashCommand("achieve")
+ok(calls.achievementsToggle == 1, "achieve (pre-existing alias) still invokes the OpenAchievements service")
+
+section("/cc battlepass / pass / bp -> BattlePass:ToggleWindow")
+
+resetSpies()
+CC:HandleSlashCommand("battlepass")
+ok(calls.battlePassToggle == 1, "battlepass invokes the OpenBattlePass service")
+
+resetSpies()
+CC:HandleSlashCommand("pass")
+ok(calls.battlePassToggle == 1, "pass (alias) invokes the OpenBattlePass service")
+
+resetSpies()
+CC:HandleSlashCommand("bp")
+ok(calls.battlePassToggle == 1, "bp (alias) invokes the OpenBattlePass service")
+
+section("Requires CreshCollect message when the service is unavailable")
+
+resetSpies()
+_G.CreshSuite = { GetService = function() return nil end }
+CC:HandleSlashCommand("achievements")
+ok(calls.achievementsToggle == 0, "no window toggle attempted when CreshCollect's service is absent")
+ok(calls.printed[1] == "Requires CreshCollect.", "prints exactly 'Requires CreshCollect.' for /cc achievements")
+
+resetSpies()
+_G.CreshSuite = { GetService = function() return nil end }
+CC:HandleSlashCommand("battlepass")
+ok(calls.battlePassToggle == 0, "no window toggle attempted when CreshCollect's service is absent")
+ok(calls.printed[1] == "Requires CreshCollect.", "prints exactly 'Requires CreshCollect.' for /cc battlepass")
+
+resetSpies()
+_G.CreshSuite = nil
+CC:HandleSlashCommand("achievements")
+ok(calls.printed[1] == "Requires CreshCollect.", "prints 'Requires CreshCollect.' even when CreshSuite itself doesn't exist")
+
+-- ============================================================
+-- 6. A later-loaded wrapper (same monkey-patch shape Developer.lua uses)
 --    for an unrelated command must not re-shadow the routing above.
 -- ============================================================
 section("Stacking a further wrapper does not re-shadow existing routing")

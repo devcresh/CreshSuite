@@ -54,6 +54,59 @@ $Suites = @(
             (Join-Path $RepoRoot "addons\CreshChat\Core.lua"),
             (Join-Path $RepoRoot "addons\CreshChat\Developer.lua")
         )
+    },
+    @{
+        Label = "Game Drawer Availability Tests"
+        Args  = @(
+            (Join-Path $RepoRoot "tests\GameDrawerAvailabilityTests.lua"),
+            (Join-Path $RepoRoot "addons\CreshChat\UI.lua")
+        )
+    },
+    @{
+        Label = "Achievements Availability Tests"
+        Args  = @(
+            (Join-Path $RepoRoot "tests\AchievementsAvailabilityTests.lua"),
+            (Join-Path $RepoRoot "addons\CreshCollect\Achievements.lua")
+        )
+    },
+    @{
+        Label = "Progression Window Tests"
+        Args  = @(
+            (Join-Path $RepoRoot "tests\ProgressionWindowTests.lua"),
+            (Join-Path $RepoRoot "addons\CreshCollect\BattlePass.lua"),
+            (Join-Path $RepoRoot "addons\CreshCollect\Achievements.lua")
+        )
+    },
+    @{
+        Label = "Progress Overview Tests"
+        Args  = @(
+            (Join-Path $RepoRoot "tests\ProgressOverviewTests.lua"),
+            (Join-Path $RepoRoot "addons\CreshCollect\BattlePass.lua"),
+            (Join-Path $RepoRoot "addons\CreshCollect\Achievements.lua"),
+            (Join-Path $RepoRoot "addons\CreshCollect\ProgressOverview.lua")
+        )
+    },
+    @{
+        Label = "Launcher Routing Tests"
+        Args  = @(
+            (Join-Path $RepoRoot "tests\LauncherRoutingTests.lua"),
+            (Join-Path $RepoRoot "addons\CreshChat\UI.lua")
+        )
+    },
+    @{
+        Label = "Collection Unlock Tests"
+        Args  = @(
+            (Join-Path $RepoRoot "tests\CollectionUnlockTests.lua"),
+            (Join-Path $RepoRoot "shared\Suite.lua"),
+            (Join-Path $RepoRoot "addons\CreshCollect\CreshCollectDatabase.lua"),
+            (Join-Path $RepoRoot "addons\CreshCollect\CreshCollect.lua")
+        )
+    },
+    @{
+        Label = "BattlePass/CardDeck Recursion Tests"
+        Args  = @(
+            (Join-Path $RepoRoot "tests\BattlePassCardDeckRecursionTests.lua")
+        )
     }
 )
 

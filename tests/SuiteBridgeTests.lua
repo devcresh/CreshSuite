@@ -87,6 +87,12 @@ eq(type(prod.api.ping), "function", "product api stored")
 ok(Suite:GetProduct("MISSING") == nil, "GetProduct nil for unknown key")
 ok(Suite:GetProduct("")        == nil, "GetProduct nil for empty key")
 
+eq(type(Suite.IsProductLoaded), "function", "IsProductLoaded present")
+ok(Suite:IsProductLoaded("TestAddon") == true,  "IsProductLoaded true for a registered product")
+ok(Suite:IsProductLoaded("testaddon") == true,  "IsProductLoaded is case-insensitive, like GetProduct")
+ok(Suite:IsProductLoaded("MISSING")   == false, "IsProductLoaded false for an unregistered product")
+ok(Suite:IsProductLoaded("")          == false, "IsProductLoaded false for an empty name")
+
 Suite:RegisterService("greet", function(name) return "hi " .. name end)
 local svc = Suite:GetService("greet")
 eq(type(svc), "function",  "GetService returns function")

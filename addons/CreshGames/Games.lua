@@ -215,7 +215,7 @@ local function setButtonAccent(button, accent)
     applyBackdrop(button, button.creshBaseColor, accent)
 end
 
-local EIGHTBIT_GAME_ICON_ROOT = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Icons8Bit\\"
+local EIGHTBIT_GAME_ICON_ROOT = "Interface\\AddOns\\CreshGames\\Media\\Games\\Icons8Bit\\"
 
 local GAME_NAMES = {
     CHESS = "Chess",
@@ -1056,7 +1056,11 @@ function Games:SetGameStatus(text, color)
     frame.status:SetText(tostring(text or ""))
     color = color or palette().muted
     frame.status:SetTextColor(color[1], color[2], color[3], 1)
-    if CC.GameProgression then CC.GameProgression:UpdateBar(frame.levelProgress, frame.levelText, self.active and self.active.game) end
+    if CC.GameProgression then
+        CC.GameProgression:UpdateBar(frame.levelProgress, frame.levelText, self.active and self.active.game)
+    elseif frame.levelText then
+        frame.levelText:SetText("Requires CreshCollect")
+    end
 end
 
 function Games:ShowWaitingGameWindow(text)
@@ -1110,18 +1114,18 @@ end
 -- CHESS -----------------------------------------------------------------------
 local CHESS_BACK = { "R", "N", "B", "Q", "K", "B", "N", "R" }
 local CHESS_TEXTURES = (_G.CreshGamesChessTextures and _G.CreshGamesChessTextures.Notation) or {
-    WK = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Chess\\White\\King_White.tga",
-    WQ = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Chess\\White\\Queen_White.tga",
-    WR = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Chess\\White\\Rook_White.tga",
-    WB = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Chess\\White\\Bishop_White.tga",
-    WN = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Chess\\White\\Knight_White.tga",
-    WP = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Chess\\White\\Pawn_White.tga",
-    BK = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Chess\\Black\\King_Black.tga",
-    BQ = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Chess\\Black\\Queen_Black.tga",
-    BR = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Chess\\Black\\Rook_Black.tga",
-    BB = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Chess\\Black\\Bishop_Black.tga",
-    BN = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Chess\\Black\\Knight_Black.tga",
-    BP = "Interface\\\\AddOns\\\\CreshGames\\\\Media\\\\Games\\Chess\\Black\\Pawn_Black.tga",
+    WK = "Interface\\AddOns\\CreshGames\\Media\\Games\\Chess\\White\\King_White.tga",
+    WQ = "Interface\\AddOns\\CreshGames\\Media\\Games\\Chess\\White\\Queen_White.tga",
+    WR = "Interface\\AddOns\\CreshGames\\Media\\Games\\Chess\\White\\Rook_White.tga",
+    WB = "Interface\\AddOns\\CreshGames\\Media\\Games\\Chess\\White\\Bishop_White.tga",
+    WN = "Interface\\AddOns\\CreshGames\\Media\\Games\\Chess\\White\\Knight_White.tga",
+    WP = "Interface\\AddOns\\CreshGames\\Media\\Games\\Chess\\White\\Pawn_White.tga",
+    BK = "Interface\\AddOns\\CreshGames\\Media\\Games\\Chess\\Black\\King_Black.tga",
+    BQ = "Interface\\AddOns\\CreshGames\\Media\\Games\\Chess\\Black\\Queen_Black.tga",
+    BR = "Interface\\AddOns\\CreshGames\\Media\\Games\\Chess\\Black\\Rook_Black.tga",
+    BB = "Interface\\AddOns\\CreshGames\\Media\\Games\\Chess\\Black\\Bishop_Black.tga",
+    BN = "Interface\\AddOns\\CreshGames\\Media\\Games\\Chess\\Black\\Knight_Black.tga",
+    BP = "Interface\\AddOns\\CreshGames\\Media\\Games\\Chess\\Black\\Pawn_Black.tga",
 }
 local CHESS_PIECE_SIZE = 44
 

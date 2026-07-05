@@ -97,6 +97,19 @@ function Suite:GetProduct(name)
     return _products[string.upper(name)]
 end
 
+-- Suite:IsProductLoaded(name) -> true/false
+--   Centralized "is this addon actually installed and loaded" check. Reflects
+--   RegisterProduct having run, which happens at the very top of each addon's
+--   own first file (right after its own copy of Suite.lua), so this is a more
+--   reliable presence signal than probing a specific bridged module table
+--   (which depends on that addon's own bridging code having also run).
+--   Use this instead of scattered `CC.Games ~= nil` / `CC.Achievements ~= nil`
+--   style checks when the question is "is the addon here at all".
+
+function Suite:IsProductLoaded(name)
+    return self:GetProduct(name) ~= nil
+end
+
 -- --------------------------------------------------------------------------
 -- Service registry
 -- --------------------------------------------------------------------------
