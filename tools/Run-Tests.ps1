@@ -129,6 +129,54 @@ $Suites = @(
         Args  = @(
             (Join-Path $RepoRoot "tests\BattlePassCardDeckRecursionTests.lua")
         )
+    },
+    @{
+        Label = "Reward Registry Tests"
+        Args  = @(
+            (Join-Path $RepoRoot "tests\RewardRegistryTests.lua")
+        )
+    },
+    @{
+        Label = "Arcade Pass Tests"
+        Args  = @(
+            (Join-Path $RepoRoot "tests\ArcadePassTests.lua")
+        )
+    },
+    @{
+        Label = "Mastery Conversion Tests"
+        Args  = @(
+            (Join-Path $RepoRoot "tests\MasteryConversionTests.lua")
+        )
+    },
+    @{
+        Label = "Games Achievements Tests"
+        Args  = @(
+            (Join-Path $RepoRoot "tests\GamesAchievementsTests.lua")
+        )
+    },
+    @{
+        Label = "Chronicle Tests"
+        Args  = @(
+            (Join-Path $RepoRoot "tests\ChronicleTests.lua")
+        )
+    },
+    @{
+        Label = "Theme Achievement Tests"
+        Args  = @(
+            (Join-Path $RepoRoot "tests\ThemeAchievementTests.lua")
+        )
+    },
+    @{
+        Label = "Game Level Migration Tests"
+        Args  = @(
+            (Join-Path $RepoRoot "tests\GameLevelMigrationTests.lua")
+        )
+    },
+    @{
+        Label = "Unified Progression UI Tests"
+        Args  = @(
+            (Join-Path $RepoRoot "tests\UnifiedProgressionUITests.lua")
+        )
     }
 )
 

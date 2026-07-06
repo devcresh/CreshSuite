@@ -1056,10 +1056,8 @@ function Games:SetGameStatus(text, color)
     frame.status:SetText(tostring(text or ""))
     color = color or palette().muted
     frame.status:SetTextColor(color[1], color[2], color[3], 1)
-    if CC.GameProgression then
-        CC.GameProgression:UpdateBar(frame.levelProgress, frame.levelText, self.active and self.active.game)
-    elseif frame.levelText then
-        frame.levelText:SetText("Requires CreshCollect")
+    if CG.GameProgression and CG.GameProgression.UpdateBar then
+        CG.GameProgression:UpdateBar(frame.levelProgress, frame.levelText, self.active and self.active.game)
     end
 end
 
@@ -1084,7 +1082,7 @@ function Games:BeginGame(seed)
     if not active then return end
     if not active.creshProgressionStarted then
         active.creshProgressionStarted = true
-        if CC.GameProgression and CC.GameProgression.OnGameStarted then CC.GameProgression:OnGameStarted(active.game, "MULTIPLAYER") end
+        if CG.GameProgression and CG.GameProgression.OnGameStarted then CG.GameProgression:OnGameStarted(active.game, "MULTIPLAYER") end
     end
     if CG.GameAudio and CG.GameAudio.PlayMusic then CG.GameAudio:PlayMusic(active.game) end
     if CC.UI and CC.UI.CloseGameDrawer then CC.UI:CloseGameDrawer(true) end

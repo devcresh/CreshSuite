@@ -11,7 +11,7 @@ end })
 -- ProgressHub (the older, generic World/Quest/Combat tracking window, left
 -- untouched and still reachable from this window's own nav row) and the
 -- detailed BattlePass/Achievements standalone windows (Phase 6) -- this is
--- a single-screen summary of Battle Pass, Achievements and Collections
+-- a single-screen summary of the Azeroth Chronicle, Achievements and Collections
 -- progress, with quick links into the detailed windows for each.
 
 local Overview = {}
@@ -150,6 +150,28 @@ function Overview:GetSummary()
         if themesTotal and backgroundsTotal and decksTotal then
             summary.collections.totalKnown = themesTotal + backgroundsTotal + decksTotal
         end
+    end
+
+    -- Rework Phase 9 (Unified Progression UI): CreshGames' own Arcade Pass,
+    -- Tetris/Delver Mastery and 116 achievements had no visibility anywhere
+    -- outside CreshGames' own windows (its achievements in particular had
+    -- none at all -- only ever surfaced as unlock toasts). Read exclusively
+    -- through CreshGamesAPI, never CG.* directly, so this stays a correct
+    -- cross-addon read even if CreshGames' internals change shape later.
+    summary.creshGames = { hasData = false }
+    if gamesLoaded and _G.CreshGamesAPI then
+        local api = _G.CreshGamesAPI
+        local arcadeLevel, arcadeCurrent, arcadeRequired = api.GetArcadePassProgress()
+        local tetrisLevel, tetrisCurrent, tetrisRequired = api.GetGameMasteryProgress("TETRIS")
+        local delverLevel, delverCurrent, delverRequired = api.GetGameMasteryProgress("DUNGEON")
+        local gamesUnlocked, gamesTotal = api.GetGameAchievementCounts()
+        summary.creshGames = {
+            hasData = true,
+            arcadePass    = { level = arcadeLevel, ratio = safeRatio(arcadeCurrent, arcadeRequired) },
+            tetrisMastery = { level = tetrisLevel,  ratio = safeRatio(tetrisCurrent, tetrisRequired) },
+            delverMastery = { level = delverLevel,  ratio = safeRatio(delverCurrent, delverRequired) },
+            achievements  = { unlocked = gamesUnlocked, total = gamesTotal, ratio = safeRatio(gamesUnlocked, gamesTotal) },
+        }
     end
 
     return summary
@@ -316,7 +338,7 @@ function Overview:BuildWindow()
     local colors = winPalette()
 
     local frame = CreateFrame("Frame", "CreshCollectProgressOverviewFrame", UIParent, winTemplateName())
-    frame:SetSize(420, 560)
+    frame:SetSize(420, 720)
     local savedPos = CC.db and CC.db.positions and CC.db.positions.progressOverviewWindow
     if savedPos then
         frame:SetPoint(savedPos.point or "CENTER", UIParent, savedPos.relPoint or "CENTER",
@@ -381,7 +403,7 @@ function Overview:BuildWindow()
     scroll:EnableMouseWheel(true)
     local content = CreateFrame("Frame", nil, scroll)
     content:SetWidth(392)
-    content:SetHeight(526)
+    content:SetHeight(704)
     scroll:SetScrollChild(content)
     scroll:SetScript("OnMouseWheel", function(selfScroll, delta)
         local current = selfScroll:GetVerticalScroll() or 0
@@ -390,8 +412,8 @@ function Overview:BuildWindow()
     end)
     self.content = content
 
-    -- Battle Pass card
-    local bpCard = buildCard(content, "BATTLE PASS", 0, 118)
+    -- Azeroth Chronicle card
+    local bpCard = buildCard(content, "AZEROTH CHRONICLE", 0, 118)
     bpCard.levelText = winCreateText(bpCard, 14, colors.text, "LEFT")
     bpCard.levelText:SetPoint("TOPLEFT", bpCard.title, "BOTTOMLEFT", 0, -6)
     bpCard.progressLabel = winCreateText(bpCard, 8, colors.muted, "LEFT")
@@ -404,7 +426,7 @@ function Overview:BuildWindow()
     bpCard.rewardsBar = winMakeBar(bpCard)
     bpCard.rewardsBar:SetPoint("TOPLEFT", bpCard.rewardsLabel, "BOTTOMLEFT", 0, -3)
     bpCard.rewardsBar:SetPoint("RIGHT", bpCard, "RIGHT", -8, 0)
-    bpCard.viewBtn = winCreateButton(bpCard, "VIEW BATTLE PASS →", 130, 22, function()
+    bpCard.viewBtn = winCreateButton(bpCard, "VIEW CHRONICLE →", 130, 22, function()
         if COL.BattlePass and COL.BattlePass.ToggleWindow then COL.BattlePass:ToggleWindow() end
     end)
     bpCard.viewBtn:SetPoint("TOPRIGHT", bpCard, "TOPRIGHT", -8, -8)
@@ -456,6 +478,34 @@ function Overview:BuildWindow()
         colCard.bucketRows[i] = row
     end
     self.colCard = colCard
+
+    -- CreshGames card (Rework Phase 9): Arcade Pass + Tetris/Delver Mastery
+    -- levels + achievement count, read via CreshGamesAPI only.
+    local gamesCard = buildCard(content, "ARCADE & MASTERY (CreshGames)", -542, 150)
+    gamesCard.notice = winCreateText(gamesCard, 8, colors.muted, "LEFT")
+    gamesCard.notice:SetPoint("TOPLEFT", gamesCard.title, "BOTTOMLEFT", 0, -6)
+    gamesCard.notice:SetPoint("RIGHT", gamesCard, "RIGHT", -8, 0)
+    gamesCard.notice:SetWordWrap(true)
+    gamesCard.rows = {}
+    for i = 1, 4 do
+        local row = CreateFrame("Frame", nil, gamesCard)
+        row:SetPoint("TOPLEFT", gamesCard.title, "BOTTOMLEFT", 0, -22 - ((i - 1) * 22))
+        row:SetPoint("RIGHT", gamesCard, "RIGHT", -8, 0)
+        row:SetHeight(18)
+        row.label = winCreateText(row, 8, colors.muted, "LEFT")
+        row.label:SetPoint("LEFT", row, "LEFT", 0, 0)
+        row.label:SetWidth(140)
+        row.value = winCreateText(row, 8, colors.text, "RIGHT")
+        row.value:SetPoint("RIGHT", row, "RIGHT", 0, 0)
+        gamesCard.rows[i] = row
+    end
+    gamesCard.viewBtn = winCreateButton(gamesCard, "OPEN ARCADE PASS →", 140, 22, function()
+        local suite = _G.CreshSuite
+        local svc = suite and suite.GetService and suite:GetService("OpenArcadePass")
+        if svc then svc() end
+    end)
+    gamesCard.viewBtn:SetPoint("TOPRIGHT", gamesCard, "TOPRIGHT", -8, -8)
+    self.gamesCard = gamesCard
 
     return frame
 end
@@ -539,5 +589,25 @@ function Overview:RefreshWindow()
     else
         colCardNotice(self, "")
         for _, row in ipairs(self.colCard.bucketRows) do row:Hide() end
+    end
+
+    -- CreshGames card
+    local cg = summary.creshGames
+    setCardAvailable(self.gamesCard, cg.hasData)
+    if cg.hasData then
+        self.gamesCard.notice:SetText("")
+        local rows = self.gamesCard.rows
+        rows[1].label:SetText("Arcade Pass")
+        rows[1].value:SetText("Level " .. tostring(cg.arcadePass.level))
+        rows[2].label:SetText("Tetris Mastery")
+        rows[2].value:SetText("Level " .. tostring(cg.tetrisMastery.level))
+        rows[3].label:SetText("Delver Mastery")
+        rows[3].value:SetText("Level " .. tostring(cg.delverMastery.level))
+        rows[4].label:SetText("Achievements")
+        rows[4].value:SetText(ratioText(cg.achievements.unlocked, cg.achievements.total))
+        for _, row in ipairs(rows) do row:Show() end
+    else
+        self.gamesCard.notice:SetText("Requires CreshGames.")
+        for _, row in ipairs(self.gamesCard.rows) do row:Hide() end
     end
 end

@@ -340,7 +340,7 @@ function Solo:RecordHistory(game, mode, result, opponent, detail, score)
     -- BattlePass:AwardForGame is intentionally not called here: GameProgression:OnGameCompleted
     -- (via AddGameXP/AwardGameLevel) is the sole game-completion path into the shared Battle Pass
     -- pools. Calling both double-funded Cresh Coins/Pass XP from a single game result.
-    if CC.GameProgression and CC.GameProgression.OnGameCompleted then CC.GameProgression:OnGameCompleted(entry) end
+    if CG.GameProgression and CG.GameProgression.OnGameCompleted then CG.GameProgression:OnGameCompleted(entry) end
     if self.socialPanel and self.socialPanel:IsShown() then self:RefreshSocialPanel() end
     return true
 end
@@ -432,10 +432,8 @@ function Solo:SetStatus(text, color)
     frame.status:SetText(tostring(text or ""))
     color = color or palette().muted
     frame.status:SetTextColor(color[1], color[2], color[3], 1)
-    if CC.GameProgression then
-        CC.GameProgression:UpdateBar(frame.levelProgress, frame.levelText, self.activeGame)
-    elseif frame.levelText then
-        frame.levelText:SetText("Requires CreshCollect")
+    if CG.GameProgression and CG.GameProgression.UpdateBar then
+        CG.GameProgression:UpdateBar(frame.levelProgress, frame.levelText, self.activeGame)
     end
 end
 
@@ -865,12 +863,16 @@ function Solo:RefreshHub()
         local backgroundTotal = CG.Tetris and CG.Tetris:GetBackgroundThemeCount() or 70
         hub.cards.TETRIS.stats:SetText(format("Wins: %d · VS wins: %d · Endless: %d\nPass Lv %d · Themes %d/%d · Backgrounds %d · High %d", save.tetris.wins or 0, save.tetris.vsWins or 0, save.tetris.endlessRuns or 0, passLevel, unlocked, themeTotal, backgroundTotal, save.tetris.highScore or 0))
     end
-    if CC.GameProgression then
-        for key, card in pairs(hub.cards or {}) do CC.GameProgression:UpdateBar(card.levelBar, card.levelText, key) end
-    else
-        for _, card in pairs(hub.cards or {}) do
-            if card.levelText then card.levelText:SetText("Requires CreshCollect") end
-        end
+    -- Rework Phase 9: GameProgression is CreshGames' own module (moved from
+    -- CreshCollect/Progression.lua earlier in the rework specifically so
+    -- these bars work without CreshCollect installed) -- calling it via
+    -- CG directly needs no bridge and no other addon at all. The old
+    -- CC-bridged call left a stale "Requires CreshCollect" fallback that
+    -- could never be true (CG.GameProgression is always present once
+    -- CreshGames itself loads) and, worse, broke the bars entirely whenever
+    -- CreshChat wasn't loaded even though nothing here needs CreshChat.
+    if CG.GameProgression and CG.GameProgression.UpdateBar then
+        for key, card in pairs(hub.cards or {}) do CG.GameProgression:UpdateBar(card.levelBar, card.levelText, key) end
     end
     self:UpdateLocalLeaderboard()
 end
@@ -905,7 +907,7 @@ function Solo:StartGame(game)
     builder(self)
     local view = self.views[game]
     self.activeGame = game
-    if CC.GameProgression and CC.GameProgression.OnGameStarted then CC.GameProgression:OnGameStarted(game, "SOLO") end
+    if CG.GameProgression and CG.GameProgression.OnGameStarted then CG.GameProgression:OnGameStarted(game, "SOLO") end
     if CG.GameAudio and CG.GameAudio.PlayMusic then CG.GameAudio:PlayMusic(game) end
     local titles = { FROGGER = "FROGGER · ENDLESS", DUNGEON = "DUNGEON DWELLER · ENDLESS", CHESS = "SOLO CHESS · LEVELS 1–5", TETRIS = "TETRIS · MODES, THEMES & PASS", HOLDEM = "TEXAS HOLD'EM · SOLO", BLACKJACK = "BLACKJACK · SOLO", HIGHERLOWER = "HIGHER OR LOWER · SOLO" }
     local subtitles = { FROGGER = "WASD / arrows to hop · P to pause · R to restart", DUNGEON = "Choose a class · A/D target · Space attacks · boss every 10 levels", CHESS = "Mouse or WASD · Space selects · keys 1–5 set enemy strength", TETRIS = "Timed Endless · VS CPU · 50 image backgrounds · 1,000 speed levels", HOLDEM = "A/D or arrows select · Space/Enter confirms · mouse buttons supported", BLACKJACK = "A/D or arrows select · Space/Enter confirms · mouse buttons supported", HIGHERLOWER = "A/D chooses Higher or Lower · W/S changes bet · Space confirms" }
@@ -914,10 +916,8 @@ function Solo:StartGame(game)
     if view and view.frame then view.frame:Show() end
     if view and view.Start then view:Start() end
     if CG.GameAudio and (game == "HOLDEM" or game == "BLACKJACK" or game == "HIGHERLOWER") then CG.GameAudio:PlayEffect("CARD") end
-    if CC.GameProgression then
-        CC.GameProgression:UpdateBar(frame.levelProgress, frame.levelText, game)
-    elseif frame.levelText then
-        frame.levelText:SetText("Requires CreshCollect")
+    if CG.GameProgression and CG.GameProgression.UpdateBar then
+        CG.GameProgression:UpdateBar(frame.levelProgress, frame.levelText, game)
     end
     frame:Show()
     return true
@@ -938,6 +938,16 @@ function Solo:OpenDungeonDwellers(mode)
     frame:Show()
     if view and view.ShowDwellersPanel then view:ShowDwellersPanel(mode or "PASS") end
     return view ~= nil
+end
+
+-- Rework Phase 9: opens straight to Tetris' own "TETRIS MASTERY" tab (the
+-- Mastery-track equivalent of OpenDungeonDwellers' `mode` parameter above),
+-- so CreshGamesAPI.OpenGameMastery("TETRIS") is never a dead end.
+function Solo:OpenTetrisMastery()
+    if not self:StartGame("TETRIS") then return false end
+    local view = self.views.TETRIS
+    if view and view.SelectTab then view:SelectTab("PASS") end
+    return true
 end
 
 function Solo:AttachHub(hub)
@@ -2860,7 +2870,7 @@ function Solo:BuildTETRISView()
     local tabData = {
         { key="ENDLESS", label="TIMED ENDLESS", width=122 },
         { key="CPU", label="VS CPU", width=82 },
-        { key="PASS", label="TETRIS PASS", width=104 },
+        { key="PASS", label="TETRIS MASTERY", width=118 },
         { key="THEMES", label="BLOCK THEMES", width=110 },
         { key="BACKGROUNDS", label="BACKGROUNDS", width=116 },
     }
@@ -3080,7 +3090,7 @@ function Solo:BuildTETRISView()
     setButtonAccent(view.rotate, colors.accent); setButtonAccent(view.drop, colors.gold)
     setButtonAccent(view.pause, colors.muted); setButtonAccent(view.restart, colors.red); setButtonAccent(view.randomTheme, colors.accent)
 
-    -- Tetris Pass panel -------------------------------------------------------
+    -- Tetris Mastery panel -----------------------------------------------------
     view.passPanel = CreateFrame("Frame", nil, frame, templateName())
     view.passPanel:SetPoint("TOPLEFT", frame, "TOPLEFT", 18, -50)
     view.passPanel:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -18, 16)
@@ -3088,7 +3098,7 @@ function Solo:BuildTETRISView()
     view.passPanel:Hide()
     view.passTitle = createText(view.passPanel, 18, colors.text, "LEFT")
     view.passTitle:SetPoint("TOPLEFT", view.passPanel, "TOPLEFT", 16, -14)
-    view.passTitle:SetText("TETRIS PASS · 100 LEVELS")
+    view.passTitle:SetText("TETRIS MASTERY · 100 LEVELS")
     view.passSummary = createText(view.passPanel, 10, colors.muted, "LEFT")
     view.passSummary:SetPoint("TOPLEFT", view.passTitle, "BOTTOMLEFT", 0, -5)
     view.passSummary:SetPoint("RIGHT", view.passPanel, "RIGHT", -180, 0)
@@ -3433,7 +3443,7 @@ function Solo:BuildTETRISView()
         if tab == "PASS" then
             self.display = "PASS"
             self.passPanel:Show(); self:SetTabState("PASS"); self:RefreshPassPanel()
-            Solo:SetStatus("Tetris Pass rewards grant Cresh Coins and exclusive piece themes.", colors.accent)
+            Solo:SetStatus("Tetris Mastery rewards grant Cresh Coins and exclusive piece themes.", colors.accent)
         elseif tab == "THEMES" then
             self.display = "THEMES"
             self.themePanel:Show(); self:SetTabState("THEMES"); self:RefreshThemePanel()
@@ -3501,9 +3511,10 @@ function Solo:BuildTETRISView()
             self:RefreshThemePanel()
         elseif theme.source == "TETRIS_PASS" then
             self.passPage = floor((theme.requirement - 1) / 8) + 1; self:SelectTab("PASS")
-            Solo:SetStatus("Reach and claim Tetris Pass level " .. tostring(theme.requirement) .. ".", colors.gold)
-        elseif theme.source == "MAIN_PASS" and CC.BattlePass and CC.BattlePass.SelectRequirement then
-            CC.BattlePass:SelectRequirement(theme.requirement)
+            Solo:SetStatus("Reach and claim Tetris Mastery level " .. tostring(theme.requirement) .. ".", colors.gold)
+        elseif theme.source == "ARCADE_PASS" and CG.BattlePass and CG.BattlePass.ToggleWindow then
+            CG.BattlePass:ToggleWindow()
+            Solo:SetStatus("Reach and claim Games Battle Pass level " .. tostring(theme.requirement) .. ".", colors.gold)
         else Solo:SetStatus("Reach Tetris game level " .. tostring(theme.requirement) .. " to unlock " .. theme.name .. ".", colors.gold) end
     end
 
@@ -3534,7 +3545,7 @@ function Solo:BuildTETRISView()
             self.previewAction.label:SetText(selected.key == theme.key and "EQUIPPED" or "EQUIP NOW")
             setButtonEnabled(self.previewAction, selected.key ~= theme.key); setButtonAccent(self.previewAction, colors.accent)
         else
-            self.previewAction.label:SetText(theme.source == "TETRIS_PASS" and "VIEW TETRIS PASS" or (theme.source == "MAIN_PASS" and "VIEW MAIN PASS" or "VIEW REQUIREMENT"))
+            self.previewAction.label:SetText(theme.source == "TETRIS_PASS" and "VIEW TETRIS MASTERY" or (theme.source == "ARCADE_PASS" and "VIEW ARCADE PASS" or "VIEW REQUIREMENT"))
             setButtonEnabled(self.previewAction, true); setButtonAccent(self.previewAction, colors.gold)
         end
     end
@@ -5765,11 +5776,11 @@ function Solo:BuildDUNGEONView()
     local dwellersTabInfo = {
         { key = "COLLECTION", label = "COLLECTION" },
         { key = "STATS", label = "STATS" },
-        { key = "PASS", label = "DWELLER PASS" },
+        { key = "PASS", label = "DELVER MASTERY" },
     }
     for index, info in ipairs(dwellersTabInfo) do
         local tabKey, tabLabel = info.key, info.label
-        local tab = createButton(view.dwellersPanel, tabLabel, index == 3 and 126 or 104, 25, function() view:SetDwellersMode(tabKey) end)
+        local tab = createButton(view.dwellersPanel, tabLabel, index == 3 and 140 or 104, 25, function() view:SetDwellersMode(tabKey) end)
         tab:SetPoint("TOPLEFT", view.dwellersPanel, "TOPLEFT", 184 + (index - 1) * 116, -9)
         tab.dwellersKey = tabKey
         view.dwellersTabs[tabKey] = tab
@@ -6286,14 +6297,14 @@ function Solo:BuildDUNGEONView()
     function view:RefreshPassPanel()
         local pass = CG.DungeonDwellersPass
         if not pass then
-            self.passLevel:SetText("DUNGEON DWELLERS PASS UNAVAILABLE")
+            self.passLevel:SetText("DELVER MASTERY UNAVAILABLE")
             return
         end
         local level, current, needed, ratio = pass:GetProgress()
         local save = pass:Ensure()
         local activity = pass:GetActivitySummary()
         local buffs = pass:GetBuffs()
-        self.passLevel:SetText("DUNGEON DWELLERS PASS · LEVEL " .. tostring(level))
+        self.passLevel:SetText("DELVER MASTERY · LEVEL " .. tostring(level))
         self.passXP:SetText(tostring(current) .. " / " .. tostring(needed) .. " XP")
         self.passBar:SetMinMaxValues(0, max(1, needed))
         self.passBar:SetValue(level >= pass.maxLevel and needed or current)
@@ -6953,9 +6964,13 @@ function Solo:BuildDUNGEONView()
         local coinBonus = self:GetArmourStats().passCoinBonus or 0
         if amount > 0 and coinBonus > 0 then amount = amount + floor((amount * coinBonus) / 100 + 0.5) end
         if amount <= 0 then return 0 end
-        if CC.BattlePass and CC.BattlePass.AddCoins then
-            CC.BattlePass:AddCoins(amount, reason or "GAME")
-            if CC.BattlePass.RefreshDrawer then CC.BattlePass:RefreshDrawer() end
+        -- In-dungeon coin pickups are CreshGames' own reward currency -- pay
+        -- into CG.BattlePass, never CreshCollect's pass (ownership boundary
+        -- fix; this previously reached CC.BattlePass, which resolves to
+        -- CreshCollect's pass now that the two are decoupled).
+        if CG.BattlePass and CG.BattlePass.AddCoins then
+            CG.BattlePass:AddCoins(amount, reason or "GAME")
+            if CG.BattlePass.RefreshWindow then CG.BattlePass:RefreshWindow() end
         end
         return amount
     end

@@ -47,6 +47,68 @@ end
 function ChatAPI.GetThemePreviewName()
     return CC.UI and CC.UI.GetThemePreviewName and CC.UI:GetThemePreviewName() or nil
 end
+
+-- ------------------------------------------------------------------------
+-- Rework Phase 1/7: theme availability checks and entitlement-cache sync for
+-- the Progression and Unlockables Rework. CreshChatDB.themeEntitlements is a
+-- union-only local cache of themes CreshCollect has confirmed the player
+-- owns, so previously earned themes stay usable even when CreshCollect is
+-- disabled. Phase 7 assigned every named theme a real source (see
+-- CreshCollect/BattlePass.lua's premiumThemes/achievementThemeRewards) --
+-- the twenty base UI.lua presets below are the only ones that were never
+-- gated by anything, so they alone stay unconditionally available here.
+-- Note: CreshChat's own theme picker (UI.lua) checks live ownership via
+-- CC.BattlePass:IsThemeUnlocked while CreshCollect is loaded; this cache and
+-- this method exist for the CreshCollect-absent case and for other callers
+-- that only have the public API surface.
+-- ------------------------------------------------------------------------
+local FREE_THEMES = {
+    CRESH_MINIMAL = true, ELVUI_CHARCOAL = true, WIM_CLASSIC = true, PRAT_GLASS = true,
+    GINGI_NEON = true, NORD_FROST = true, CLASSIC_BRONZE = true, TUKUI_OBSIDIAN = true,
+    LS_GLASS = true, CHATTYNATOR_SLATE = true, SPARTAN_STEEL = true, NDUI_AZURE = true,
+    BENIK_TEAL = true, ICQ = true, WINDOWS_31 = true, HIGH_CONTRAST = true, MESSENGER = true,
+    SNAPCHAT = true, DISCORD = true, MIDNIGHT = true,
+}
+
+function ChatAPI.IsThemeAvailable(key)
+    key = string.upper(tostring(key or ""))
+    if not ChatAPI.GetThemeInfo(key) then return false end
+    if FREE_THEMES[key] then return true end
+    if type(_G.CreshChatDB) == "table" and type(_G.CreshChatDB.themeEntitlements) == "table" then
+        return _G.CreshChatDB.themeEntitlements[key] == true
+    end
+    return false
+end
+
+-- Unions the given theme keys into the local entitlement cache; never
+-- removes anything already cached. Accepts an array of theme-key strings,
+-- or an array of { key = ... } tables (CreshCollectAPI.GetChatThemeEntitlements'
+-- shape). Returns how many entitlements were newly added.
+function ChatAPI.SyncThemeEntitlements(keys)
+    if type(_G.CreshChatDB) ~= "table" or type(keys) ~= "table" then return 0 end
+    _G.CreshChatDB.themeEntitlements = type(_G.CreshChatDB.themeEntitlements) == "table" and _G.CreshChatDB.themeEntitlements or {}
+    local cache = _G.CreshChatDB.themeEntitlements
+    local added = 0
+    for _, entry in ipairs(keys) do
+        local key = type(entry) == "table" and entry.key or entry
+        key = (type(key) == "string" and key ~= "") and string.upper(key) or nil
+        if key and not cache[key] then
+            cache[key] = true
+            added = added + 1
+        end
+    end
+    return added
+end
+
+function ChatAPI.GetThemeEntitlements()
+    if type(_G.CreshChatDB) ~= "table" or type(_G.CreshChatDB.themeEntitlements) ~= "table" then return {} end
+    local result = {}
+    for key, owned in pairs(_G.CreshChatDB.themeEntitlements) do
+        if owned then result[#result + 1] = key end
+    end
+    return result
+end
+
 _G.CreshChatAPI = ChatAPI
 
 if _G.CreshSuite and _G.CreshSuite.RegisterProduct then
@@ -4874,6 +4936,13 @@ eventFrame:SetScript("OnEvent", function(_, event, ...)
         -- no-op if another addon already built it.
         if _G.CreshSuiteLauncherAPI and _G.CreshSuiteLauncherAPI.EnsureBuilt then
             _G.CreshSuiteLauncherAPI:EnsureBuilt()
+        end
+        -- Rework Phase 7: union CreshCollect's confirmed theme ownership into
+        -- the local entitlement cache, so already-earned themes stay usable
+        -- if CreshCollect is later disabled. Union-only and idempotent, safe
+        -- to run every login.
+        if _G.CreshCollectAPI and _G.CreshCollectAPI.GetChatThemeEntitlements and ChatAPI.SyncThemeEntitlements then
+            ChatAPI.SyncThemeEntitlements(_G.CreshCollectAPI.GetChatThemeEntitlements())
         end
         if CC.UI and CC.UI.Initialize then
             CC.UI:Initialize()

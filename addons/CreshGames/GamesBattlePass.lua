@@ -1,11 +1,14 @@
--- CreshGames/BattlePass.lua
--- CreshGames' own Battle Pass: earns Cresh Coins and Pass XP exclusively
--- from in-game activity (mini-game level-ups, see GameProgression's
--- AwardGameLevel bridge in CreshCollect/Progression.lua), and grants
--- exclusively game-owned rewards (card decks, Tetris themes, spendable
--- Cresh Coins). Deliberately separate from CreshCollect's own 200-level
--- Battle Pass, which stays fed by achievements/exploration/quests and keeps
--- its own reward catalog (world/chat themes) untouched.
+-- CreshGames/GamesBattlePass.lua
+-- CreshGames' own Arcade Battle Pass: one global, account-wide, 100-level
+-- pass earning Cresh Coins and Pass XP exclusively from CreshGames activity
+-- (game starts, completed results, achievement completions, per-game
+-- Mastery level-ups -- see AwardGameStart/AwardGameResult/
+-- AwardAchievementCompletion/AwardMasteryLevelUp below), and granting
+-- exclusively game-owned rewards (card decks, Tetris themes, spendable Cresh
+-- Coins). Deliberately separate from CreshCollect's own 200-level Battle
+-- Pass (soon "Azeroth Chronicle"), which stays fed by achievements/
+-- exploration/quests and keeps its own reward catalog (world/chat themes)
+-- untouched -- neither pass ever funds the other.
 --
 -- State lives in CreshGamesDB.battlePass -- a brand-new table; nothing is
 -- migrated from CreshCollectDB (that data remains CreshCollect's, describing
@@ -20,12 +23,56 @@ end })
 
 local Pass = {
     version = CG.version,
-    maxLevel = 50,
+    maxLevel = 100,
 }
 CG.BattlePass = Pass
 if CG.RegisterModule then CG:RegisterModule("BattlePass", Pass) end
 
 local floor, min, max = math.floor, math.min, math.max
+
+-- Rework Phase 3: every previously-scattered numeric constant lives here
+-- instead, so pacing can be retuned in one place (and the pacing report in
+-- Docs/PHASE3_ARCADE_PASS_PACING.md can be regenerated from it).
+Pass.balance = {
+    -- Leveling curve: GetNextLevelCost(level) = xpBaseCost + (level-1)*xpCostPerLevel
+    xpBaseCost = 50,
+    xpCostPerLevel = 5,
+
+    -- Direct XP sources (do not require a per-game Mastery level-up first)
+    xpGameStart = 5,
+    xpGameStartMultiplayerBonus = 5,
+    xpGameStartCooldownSeconds = 30, -- anti-farm: repeat "start" XP for the same game within this window is not paid again
+    xpCompleteBase = 10,
+    xpCompleteWin = 30,
+    xpCompleteDraw = 20,
+    xpCompleteLoss = 15,
+    xpCompleteRunScorePer = 250,     -- RUN-type results: + floor(score / this) XP
+    xpCompleteRunScoreCap = 20,
+    xpMultiplayerMultiplier = 2,
+    xpScoreMilestoneStep = 500,      -- any result: + xpScoreMilestoneAmount per this many score points
+    xpScoreMilestoneAmount = 5,
+    xpScoreMilestoneCap = 25,
+    xpAchievementUnlock = 15,        -- per CreshGames-category achievement completion
+    xpMasteryLevelUp = 20,           -- per Tetris/Dungeon Mastery pass level gained
+
+    -- Coin reward rhythm (levels 1-50 additionally carry the fixed card-deck/
+    -- Tetris-theme grants in gameRewardCatalog below; every level of the full
+    -- 1-100 range also gets a tier-based coin payout from this table)
+    coinsNormal = 20,
+    coinsNormalLevelStep = 2,
+    coinsGuaranteed = 60,       -- every 5th level
+    coinsCollectionChoice = 100, -- every 10th level
+    coinsMajorBundle = 250,     -- levels 25, 50, 75
+    coinsCapstone = 750,        -- level 100
+
+    -- Fallback payout if a deck-reward level's target deck AND every other
+    -- premium deck are already owned -- keeps the reward slot from ever
+    -- paying out nothing.
+    deckVoucherFallbackCoins = 50,
+
+    -- Ring-buffer cap for the duplicate-result-submission guard.
+    recentResultIdCap = 200,
+}
 
 local function now()
     if type(_G.time) == "function" then return _G.time() end
@@ -71,6 +118,17 @@ Pass.levelNames = {
     "High Roller", "Dungeon Survivor", "Perfect Read", "Multiplayer Rival", "Mythic Cache",
     "Arcade Elite", "Board Master", "River King", "Endless Dweller", "Legend Cache",
     "Grandmaster Trial", "Casino Champion", "Game Night Hero", "Cresh Challenger", "Grand Arcade Vault",
+    -- Levels 51-100 (Rework Phase 3: expanded from a 50-level to a 100-level pass)
+    "Rally Point", "Second Wind", "High Score Hunter", "Combo Breaker", "Vault Cache",
+    "Speed Runner", "Precision Player", "Iron Nerve", "Clutch Caller", "Collector's Cache",
+    "Marathon Gamer", "Streak Master", "Tactical Mind", "Bluff Master", "Jackpot Cache",
+    "Line Clearer", "Combo Architect", "Endgame Tactician", "Rivalry Veteran", "Champion's Cache",
+    "Arcade Veteran", "Board Sage", "Card Sharp Elite", "Dungeon Warden", "Grand Bundle Cache",
+    "Perfect Streaker", "Tetromino Master", "Table Legend", "Dice Whisperer", "Vanguard Cache",
+    "Multiplayer Ace", "Solo Grinder", "Puzzle Sage", "Room Conqueror", "Diamond Cache",
+    "Board Room Legend", "Chess Grandmaster", "Card Table Icon", "Boss Slayer", "Titanium Cache",
+    "Cresh Veteran", "Arcade Sage", "Ultimate Rival", "Dungeon Legend", "Platinum Vault Cache",
+    "Grand Strategist", "Perfect Record", "Cresh Grandmaster", "Arcade Paragon", "Arcade Champion",
 }
 
 function Pass:Ensure()
@@ -82,22 +140,36 @@ function Pass:Ensure()
     save.xp = floor(max(0, tonumber(save.xp) or 0))
     save.claimed = type(save.claimed) == "table" and save.claimed or {}
     save.recent = type(save.recent) == "table" and save.recent or {}
+    -- Rework Phase 3: anti-farm and duplicate-submission guards for the new
+    -- direct XP sources (AwardGameStart/AwardGameResult below).
+    save.startCooldowns = type(save.startCooldowns) == "table" and save.startCooldowns or {}
+    save.recentResultIds = type(save.recentResultIds) == "table" and save.recentResultIds or {}
+    save.arcadeChampion = save.arcadeChampion == true
     return save
 end
 
 -- Same closed-form leveling curve as CreshCollect's Battle Pass (proven
--- math, reused for consistency): GetNextLevelCost(level) = 50 + (level-1)*5.
+-- math, reused for consistency), parameterized by Pass.balance.
 function Pass:GetNextLevelCost(level)
     level = floor(clamp(level, 1, self.maxLevel))
-    return 50 + ((level - 1) * 5)
+    local b = self.balance
+    return b.xpBaseCost + ((level - 1) * b.xpCostPerLevel)
 end
 
 function Pass:GetCumulativeXP(level)
     level = floor(clamp(level, 1, self.maxLevel))
+    local b = self.balance
     local completed = level - 1
-    return completed * 50 + (5 * completed * (completed - 1)) / 2
+    return completed * b.xpBaseCost + (b.xpCostPerLevel * completed * (completed - 1)) / 2
 end
 
+-- Closed-form inverse of GetCumulativeXP, i.e. the quadratic solution of
+-- xp = xpBaseCost*n + (xpCostPerLevel/2)*n*(n-1) for n = level-1. The
+-- constants below (9025 = 95^2, 40, 95, 10) are algebraically derived from
+-- balance.xpBaseCost=50/xpCostPerLevel=5 specifically -- if either of those
+-- two balance values ever changes, these must be re-derived to match (the
+-- while loops below are a safety net that corrects small drift, but a large
+-- constant mismatch would make every GetLevelFromXP call loop needlessly).
 function Pass:GetLevelFromXP(xp)
     xp = floor(max(0, tonumber(xp) or 0))
     local k = floor((-95 + math.sqrt(9025 + 40 * xp)) / 10)
@@ -109,7 +181,7 @@ end
 
 function Pass:GetProgress()
     local save = self:Ensure()
-    if not save then return 1, 0, 50, 0 end
+    if not save then return 1, 0, self.balance.xpBaseCost, 0 end
     local level = self:GetLevelFromXP(save.xp)
     local base = self:GetCumulativeXP(level)
     if level >= self.maxLevel then return level, 1, 1, 1 end
@@ -118,21 +190,32 @@ function Pass:GetProgress()
     return level, current, required, clamp(current / max(1, required), 0, 1)
 end
 
+-- Reward rhythm (Rework Phase 3): every level pays coins; every 5th level is
+-- a guaranteed bonus; every 10th is a bigger "collection choice" bonus;
+-- levels 25/50/75 are major bundles; level 100 is the capstone. Independent
+-- of this, levels 1-50 additionally carry the fixed card-deck/Tetris-theme
+-- grants in gameRewardCatalog (unchanged from before this pass's expansion).
+function Pass:GetRewardTier(level)
+    if level == self.maxLevel then return "CAPSTONE" end
+    if level == 25 or level == 50 or level == 75 then return "MAJOR_BUNDLE" end
+    if level % 10 == 0 then return "COLLECTION_CHOICE" end
+    if level % 5 == 0 then return "GUARANTEED" end
+    return "NORMAL"
+end
+
 function Pass:GetReward(level)
     level = floor(clamp(level, 1, self.maxLevel))
+    local b = self.balance
+    local tier = self:GetRewardTier(level)
     local coins
-    if level == self.maxLevel then
-        coins = 500 -- capstone: completing all 50 levels
-    elseif level % 10 == 0 then
-        coins = 100 + level * 2
-    elseif level % 5 == 0 then
-        coins = 45 + level
-    else
-        coins = 15 + floor((level - 1) / 5) * 5
-    end
+    if tier == "CAPSTONE" then coins = b.coinsCapstone
+    elseif tier == "MAJOR_BUNDLE" then coins = b.coinsMajorBundle
+    elseif tier == "COLLECTION_CHOICE" then coins = b.coinsCollectionChoice
+    elseif tier == "GUARANTEED" then coins = b.coinsGuaranteed
+    else coins = b.coinsNormal + floor((level - 1) / 5) * b.coinsNormalLevelStep end
     local gameReward = self.gameRewardCatalog[level] or {}
     return {
-        level = level, coins = coins,
+        level = level, coins = coins, tier = tier,
         title = self.levelNames[level] or ("Games Battle Pass Level " .. level),
         deckKey = gameReward.deckKey,
         deckName = gameReward.deckName,
@@ -184,11 +267,99 @@ function Pass:AddXP(amount, source, silent)
     return amount, previousLevel, newLevel
 end
 
+-- ---------------------------------------------------------------------------
+-- Rework Phase 3: direct XP sources. Unlike per-game Mastery XP
+-- (GameProgression.lua), Arcade Pass XP never requires a per-game level-up
+-- first -- every source below pays into this pass's own save.xp directly.
+-- ---------------------------------------------------------------------------
+
+-- "Valid game start" source. Anti-farmed: a repeat start for the same game
+-- within xpGameStartCooldownSeconds pays no further XP, so rapidly
+-- starting/abandoning a game cannot be used to grind XP.
+function Pass:AwardGameStart(game, mode, silent)
+    local save = self:Ensure()
+    if not save then return 0 end
+    local b = self.balance
+    game = string.upper(tostring(game or "GAME"))
+    local last = tonumber(save.startCooldowns[game]) or 0
+    if now() - last < b.xpGameStartCooldownSeconds then return 0 end
+    save.startCooldowns[game] = now()
+    local amount = b.xpGameStart
+    mode = string.upper(tostring(mode or "SOLO"))
+    if mode == "MULTIPLAYER" or mode == "MULTI" then amount = amount + b.xpGameStartMultiplayerBonus end
+    return self:AddXP(amount, "GAME_START", silent)
+end
+
+-- "Completed game" / "win, loss or draw" / "score milestones" / "multiplayer
+-- completion" sources, all in one call: every one of those is a property of
+-- a single completed-game `entry` (the same shape GameProgression:
+-- OnGameCompleted receives). Guards against duplicate submission of the
+-- exact same result via a persisted, capped ring buffer of recent result
+-- ids -- unlike Games.lua's in-memory-only multiplayer dedup, this survives
+-- reload and covers solo results too.
+function Pass:AwardGameResult(entry, silent)
+    local save = self:Ensure()
+    if not save or type(entry) ~= "table" then return 0 end
+    local b = self.balance
+
+    local resultId = table.concat({
+        tostring(entry.game), tostring(entry.mode), tostring(entry.result),
+        tostring(entry.score or 0), tostring(entry.timestamp or now()),
+    }, ":")
+    if save.recentResultIds[resultId] then return 0 end
+    save.recentResultIds[resultId] = now()
+    local count = 0
+    for _ in pairs(save.recentResultIds) do count = count + 1 end
+    if count > b.recentResultIdCap then
+        local oldestId, oldestAt
+        for id, at in pairs(save.recentResultIds) do
+            if not oldestAt or at < oldestAt then oldestId, oldestAt = id, at end
+        end
+        if oldestId then save.recentResultIds[oldestId] = nil end
+    end
+
+    local result = string.upper(tostring(entry.result or "RUN"))
+    local amount = b.xpCompleteBase
+    if result == "WIN" then amount = b.xpCompleteWin
+    elseif result == "DRAW" then amount = b.xpCompleteDraw
+    elseif result == "LOSS" then amount = b.xpCompleteLoss
+    elseif result == "RUN" then
+        amount = b.xpCompleteBase + min(b.xpCompleteRunScoreCap, floor((tonumber(entry.score) or 0) / b.xpCompleteRunScorePer))
+    end
+    local mode = string.upper(tostring(entry.mode or "SOLO"))
+    if mode == "MULTIPLAYER" or mode == "MULTI" then amount = amount * b.xpMultiplayerMultiplier end
+
+    local score = tonumber(entry.score) or 0
+    if score > 0 then
+        amount = amount + min(b.xpScoreMilestoneCap, floor(score / b.xpScoreMilestoneStep) * b.xpScoreMilestoneAmount)
+    end
+
+    return self:AddXP(amount, "GAME_RESULT", silent)
+end
+
+-- "Game achievement completion" source. Called directly by
+-- GamesAchievements.lua's Unlock() -- same addon (Rework Phase 5 moved the
+-- GAMES achievement category here from CreshCollect), no Suite hop needed.
+-- Earlier (Phase 3-4), this fired via a Suite subscription to CreshCollect's
+-- unlock notification, since CreshCollect owned that catalog at the time.
+function Pass:AwardAchievementCompletion(silent)
+    return self:AddXP(self.balance.xpAchievementUnlock, "ACHIEVEMENT", silent)
+end
+
+-- "Per-game Mastery milestones" source. Tetris' and Dungeon Dwellers' own
+-- passes (Mastery tracks, Phase 4) call this directly on their own
+-- level-ups -- same addon, no Suite hop needed.
+function Pass:AwardMasteryLevelUp(silent)
+    return self:AddXP(self.balance.xpMasteryLevelUp, "MASTERY", silent)
+end
+
 -- Grants a claimed level's game-owned reward directly (same addon now, no
 -- Suite-API hop needed).
 local function grantGameReward(reward, silent)
-    if reward.deckKey and CG.CardDecks and CG.CardDecks.UnlockDeck then
-        CG.CardDecks:UnlockDeck(reward.deckKey, "GAMES_BATTLEPASS", silent ~= false)
+    if reward.deckKey and CG.CardDecks and CG.CardDecks.GrantDeckOrVoucher then
+        if not CG.CardDecks:GrantDeckOrVoucher(reward.deckKey, "GAMES_BATTLEPASS", silent ~= false) then
+            Pass:AddCoins(Pass.balance.deckVoucherFallbackCoins, "GAMES_BATTLEPASS:DECK_VOUCHER")
+        end
     end
     if reward.tetrisThemeKey and CG.Tetris and CG.Tetris.UnlockTheme then
         CG.Tetris:UnlockTheme(reward.tetrisThemeKey, "GAMES_BATTLEPASS", silent ~= false)
@@ -210,7 +381,15 @@ function Pass:ClaimReward(level, silent)
     save.claimed[key] = true
     self:AddCoins(reward.coins, "PASS")
     grantGameReward(reward, silent)
+    if reward.tier == "CAPSTONE" then save.arcadeChampion = true end
     save.recent = { text = "Level " .. level .. " unlocked", coins = reward.coins, deck = reward.deckKey, at = now() }
+    local suite = _G.CreshSuite
+    if suite and suite.Publish then
+        suite:Publish("CRESHGAMES_REWARD_UNLOCKED", {
+            source = "CRESHGAMES", level = level, coins = reward.coins,
+            deckKey = reward.deckKey, tetrisThemeKey = reward.tetrisThemeKey,
+        })
+    end
     if not silent then
         self:RefreshWindow()
         if CG.SoloGames and CG.SoloGames.RefreshTetrisPanels then CG.SoloGames:RefreshTetrisPanels(true) end

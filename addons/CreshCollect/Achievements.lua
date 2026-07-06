@@ -10,18 +10,16 @@ local Achievements = {
     version = COL.version,
     catalog = {},
     byKey = {},
-    categoryOrder = { "EXPLORATION", "COMBAT", "DUNGEONS", "PROFESSIONS", "GAMES" },
+    categoryOrder = { "EXPLORATION", "COMBAT", "DUNGEONS", "PROFESSIONS" },
     categoryNames = {
         EXPLORATION = "Exploration",
         COMBAT = "Combat",
         DUNGEONS = "Dungeons & Bosses",
         PROFESSIONS = "Professions",
-        GAMES = "Cresh Games",
     },
     -- Which feature flags must be enabled for each achievement category to be active.
     -- A category with no entry here is always shown (no feature dependency).
     categoryRequiredFeatures = {
-        GAMES       = { "games", "gameProgression" },
         COMBAT      = { "combatTracking" },
         EXPLORATION = { "worldProgression" },
         DUNGEONS    = { "worldProgression" },
@@ -45,35 +43,20 @@ local function isCategoryEnabled(category)
     return false
 end
 
--- Categories whose content is actually supplied by another addon, as opposed
--- to merely gated by a user-facing feature toggle. GAMES achievements track
--- CreshGames activity, so they can only ever be earned when CreshGames is
--- installed — that's an addon-presence fact, independent of the "games" /
--- "gameProgression" feature flags isCategoryEnabled checks above (those only
--- reflect the player's own on/off choice once the addon exists).
-local categoryRequiredAddon = {
-    GAMES = "CreshGames",
-}
-
--- Returns the addon name (e.g. "CreshGames") if this category's content
--- requires an addon that isn't currently loaded, or nil otherwise.
-local function categoryMissingAddon(category)
-    local addonName = categoryRequiredAddon[category]
-    if not addonName then return nil end
-    if _G.CreshSuite and _G.CreshSuite:IsProductLoaded(addonName) then return nil end
-    return addonName
-end
-
+-- Per-achievement addon requirement (e.g. a handful of COMMUNITY
+-- achievements require CreshChat). Rework Phase 5 removed the category-level
+-- version of this check (categoryRequiredAddon/categoryMissingAddon) along
+-- with the GAMES category, which was its only user -- CreshCollect no
+-- longer has any category whose entire content requires another addon.
 local function achievementMissingAddon(achievement)
     if type(achievement) ~= "table" then return nil end
-    local addonName = achievement.requiredAddon or categoryRequiredAddon[achievement.category]
+    local addonName = achievement.requiredAddon
     if not addonName then return nil end
     if _G.CreshSuite and _G.CreshSuite:IsProductLoaded(addonName) then return nil end
     return addonName
 end
--- Test-only hooks (see tests/AchievementsAvailabilityTests.lua) for the pure
+-- Test-only hook (see tests/AchievementsAvailabilityTests.lua) for the pure
 -- logic above; production code should call it only from RefreshDrawerPanel.
-Achievements._TESTONLY_CategoryMissingAddon = categoryMissingAddon
 Achievements._TESTONLY_IsCategoryEnabled = isCategoryEnabled
 Achievements._TESTONLY_AchievementMissingAddon = achievementMissingAddon
 
@@ -306,34 +289,9 @@ function Achievements:BuildCatalog()
         { "One Mastery", "Dual Mastery", "Master of Four", "Trade Grandmaster" },
         function(goal) return "Reach 300 skill in " .. formatNumber(goal) .. " professions." end, 2,
         { "ACH_WOW_PROF_MASTER_001", "ACH_WOW_PROF_MASTER_002", "ACH_WOW_PROF_MASTER_003", "ACH_WOW_PROF_MASTER_004" })
-
-    addSeries(self, "GAMES", "GAME_PLAYS",
-        { 1, 10, 25, 50, 100, 250 },
-        { "Game On", "Arcade Regular", "Twenty-Five Plays", "Game Night", "Arcade Veteran", "Cresh Games Loyalist" },
-        function(goal) return "Complete or start " .. formatNumber(goal) .. " Cresh game sessions." end, 1,
-        { "ACH_WOW_GAME_PLAYS_001", "ACH_WOW_GAME_PLAYS_002", "ACH_WOW_GAME_PLAYS_003",
-          "ACH_WOW_GAME_PLAYS_004", "ACH_WOW_GAME_PLAYS_005", "ACH_WOW_GAME_PLAYS_006" })
-
-    addSeries(self, "GAMES", "GAME_WINS",
-        { 1, 10, 25, 50, 100 },
-        { "First Win", "Winning Habit", "Arcade Champion", "Fifty Victories", "Century Champion" },
-        function(goal) return "Win " .. formatNumber(goal) .. " Cresh games." end, 2,
-        { "ACH_WOW_GAME_WINS_001", "ACH_WOW_GAME_WINS_002", "ACH_WOW_GAME_WINS_003",
-          "ACH_WOW_GAME_WINS_004", "ACH_WOW_GAME_WINS_005" })
-
-    addSeries(self, "GAMES", "GAME_LEVELS",
-        { 5, 10, 25, 50, 100, 250 },
-        { "Level Collector", "Double Digits", "Growing Arcade", "Fifty Combined Levels", "Century of Levels", "Account Arcade Master" },
-        function(goal) return "Reach " .. formatNumber(goal) .. " combined levels across Cresh games." end, 1,
-        { "ACH_WOW_GAME_LEVELS_001", "ACH_WOW_GAME_LEVELS_002", "ACH_WOW_GAME_LEVELS_003",
-          "ACH_WOW_GAME_LEVELS_004", "ACH_WOW_GAME_LEVELS_005", "ACH_WOW_GAME_LEVELS_006" })
-
-    addSeries(self, "GAMES", "UNLOCKS",
-        { 1, 5, 10, 25, 50, 100 },
-        { "First Unlock", "Collection Started", "Ten Treasures", "Unlock Hunter", "Collection Curator", "Vault Keeper" },
-        function(goal) return "Own " .. formatNumber(goal) .. " themes, decks, armour sets, minions or game cosmetics." end, 2,
-        { "ACH_WOW_UNLOCKS_001", "ACH_WOW_UNLOCKS_002", "ACH_WOW_UNLOCKS_003",
-          "ACH_WOW_UNLOCKS_004", "ACH_WOW_UNLOCKS_005", "ACH_WOW_UNLOCKS_006" })
+    -- Rework Phase 5: the GAMES category (GAME_PLAYS/GAME_WINS/GAME_LEVELS/
+    -- UNLOCKS, 23 achievements) moved to CreshGames/GamesAchievements.lua.
+    -- CreshCollect now reports only World of Warcraft achievements.
 end
 
 local function progressionRoot()
@@ -371,50 +329,10 @@ function Achievements:Ensure()
     return save
 end
 
-local function countTrueOrTables(tbl)
-    local count = 0
-    for _, value in pairs(tbl or {}) do
-        if value == true or type(value) == "table" then count = count + 1 end
-    end
-    return count
-end
-
 local function countMap(tbl)
     local count = 0
     for _ in pairs(tbl or {}) do count = count + 1 end
     return count
-end
-
-function Achievements:GetGameTotals()
-    local plays, wins, levels = 0, 0, 0
-    local progression = CreshCollectDB.gameProgression and CreshCollectDB.gameProgression.games or {}
-    local solo = {} -- game solo stats tracked in CreshGamesDB; not read directly
-    local keys = { "FROGGER", "DUNGEON", "CHESS", "HOLDEM", "BLACKJACK", "HIGHERLOWER", "TETRIS", "PONG" }
-    for _, game in ipairs(keys) do
-        local record = progression[game] or {}
-        local saved = solo[lower(game)] or {}
-        local recordPlays = floor(max(0, tonumber(record.plays) or tonumber(record.starts) or 0))
-        local savedPlays = floor(max(0, tonumber(saved.games) or tonumber(saved.runs) or tonumber(saved.endlessRuns) or 0))
-        local recordWins = floor(max(0, tonumber(record.wins) or 0))
-        local savedWins = floor(max(0, tonumber(saved.wins) or tonumber(saved.vsWins) or 0))
-        plays = plays + max(recordPlays, savedPlays)
-        wins = wins + max(recordWins, savedWins)
-        levels = levels + floor(max(1, tonumber(record.level) or 1))
-    end
-    return plays, wins, levels
-end
-
-function Achievements:GetUnlockCount()
-    local total = 0
-    local rewards = CreshCollectDB.arcadeRewards or {}
-    total = total + countTrueOrTables(rewards.unlockedThemes)
-    local colDecks = CreshCollectDB.collections and CreshCollectDB.collections.cardDecks or {}
-    total = total + countTrueOrTables(colDecks)
-    local col = CreshCollectDB.collections or {}
-    total = total + countTrueOrTables(col.themes)
-    total = total + countTrueOrTables(col.backgrounds)
-    total = total + countTrueOrTables(col.dungeonArmour)
-    return total
 end
 
 function Achievements:GetStat(stat)
@@ -449,13 +367,6 @@ function Achievements:GetStat(stat)
         for _, rank in pairs(save.professionRanks or {}) do if (tonumber(rank) or 0) >= 300 then count = count + 1 end end
         return count
     end
-    if stat == "GAME_PLAYS" or stat == "GAME_WINS" or stat == "GAME_LEVELS" then
-        local plays, wins, levels = self:GetGameTotals()
-        if stat == "GAME_PLAYS" then return plays end
-        if stat == "GAME_WINS" then return wins end
-        return levels
-    end
-    if stat == "UNLOCKS" then return self:GetUnlockCount() end
     return floor(max(0, tonumber(save.stats[stat]) or 0))
 end
 
@@ -508,6 +419,14 @@ function Achievements:Unlock(achievement, silent)
     }
     save.totalCoins = save.totalCoins + achievement.coins
     save.totalPassXP = save.totalPassXP + achievement.xp
+    -- Rework Phase 3: notify listeners (e.g. CreshGames' Arcade Pass, for the
+    -- still-CreshCollect-owned GAMES category) that an achievement unlocked.
+    -- Fires regardless of `silent` -- that flag only defers CreshCollect's
+    -- own coin/XP payout timing, not whether the achievement happened.
+    local suite = _G.CreshSuite
+    if suite and suite.Publish then
+        suite:Publish("CRESHCOLLECT_ACHIEVEMENT_UNLOCKED", { source = "CRESHCOLLECT", key = achievement.key, category = achievement.category })
+    end
     if silent and self.silentRewardBatch then
         self.silentRewardBatch.coins = self.silentRewardBatch.coins + achievement.coins
         self.silentRewardBatch.xp = self.silentRewardBatch.xp + achievement.xp
@@ -518,7 +437,7 @@ function Achievements:Unlock(achievement, silent)
     if not silent and CC.UI and CC.UI.ShowBattlePassToast then
         CC.UI:ShowBattlePassToast(
             "Achievement unlocked: " .. achievement.title,
-            "+" .. tostring(achievement.coins) .. " Cresh Coins · +" .. tostring(achievement.xp) .. " Battle Pass XP",
+            "+" .. tostring(achievement.coins) .. " Cresh Coins · +" .. tostring(achievement.xp) .. " Chronicle XP",
             "BATTLEPASS",
             "ACHIEVEMENT:" .. achievement.key
         )
@@ -802,7 +721,7 @@ function Achievements:BuildDrawerPanel(drawer, helpers)
     panel.enabledOnly = false
     local filters = {
         { "ALL", "ALL", 42 }, { "EXPLORATION", "EXPLORE", 58 }, { "COMBAT", "COMBAT", 52 },
-        { "DUNGEONS", "DUNGEON", 58 }, { "PROFESSIONS", "PROF", 46 }, { "GAMES", "GAMES", 46 },
+        { "DUNGEONS", "DUNGEON", 58 }, { "PROFESSIONS", "PROF", 46 },
     }
     local previous
     for _, item in ipairs(filters) do

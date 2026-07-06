@@ -13,13 +13,6 @@ local Tetris = {
     backgrounds = {},
     backgroundOrder = {},
     miniPassThemeRewards = {},
-    mainPassThemeRewards = {
-        [15] = "QUAKE_ARENA",
-        [35] = "DARK_PORTAL_BLOCKS",
-        [55] = "ASHBRINGER_LIGHT",
-        [75] = "ILLIDARI_FEL",
-        [95] = "COSMIC_GRANDMASTER",
-    },
 }
 CG.Tetris = Tetris
 if CG.RegisterModule then CG:RegisterModule("Tetris", Tetris) end
@@ -176,7 +169,9 @@ addTheme("VOID_STORM", "Void Storm", "GAME_LEVEL", 75,
     {0.44,0.20,1.00,1}, {0.08,0.80,1.00,1}, {0.82,0.16,0.92,1}, {0.022,0.010,0.060,1},
     "A high-level set of void purple and storm energy.")
 
--- Twenty themes are earned through the dedicated 100-level Tetris Pass.
+-- Twenty themes are earned through the dedicated 100-level Tetris Mastery
+-- track (Rework Phase 4: converted from "Tetris Pass" -- same mechanic and
+-- data, player-facing name only).
 local miniThemes = {
     {10, "PIXEL_CANDY", "Pixel Candy", {1.00,0.28,0.66,1}, {0.30,0.90,1.00,1}, {0.78,0.42,1.00,1}, {0.060,0.020,0.060,1}, "Bright arcade sweets and neon sugar."},
     {20, "ARCANE_RUNES", "Arcane Runes", {0.30,0.52,1.00,1}, {0.84,0.42,1.00,1}, {0.18,0.90,0.94,1}, {0.018,0.026,0.070,1}, "Blue-violet runes with a charged glow."},
@@ -187,27 +182,33 @@ local miniThemes = {
     {70, "NETHERSTORM_GRID", "Netherstorm Grid", {0.72,0.20,1.00,1}, {0.20,0.72,1.00,1}, {0.96,0.28,0.72,1}, {0.040,0.012,0.070,1}, "Fractured arcane currents over a dark grid."},
     {80, "SUNWELL_RADIANCE", "Sunwell Radiance", {1.00,0.76,0.20,1}, {1.00,0.96,0.62,1}, {1.00,0.34,0.18,1}, {0.070,0.040,0.012,1}, "High-elven light, phoenix red and radiant gold."},
     {90, "TITAN_FORGE", "Titan Forge", {0.28,0.72,1.00,1}, {1.00,0.76,0.24,1}, {0.44,0.48,0.54,1}, {0.025,0.030,0.038,1}, "Titan steel, keeper blue and ancient gold."},
-    {100, "CRESH_IMMORTAL", "Cresh Immortal", {0.04,0.78,1.00,1}, {1.00,0.84,0.20,1}, {0.82,0.18,1.00,1}, {0.008,0.018,0.038,1}, "The final Tetris Pass set with animated-looking contrast."},
+    {100, "CRESH_IMMORTAL", "Cresh Immortal", {0.04,0.78,1.00,1}, {1.00,0.84,0.20,1}, {0.82,0.18,1.00,1}, {0.008,0.018,0.038,1}, "The final Tetris Mastery set with animated-looking contrast."},
 }
 for _, row in ipairs(miniThemes) do
     Tetris.miniPassThemeRewards[row[1]] = row[2]
     addTheme(row[2], row[3], "TETRIS_PASS", row[1], row[4], row[5], row[6], row[7], row[8])
 end
 
--- Five premium sets are attached to selected levels of the main Cresh Battle Pass.
-addTheme("QUAKE_ARENA", "Quake Arena", "MAIN_PASS", 15,
+-- Five premium sets are attached to selected levels of CreshGames' own
+-- Arcade Battle Pass (GamesBattlePass.lua's gameRewardCatalog). These used to
+-- be tagged "MAIN_PASS" and synced from CreshCollect's pre-split pass via a
+-- cross-addon claimed-tier check in SyncUnlocks -- that made them unlockable
+-- through two independent routes at once. Retagged "ARCADE_PASS" (with
+-- `requirement` corrected to the Arcade Pass levels that actually grant
+-- them) now that the Arcade Pass is their sole real trigger.
+addTheme("QUAKE_ARENA", "Quake Arena", "ARCADE_PASS", 8,
     {0.96,0.17,0.03,1}, {1.00,0.52,0.06,1}, {0.24,0.26,0.28,1}, {0.012,0.014,0.018,1},
     "Arena black, industrial steel and rocket-orange glow.")
-addTheme("DARK_PORTAL_BLOCKS", "Dark Portal Blocks", "MAIN_PASS", 35,
+addTheme("DARK_PORTAL_BLOCKS", "Dark Portal Blocks", "ARCADE_PASS", 18,
     {0.56,0.18,0.90,1}, {0.30,0.92,0.22,1}, {0.14,0.05,0.24,1}, {0.018,0.008,0.028,1},
     "Portal violet, fel green and ancient black stone.")
-addTheme("ASHBRINGER_LIGHT", "Ashbringer Light", "MAIN_PASS", 55,
+addTheme("ASHBRINGER_LIGHT", "Ashbringer Light", "ARCADE_PASS", 28,
     {1.00,0.62,0.10,1}, {1.00,0.94,0.54,1}, {0.86,0.18,0.08,1}, {0.060,0.025,0.008,1},
     "Holy fire, polished gold and scarlet flame.")
-addTheme("ILLIDARI_FEL", "Illidari Fel", "MAIN_PASS", 75,
+addTheme("ILLIDARI_FEL", "Illidari Fel", "ARCADE_PASS", 38,
     {0.38,0.96,0.16,1}, {0.70,0.22,0.96,1}, {0.10,0.18,0.08,1}, {0.010,0.022,0.010,1},
     "Premium demon-hunter green and Illidari violet.")
-addTheme("COSMIC_GRANDMASTER", "Cosmic Grandmaster", "MAIN_PASS", 95,
+addTheme("COSMIC_GRANDMASTER", "Cosmic Grandmaster", "ARCADE_PASS", 48,
     {0.10,0.76,1.00,1}, {1.00,0.42,0.82,1}, {0.60,0.30,1.00,1}, {0.008,0.010,0.034,1},
     "A rare cosmic set reserved for late Battle Pass progression.")
 
@@ -512,7 +513,7 @@ function Tetris:SyncUnlocks(showToast)
     save.passClaimed = type(save.passClaimed) == "table" and save.passClaimed or {}
     local unlocked = 0
     local gameLevel = 1
-    if CC.GameProgression and CC.GameProgression.GetProgress then gameLevel = select(1, CC.GameProgression:GetProgress("TETRIS")) or 1 end
+    if CG.GameProgression and CG.GameProgression.GetProgress then gameLevel = select(1, CG.GameProgression:GetProgress("TETRIS")) or 1 end
     for _, key in ipairs(self.themeOrder) do
         local theme = self.themes[key]
         if theme.source == "GAME_LEVEL" and gameLevel >= (theme.requirement or 1) then
@@ -524,18 +525,11 @@ function Tetris:SyncUnlocks(showToast)
             if self:UnlockTheme(key, "TETRIS_PASS:" .. tostring(level), false, true) then unlocked = unlocked + 1 end
         end
     end
-    -- Main Battle Pass claim state is authoritative in CreshCollect, not a
-    -- local copy here. Query it live through the guarded CreshCollectAPI so
-    -- this never drifts from a stale snapshot; if CreshCollect isn't
-    -- installed, these theme unlocks simply stay unsynced until it is.
-    local collectAPI = _G.CreshCollectAPI
-    if collectAPI then
-        for level, key in pairs(self.mainPassThemeRewards) do
-            if collectAPI.IsBattlePassRewardClaimed(level) then
-                if self:UnlockTheme(key, "MAIN_PASS:" .. tostring(level), false, true) then unlocked = unlocked + 1 end
-            end
-        end
-    end
+    -- The 5 ARCADE_PASS themes are granted directly by GamesBattlePass.lua's
+    -- ClaimReward (same addon) when their pass level is claimed -- no sync
+    -- needed here. (Rework Phase 3: removed a legacy cross-addon check
+    -- against CreshCollect's pre-split claimed tiers that let these same 5
+    -- themes be unlocked through a second, independent route.)
     if unlocked > 0 and CG.SoloGames and CG.SoloGames.RefreshTetrisPanels then CG.SoloGames:RefreshTetrisPanels() end
     return unlocked
 end
@@ -565,8 +559,8 @@ function Tetris:GetThemeRequirementText(key)
     local theme = self:GetTheme(key)
     if theme.source == "DEFAULT" then return "Included"
     elseif theme.source == "GAME_LEVEL" then return "Tetris game level " .. tostring(theme.requirement)
-    elseif theme.source == "TETRIS_PASS" then return "Tetris Pass level " .. tostring(theme.requirement)
-    elseif theme.source == "MAIN_PASS" then return "Main Battle Pass level " .. tostring(theme.requirement) end
+    elseif theme.source == "TETRIS_PASS" then return "Tetris Mastery level " .. tostring(theme.requirement)
+    elseif theme.source == "ARCADE_PASS" then return "Games Battle Pass level " .. tostring(theme.requirement) end
     return "Locked"
 end
 
@@ -734,8 +728,15 @@ function Tetris:AddPassXP(amount, source)
     local oldLevel = self:GetPassLevelFromXP(save.passXP)
     save.passXP = save.passXP + amount
     local newLevel = self:GetPassLevelFromXP(save.passXP)
-    if newLevel > oldLevel and CC.UI and CC.UI.ShowGameToast then
-        CC.UI:ShowGameToast("Tetris Pass Level " .. tostring(newLevel), "+" .. tostring(amount) .. " Tetris XP · reward ready", "SUCCESS", "TETRIS:PASSLEVEL:" .. tostring(newLevel))
+    if newLevel > oldLevel then
+        -- Rework Phase 3: "per-game Mastery milestones" Arcade Pass XP
+        -- source -- same addon, no Suite hop needed. Silent: the Tetris
+        -- Pass level-up toast above already covers user feedback for this
+        -- moment.
+        if CG.BattlePass and CG.BattlePass.AwardMasteryLevelUp then CG.BattlePass:AwardMasteryLevelUp(true) end
+        if CC.UI and CC.UI.ShowGameToast then
+            CC.UI:ShowGameToast("Tetris Mastery Level " .. tostring(newLevel), "+" .. tostring(amount) .. " Tetris XP · reward ready", "SUCCESS", "TETRIS:PASSLEVEL:" .. tostring(newLevel))
+        end
     end
     if CG.SoloGames and CG.SoloGames.RefreshTetrisPanels then CG.SoloGames:RefreshTetrisPanels() end
     return amount, oldLevel, newLevel
@@ -747,11 +748,13 @@ function Tetris:ClaimPassReward(level, silent)
     if not save or not self:IsPassLevelReached(level) or save.passClaimed[tostring(level)] then return false end
     local reward = self:GetPassReward(level)
     save.passClaimed[tostring(level)] = true
-    if CC.BattlePass and CC.BattlePass.AddCoins then CC.BattlePass:AddCoins(reward.coins, "GAME") end
+    -- Tetris Mastery coin rewards are CreshGames' own reward currency -- pay
+    -- into CG.BattlePass, never CreshCollect's pass (ownership boundary fix).
+    if CG.BattlePass and CG.BattlePass.AddCoins then CG.BattlePass:AddCoins(reward.coins, "GAME") end
     if reward.themeKey then self:UnlockTheme(reward.themeKey, "TETRIS_PASS:" .. tostring(level), not silent, true) end
     if not silent and CC.UI and CC.UI.ShowGameToast then
         local extra = reward.themeName and (" · " .. reward.themeName) or ""
-        CC.UI:ShowGameToast("Tetris Pass Reward", "Level " .. level .. " · +" .. reward.coins .. " Cresh Coins" .. extra, "SUCCESS", "TETRIS:PASSREWARD:" .. tostring(level))
+        CC.UI:ShowGameToast("Tetris Mastery Reward", "Level " .. level .. " · +" .. reward.coins .. " Cresh Coins" .. extra, "SUCCESS", "TETRIS:PASSREWARD:" .. tostring(level))
     end
     if not silent and CG.SoloGames and CG.SoloGames.RefreshTetrisPanels then CG.SoloGames:RefreshTetrisPanels(true) end
     return true
@@ -766,9 +769,9 @@ function Tetris:ClaimAllPassRewards()
         end
     end
     if claimed > 0 and CC.UI and CC.UI.ShowGameToast then
-        CC.UI:ShowGameToast("Tetris Pass", tostring(claimed) .. " rewards · +" .. tostring(coins) .. " Cresh Coins", "SUCCESS", "TETRIS:CLAIMALL:" .. tostring(time()))
+        CC.UI:ShowGameToast("Tetris Mastery", tostring(claimed) .. " rewards · +" .. tostring(coins) .. " Cresh Coins", "SUCCESS", "TETRIS:CLAIMALL:" .. tostring(time()))
     elseif claimed == 0 and CC.Print then
-        CC:Print("No Tetris Pass rewards are ready to claim.")
+        CC:Print("No Tetris Mastery rewards are ready to claim.")
     end
     if CG.SoloGames and CG.SoloGames.RefreshTetrisPanels then CG.SoloGames:RefreshTetrisPanels(true) end
     return claimed, coins
@@ -783,6 +786,24 @@ function Tetris:AwardRun(result, mode, score, lines)
     if result == "WIN" then xp = xp + 22 elseif result == "LOSS" then xp = xp + 8 else xp = xp + 12 end
     if mode == "CPU" then xp = floor(xp * 1.35) elseif mode == "ENDLESS" then xp = xp + min(25, lines) end
     return self:AddPassXP(xp, "TETRIS RUN")
+end
+
+-- ---------------------------------------------------------------------------
+-- Rework Phase 4: forward-looking "Tetris Mastery" naming, wrapping the exact
+-- same *Pass* functions above (no data or behavior changes) so future code
+-- (Phase 9's Unified Progression UI) can use Mastery vocabulary without
+-- reaching into the underlying Pass-named internals.
+-- ---------------------------------------------------------------------------
+function Tetris:GetMasteryProgress()
+    return self:GetPassProgress()
+end
+
+function Tetris:ClaimMasteryReward(level, silent)
+    return self:ClaimPassReward(level, silent)
+end
+
+function Tetris:ClaimAllMasteryRewards()
+    return self:ClaimAllPassRewards()
 end
 
 function Tetris:GetCatalog()

@@ -595,56 +595,55 @@ tests[12] = function(T)  -- GetStat fallback reads combat stat keys directly
     T.check("L12: GetStat('NONEXISTENT') returns 0 safely",          Ach:GetStat("NONEXISTENT_STAT_XYZ") == 0)
 end
 
-tests[13] = function(T)  -- DD MigrateFromWoW idempotence
-    local DD  = CC.DungeonAchievements
+tests[13] = function(T)  -- Rework Phase 5: legacy achievement-completion sync idempotence
+    local GA  = CC.GamesAchievements
     local Ach = CC.Achievements
-    if not DD or not Ach then T.skip("L13", "module missing"); return end
-    local ddSave  = DD:Ensure();  if not ddSave  then T.skip("L13", "DD Ensure nil"); return end
+    if not GA or not Ach then T.skip("L13", "module missing"); return end
+    local gaSave  = GA:Ensure();  if not gaSave  then T.skip("L13", "GamesAchievements Ensure nil"); return end
     local achSave = Ach:Ensure(); if not achSave then T.skip("L13", "Ach Ensure nil"); return end
     local testKey = "ACH_DD_KILLS_001"
-    local prevDD  = ddSave.unlocked[testKey]
+    local prevGA  = gaSave.unlocked[testKey]
     local prevWoW = achSave.unlocked[testKey]
-    local wasFlag = ddSave.migratedFromWoW
-    -- Plant record in WoW table, reset migration flag
+    -- Plant a record in CreshCollect's legacy table, clear it from CreshGames' own save
     achSave.unlocked[testKey] = { at = 1, value = 5 }
-    ddSave.unlocked[testKey]  = nil
-    ddSave.migratedFromWoW    = false
-    -- First migration
-    local moved1 = DD:MigrateFromWoW()
-    T.check("L13: first MigrateFromWoW reports move(s)",    moved1 > 0)
-    T.check("L13: key moved to DD namespace",               ddSave.unlocked[testKey] ~= nil)
-    T.check("L13: key removed from WoW namespace",          achSave.unlocked[testKey] == nil)
-    T.check("L13: migratedFromWoW flag now set",            ddSave.migratedFromWoW == true)
-    -- Second migration must be a no-op
-    local moved2 = DD:MigrateFromWoW()
-    T.check("L13: second MigrateFromWoW returns 0 (idempotent)", moved2 == 0)
+    gaSave.unlocked[testKey]  = nil
+    -- First sync imports it (union, not a move -- the legacy record stays in CreshCollect too)
+    GA:SyncLegacyCompletions()
+    T.check("L13: key imported into CreshGames' own save",                     gaSave.unlocked[testKey] ~= nil)
+    T.check("L13: legacy record in CreshCollect is left in place (union, not move)", achSave.unlocked[testKey] ~= nil)
+    local afterFirstSync = gaSave.unlocked[testKey]
+    -- Second sync must not disturb an already-imported key
+    GA:SyncLegacyCompletions()
+    T.check("L13: second sync leaves the already-imported key unchanged (idempotent)", gaSave.unlocked[testKey] == afterFirstSync)
     -- Restore local plantings (RestoreDB handles the rest)
-    ddSave.unlocked[testKey]  = prevDD
+    gaSave.unlocked[testKey]  = prevGA
     achSave.unlocked[testKey] = prevWoW
-    ddSave.migratedFromWoW    = wasFlag
 end
 
-tests[14] = function(T)  -- Dungeon Dwellers isolation: unlocks go to DD save, not WoW save
-    local DD  = CC.DungeonAchievements
+tests[14] = function(T)  -- Dungeon Dwellers isolation: unlocks go to CreshGames' save, not CreshCollect's WoW save
+    local GA  = CC.GamesAchievements
     local Ach = CC.Achievements
-    if not DD or not Ach then T.skip("L14", "module missing"); return end
-    local ddSave  = DD:Ensure();  if not ddSave  then T.skip("L14", "DD Ensure nil"); return end
+    if not GA or not Ach then T.skip("L14", "module missing"); return end
+    local gaSave  = GA:Ensure();  if not gaSave  then T.skip("L14", "GamesAchievements Ensure nil"); return end
     local achSave = Ach:Ensure(); if not achSave then T.skip("L14", "Ach Ensure nil"); return end
     local dungeon = CC.db and CC.db.soloGames and CC.db.soloGames.dungeon
     if not dungeon then T.skip("L14", "soloGames.dungeon missing"); return end
-    local firstDD = DD.catalog and DD.catalog[1]
-    if not firstDD then T.skip("L14", "DD catalog empty"); return end
+    local firstDD
+    for _, achievement in ipairs(GA.catalog or {}) do
+        if achievement.category == "DUNGEON_DWELLERS" then firstDD = achievement; break end
+    end
+    if not firstDD then T.skip("L14", "Dungeon Dwellers catalog empty"); return end
     -- Force the stat above threshold
     local prevKills  = dungeon.kills
-    local prevUnlock = ddSave.unlocked[firstDD.key]
+    local prevUnlock = gaSave.unlocked[firstDD.key]
     dungeon.kills = math.max(dungeon.kills or 0, firstDD.goal)
-    ddSave.unlocked[firstDD.key] = nil
-    DD:EvaluateAll(true)
-    T.check("L14: DD achievement written to DD namespace",   ddSave.unlocked[firstDD.key] ~= nil)
-    T.check("L14: DD achievement absent from WoW namespace", achSave.unlocked[firstDD.key] == nil)
+    gaSave.unlocked[firstDD.key] = nil
+    GA:EvaluateAll(true)
+    T.check("L14: Dungeon Dweller achievement written to CreshGames' save",   gaSave.unlocked[firstDD.key] ~= nil)
+    T.check("L14: Dungeon Dweller achievement absent from CreshCollect's WoW save", achSave.unlocked[firstDD.key] == nil)
     -- Restore within-test state
     dungeon.kills = prevKills
-    ddSave.unlocked[firstDD.key] = prevUnlock
+    gaSave.unlocked[firstDD.key] = prevUnlock
 end
 
 tests[15] = function(T)  -- Dungeon Crawler isolation: routing rules enforced
@@ -685,11 +684,11 @@ tests[16] = function(T)  -- FarmFinder isolation (unregistered game cannot pollu
         progressNamespace = R.GAMES.DUNGEON_DWELLER, objectiveType = R.OBJECTIVES.MOB_KILL, amount = 1,
     })
     T.check("L16: FARMFINDER->DD rejected", R:RouteProgressEvent(e2) == false)
-    -- WoW and DD save tables must be untouched
+    -- WoW and Dungeon Dweller save tables must be untouched
     local achSave = CC.Achievements and CC.Achievements:Ensure()
-    local ddSave  = CC.DungeonAchievements and CC.DungeonAchievements:Ensure()
+    local ddSave  = CC.GamesAchievements and CC.GamesAchievements:Ensure()
     T.check("L16: WoW achievement save still accessible after rejected events", achSave ~= nil)
-    T.check("L16: DD achievement save still accessible after rejected events",  ddSave  ~= nil)
+    T.check("L16: Dungeon Dweller achievement save still accessible after rejected events", ddSave ~= nil)
     T.skip("L16 FarmFinder module test", "FarmFinder game not yet implemented")
 end
 
@@ -979,13 +978,14 @@ tests[24] = function(T)  -- L24: Class achievement keys (ACH_CLASS_* format)
 end
 
 tests[25] = function(T)  -- L25: Dungeon Dwellers isolation (no WoW namespace bleed)
-    local DA = CC.DungeonAchievements
+    local DA = CC.GamesAchievements
     local A  = CC.Achievements
-    if not DA then T.skip("L25", "DungeonAchievements not loaded"); return end
+    if not DA then T.skip("L25", "GamesAchievements not loaded"); return end
     if not A  then T.skip("L25", "Achievements not loaded"); return end
     local ddSave  = DA:Ensure()
     local wowSave = A:Ensure()
-    -- DD namespace exists and is separate from WoW namespace
+    -- CreshGames' achievement save is a separate SavedVariables root from
+    -- CreshCollect's WoW-achievement save entirely now (Rework Phase 5).
     T.check("L25: DD save table distinct from WoW save", ddSave ~= wowSave)
     -- WoW stat keys not present in DD save.stats (DD uses DD_ prefix)
     if ddSave and type(ddSave.activity) == "table" then

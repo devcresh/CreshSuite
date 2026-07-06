@@ -48,15 +48,19 @@ _G.CreshCollectDB = {
 }
 
 local COL = { version = "0.2.3", RegisterModule = function() end }
-local targeted, full, milestoneChecks = 0, 0, 0
+local targeted, full = 0, 0
 COL.Achievements = {
     ProcessTaxiState = function() end,
     EvaluateStat = function(_, stat) if stat == "STEPS" then targeted = targeted + 1 end end,
     EvaluateAll = function() full = full + 1 end,
 }
-COL.BattlePass = {
-    CheckMilestoneGoals = function() milestoneChecks = milestoneChecks + 1 end,
-}
+-- Rework Phase 6: Progression.lua no longer calls a BattlePass-native
+-- WALK/KILL milestone check at all -- that mechanism was removed as a
+-- duplicate of the EXPLORATION "STEPS" / COMBAT "KILLS" achievement series
+-- (both tracked the identical totalSteps/totalKills counters and paid
+-- rewards independently). The achievement series above is now the sole
+-- canonical progression source for both stats.
+COL.BattlePass = {}
 
 loadProductionFile(progressionPath, "CreshCollect", COL)
 
@@ -66,27 +70,14 @@ mapX = mapX + 0.0002                 -- fallback map scale: one yard
 COL.GameProgression:ProcessMovement()
 eq(targeted, 1, "movement evaluates only the STEPS achievement series")
 eq(full, 0, "movement never invokes the full achievement-catalogue sweep")
-eq(milestoneChecks, 1, "walking milestone check still runs after real movement")
 ok(CreshCollectDB.gameProgression.exploration.totalSteps >= 1, "estimated step total still advances")
 
-print("\n[Progressive walking milestones]")
+print("\n[Duplicate milestone system removed]")
 loadProductionFile(battlePassPath, "CreshCollect", COL)
 local PassModule = COL.BattlePass
-local early = {}
-for _, goal in ipairs(PassModule.milestoneDefinitions) do
-    if goal.kind == "WALK" and goal.goal <= 10000 then early[#early + 1] = goal.goal end
-end
-eq(#early, 10, "there are ten early walking unlocks")
-for index = 1, 10 do eq(early[index], index * 1000, "walking unlock " .. index .. " uses a 1,000-step progression") end
-
-local refreshes = 0
-PassModule.RefreshDrawer = function() refreshes = refreshes + 1 end
-PassModule:CheckMilestoneGoals("WALK", 999)
-eq(refreshes, 0, "no Battle Pass UI rebuild occurs when no milestone changes")
-PassModule:CheckMilestoneGoals("WALK", 1000)
-eq(refreshes, 1, "crossing 1,000 steps refreshes once")
-PassModule:CheckMilestoneGoals("WALK", 1001)
-eq(refreshes, 1, "ordinary movement after the unlock does not rebuild the UI")
+eq(PassModule.milestoneDefinitions, nil, "the BattlePass-native WALK/KILL milestone table no longer exists")
+eq(PassModule.CheckMilestoneGoals, nil, "CheckMilestoneGoals no longer exists")
+eq(PassModule.GetNextMilestone, nil, "GetNextMilestone no longer exists")
 
 print("\n[Cross-addon reward availability]")
 _G.CreshSuite = {

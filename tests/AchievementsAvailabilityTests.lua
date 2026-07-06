@@ -1,9 +1,14 @@
 -- AchievementsAvailabilityTests.lua
--- Lua 5.1 tests for the GAMES-category addon-availability logic in
--- addons/CreshCollect/Achievements.lua: isCategoryEnabled and
--- categoryMissingAddon (exposed as _TESTONLY_ hooks), which decide whether
--- the GAMES achievement category is shown as available, "MODULE OFF", or
--- "REQUIRES CRESHGAMES" in the achievements drawer panel.
+-- Lua 5.1 tests for addons/CreshCollect/Achievements.lua's per-achievement
+-- addon-availability logic (_TESTONLY_AchievementMissingAddon) and its
+-- feature-flag category logic (_TESTONLY_IsCategoryEnabled).
+--
+-- Rework Phase 5 removed the GAMES achievement category (and the
+-- category-level categoryRequiredAddon/categoryMissingAddon mechanism that
+-- existed only to gate it on CreshGames) -- this file used to test exactly
+-- that. What remains and is still genuinely live: the generic per-item
+-- `achievement.requiredAddon` override (used by a handful of COMMUNITY
+-- achievements that require CreshChat), and the feature-flag category gate.
 --
 -- Loads the REAL production Achievements.lua (not a reimplemented copy).
 -- Only enough of the WoW API is stubbed for the file's top-level chunk to
@@ -69,82 +74,55 @@ local COL = { version = "0.2.3" }
 loadProductionFile(achievementsPath, "CreshCollect", COL)
 
 local Achievements = COL.Achievements
-if not Achievements or not Achievements._TESTONLY_CategoryMissingAddon or not Achievements._TESTONLY_IsCategoryEnabled
-    or not Achievements._TESTONLY_AchievementMissingAddon then
+if not Achievements or not Achievements._TESTONLY_IsCategoryEnabled or not Achievements._TESTONLY_AchievementMissingAddon then
     print("FATAL: CreshCollect.Achievements / _TESTONLY_ hooks not found after loading Achievements.lua")
     os.exit(2)
 end
 
-local categoryMissingAddon = Achievements._TESTONLY_CategoryMissingAddon
 local isCategoryEnabled = Achievements._TESTONLY_IsCategoryEnabled
 local achievementMissingAddon = Achievements._TESTONLY_AchievementMissingAddon
 
 -- ============================================================
--- 1. categoryMissingAddon
+-- 1. GAMES no longer exists as a category at all (Rework Phase 5)
 -- ============================================================
-section("categoryMissingAddon")
+section("GAMES category removed from CreshCollect entirely")
 
-_G.CreshSuite = nil
-ok(categoryMissingAddon("GAMES") == "CreshGames", "GAMES category reports missing CreshGames when CreshSuite doesn't even exist")
-ok(categoryMissingAddon("COMBAT") == nil, "COMBAT category has no addon requirement")
-ok(categoryMissingAddon("EXPLORATION") == nil, "EXPLORATION category has no addon requirement")
-ok(categoryMissingAddon("DUNGEONS") == nil, "DUNGEONS category has no addon requirement")
-ok(categoryMissingAddon("PROFESSIONS") == nil, "PROFESSIONS category has no addon requirement")
+local hasGames = false
+for _, category in ipairs(Achievements.categoryOrder or {}) do
+    if category == "GAMES" then hasGames = true end
+end
+ok(not hasGames, "categoryOrder no longer contains GAMES")
+ok(Achievements.categoryNames.GAMES == nil, "categoryNames no longer has a GAMES entry")
+ok(Achievements.categoryRequiredFeatures.GAMES == nil, "categoryRequiredFeatures no longer has a GAMES entry")
+
+-- ============================================================
+-- 2. Per-achievement addon requirements (still live -- e.g. CreshChat-only
+--    COMMUNITY achievements)
+-- ============================================================
+section("per-achievement addon requirements")
 
 _G.CreshSuite = {
     _loaded = {},
     IsProductLoaded = function(self, name) return self._loaded[string.upper(tostring(name or ""))] == true end,
 }
-ok(categoryMissingAddon("GAMES") == "CreshGames", "GAMES still reported missing when CreshSuite exists but CreshGames isn't registered")
-_G.CreshSuite._loaded.CRESHGAMES = true
-ok(categoryMissingAddon("GAMES") == nil, "GAMES reports no missing addon once CreshGames is registered")
-
-section("per-achievement addon requirements")
-_G.CreshSuite._loaded.CRESHCHAT = nil
 ok(achievementMissingAddon({ category = "COMMUNITY", requiredAddon = "CreshChat" }) == "CreshChat",
     "an individual CreshChat achievement reports CreshChat missing")
 _G.CreshSuite._loaded.CRESHCHAT = true
 ok(achievementMissingAddon({ category = "COMMUNITY", requiredAddon = "CreshChat" }) == nil,
     "the individual achievement becomes available when CreshChat is registered")
-_G.CreshSuite._loaded.CRESHGAMES = nil
-ok(achievementMissingAddon({ category = "GAMES" }) == "CreshGames",
-    "category-owned requirements still apply when no item override is present")
+ok(achievementMissingAddon({ category = "EXPLORATION" }) == nil,
+    "an achievement with no requiredAddon field never reports anything missing")
+ok(achievementMissingAddon(nil) == nil, "a nil achievement reports nothing missing (defensive)")
 
 -- ============================================================
--- 2. isCategoryEnabled (feature-flag path, unaffected by addon presence)
+-- 3. isCategoryEnabled (feature-flag path; unrelated to addon presence)
 -- ============================================================
-section("isCategoryEnabled (feature-flag semantics unchanged)")
+section("isCategoryEnabled (feature-flag semantics)")
 
 -- No CC.IsFeatureEnabled available at all -> always enabled (matches
 -- production's "if not (CC.IsFeatureEnabled) then return true end").
-ok(isCategoryEnabled("GAMES") == true, "GAMES enabled by feature-flag check when no feature system is present")
 ok(isCategoryEnabled("COMBAT") == true, "COMBAT enabled by feature-flag check when no feature system is present")
-
--- ============================================================
--- 3. Combined semantics a caller (RefreshDrawerPanel) relies on:
---    disabled = categoryMissingAddon(cat) ~= nil or not isCategoryEnabled(cat)
--- ============================================================
-section("Combined disabled-state semantics")
-
-_G.CreshSuite = nil
-do
-    local missing = categoryMissingAddon("GAMES")
-    local enabled = isCategoryEnabled("GAMES")
-    local disabled = missing ~= nil or not enabled
-    ok(disabled == true, "GAMES category is disabled overall when CreshGames is absent")
-    ok(missing == "CreshGames", "...specifically because of a missing addon, not a feature toggle")
-end
-
-_G.CreshSuite = {
-    _loaded = { CRESHGAMES = true },
-    IsProductLoaded = function(self, name) return self._loaded[string.upper(tostring(name or ""))] == true end,
-}
-do
-    local missing = categoryMissingAddon("GAMES")
-    local enabled = isCategoryEnabled("GAMES")
-    local disabled = missing ~= nil or not enabled
-    ok(disabled == false, "GAMES category is enabled once CreshGames is loaded (feature flags default enabled)")
-end
+ok(isCategoryEnabled("EXPLORATION") == true, "EXPLORATION enabled by feature-flag check when no feature system is present")
 
 -- ============================================================
 -- Summary

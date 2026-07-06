@@ -10,13 +10,14 @@ CreshCollectDatabase.lua
 CreshCollect.lua
 Launcher.lua
 BattlePass.lua
+CollectRewardRegistry.lua
 Progression.lua
 ProgressRouter.lua
 CombatTracker.lua
 Achievements.lua
 AchievementExpansion.lua
 ClassAchievements.lua
-DungeonAchievements.lua
+MetaAchievements.lua
 ProgressHub.lua
 ProgressOverview.lua
 CollectSettings.lua

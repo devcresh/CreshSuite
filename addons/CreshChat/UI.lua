@@ -469,6 +469,11 @@ end
 
 -- Extended Guild palettes that mirror a premium global theme use the same
 -- ownership requirement. Base Guild presets remain free.
+-- Rework Phase 7: the four capital-city guild themes below had no entry
+-- here, so GetGuildThemeUnlockKey returned nil and IsGuildThemeUnlocked's
+-- "no unlock key means free" fallback (see below) silently treated them as
+-- always unlocked. Every guild theme now maps to its matching named theme's
+-- ownership state, same as the six that already worked correctly.
 UI.GUILD_THEME_UNLOCK_KEYS = {
     FOR_ALLIANCE_GUILD = "FOR_THE_ALLIANCE",
     FOR_HORDE_GUILD = "FOR_THE_HORDE",
@@ -476,6 +481,10 @@ UI.GUILD_THEME_UNLOCK_KEYS = {
     STORMWIND_GUILD = "STORMWIND",
     ORGRIMMAR_GUILD = "ORGRIMMAR",
     SILVERMOON_GUILD = "SILVERMOON",
+    UNDERCITY_GUILD = "UNDERCITY",
+    IRONFORGE_GUILD = "IRONFORGE",
+    DARNASSUS_GUILD = "DARNASSUS",
+    THUNDER_BLUFF_GUILD = "THUNDER_BLUFF",
 }
 
 function UI:GetGuildThemeUnlockKey(name)
@@ -3328,7 +3337,10 @@ function UI:RefreshGameDrawer(silent)
             if CC.GameProgression then
                 CC.GameProgression:UpdateBar(card.levelBar, card.levelText, key)
             elseif card.levelText then
-                card.levelText:SetText("Requires CreshCollect")
+                -- GameProgression is CreshGames' own module (bridged onto
+                -- CC here); it is nil when CreshGames itself is absent, not
+                -- CreshCollect.
+                card.levelText:SetText("Requires CreshGames")
             end
         end
     end
@@ -3375,7 +3387,7 @@ function UI:RefreshGameDrawer(silent)
             if CC.GameProgression then
                 CC.GameProgression:UpdateBar(card.levelBar, card.levelText, key)
             elseif card.levelText then
-                card.levelText:SetText("Requires CreshCollect")
+                card.levelText:SetText("Requires CreshGames")
             end
         end
         for index, row in ipairs(drawer.playerRows or {}) do
@@ -7641,7 +7653,7 @@ end
 function UI:ShowDungeonPassToast(title, message, key)
     if CC.PlayAlertSound then CC:PlayAlertSound("GAME") end
     if CC.IsNotificationEnabled and not CC:IsNotificationEnabled("GAME") then return end
-    self:ShowSlideToast(title or "Dungeon Dwellers Pass", message or "New delver progress is ready.", "DUNGEONPASS", key or ("DUNGEONPASS:" .. tostring(title) .. ":" .. tostring(message)), nil, "DUNGEONPASS", nil)
+    self:ShowSlideToast(title or "Delver Mastery", message or "New delver progress is ready.", "DUNGEONPASS", key or ("DUNGEONPASS:" .. tostring(title) .. ":" .. tostring(message)), nil, "DUNGEONPASS", nil)
 end
 
 function UI:ShowGameToast(title, message, status, key)
