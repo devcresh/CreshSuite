@@ -823,11 +823,13 @@ function Settings:BuildGeneral(page)
 
     b:Section("Launcher")
     b:Dropdown("Default launcher action", function() return CC.db.ui.launcherDefault or "LAST" end, function(v) CC.db.ui.launcherDefault = v end,
-        { "LAST", "CHAT", "GAMES", "ACHIEVEMENTS", "PROGRESS", "SETTINGS" },
-        { LAST = "Last used", CHAT = "Chat", GAMES = "Games", ACHIEVEMENTS = "Achievements", PROGRESS = "Progress Hub", SETTINGS = "Settings" })
+        { "LAST", "CHAT", "GAMES", "ACHIEVEMENTS", "PROGRESS", "CRESHQUEST", "SETTINGS" },
+        { LAST = "Last used", CHAT = "Chat", GAMES = "Games", ACHIEVEMENTS = "Achievements", PROGRESS = "Progress Hub", CRESHQUEST = "CreshQuest", SETTINGS = "Settings" })
     b:Note("Left-click on C opens this destination. If it's disabled in Modules, CreshChat falls back to the first enabled destination automatically. Shift+click always opens Settings.")
     b:Dropdown("Launcher buttons", function() return CC.db.ui.launcherMode or "SINGLE" end, function(v) CC.db.ui.launcherMode = v end,
         { "SINGLE", "EXPANDED" }, { SINGLE = "C only", EXPANDED = "C + quick buttons" })
+    b:Dropdown("Launcher orientation", function() return CC.UI:GetLauncherOrientation() end, function(v) CC.UI:SetLauncherOrientation(v) end,
+        { "HORIZONTAL", "VERTICAL" }, { HORIZONTAL = "Horizontal", VERTICAL = "Vertical" })
     b:HalfToggle("Whisper quick button", function() return CC.db.ui.showWhisperButton == true end, function(v) CC.db.ui.showWhisperButton = v end)
     b:HalfToggle("General quick button", function() return CC.db.ui.showGeneralButton == true end, function(v) CC.db.ui.showGeneralButton = v end)
     b:HalfToggle("Combat quick button", function() return CC.db.ui.showCombatButton == true end, function(v) CC.db.ui.showCombatButton = v end)

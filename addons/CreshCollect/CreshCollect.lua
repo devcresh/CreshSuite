@@ -51,6 +51,13 @@ function API.GetAchievementCounts(category)
     return COL.Achievements:GetCounts(category)
 end
 
+-- Returns available, missingAddon. Completed achievements remain queryable
+-- even when their owning addon is currently disabled.
+function API.GetAchievementAvailability(key)
+    if not COL.Achievements or not COL.Achievements.IsAvailable then return false, nil end
+    return COL.Achievements:IsAvailable(key)
+end
+
 -- Battle Pass -------------------------------------------------------------
 -- Returns level, currentXP, requiredXP, ratio. (1, 0, 50, 0) when not loaded.
 function API.GetBattlePassProgress()
@@ -61,6 +68,16 @@ end
 function API.IsBattlePassRewardClaimed(level)
     if not COL.BattlePass then return false end
     return COL.BattlePass:IsRewardClaimed(level)
+end
+
+function API.GetBattlePassReward(level)
+    if not COL.BattlePass then return nil end
+    return COL.BattlePass:GetReward(level)
+end
+
+function API.GetThemeAvailability(key)
+    if not COL.BattlePass or not COL.BattlePass.IsThemeAvailable then return false, nil end
+    return COL.BattlePass:IsThemeAvailable(key)
 end
 
 -- Collections -------------------------------------------------------------
@@ -104,6 +121,17 @@ do
         end)
         Suite:RegisterService("OpenBattlePass", function()
             if COL.BattlePass and COL.BattlePass.ToggleWindow then COL.BattlePass:ToggleWindow() end
+        end)
+
+        -- Read-only legacy snapshot for CreshGames' one-time migration of
+        -- per-game levels (Phase 10 split): lets GameProgression.lua pick up
+        -- existing players' pre-split levels without ever reaching directly
+        -- into CreshCollectDB (mirrors CreshGames' own
+        -- GetLegacyProgressionSnapshot service for the reverse direction).
+        Suite:RegisterService("GetLegacyGameLevels", function()
+            if not _G.CreshCollectDB then return nil end
+            local root = _G.CreshCollectDB.gameProgression
+            return root and root.games or nil
         end)
 
         -- Mirror cosmetic unlocks from CreshGames into CreshCollectDB.collections.
@@ -169,8 +197,13 @@ end
 local function bridgeToCreshChat()
     local cc = _G.CreshChat
     if not cc then return end
+    -- GameProgression is not bridged here any more: per-game level tracking
+    -- moved to CreshGames/GameProgression.lua (Phase 10), which bridges its
+    -- own CC.GameProgression. This module keeps only world-exploration
+    -- tracking (COL.GameProgression itself), which nothing outside
+    -- CreshCollect needs to reach.
     local keys = {
-        "BattlePass", "GameProgression", "ProgressRouter",
+        "BattlePass", "ProgressRouter",
         "Achievements", "AchievementExpansion", "ClassAchievements",
         "DungeonAchievements", "ProgressHub", "ProgressOverview", "CombatTracker",
     }
@@ -211,5 +244,10 @@ _frame:SetScript("OnEvent", function(_, event, arg1)
         -- Safety net: ensure bridge and notifications are wired before gameplay.
         bridgeToCreshChat()
         registerNotifications()
+        -- Ensure the shared launcher exists even when CreshChat is absent --
+        -- idempotent, a no-op if another addon already built it.
+        if _G.CreshSuiteLauncherAPI and _G.CreshSuiteLauncherAPI.EnsureBuilt then
+            _G.CreshSuiteLauncherAPI:EnsureBuilt()
+        end
     end
 end)

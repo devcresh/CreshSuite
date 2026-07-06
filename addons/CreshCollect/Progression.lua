@@ -14,19 +14,8 @@ local Progression = {
 COL.GameProgression = Progression
 if COL.RegisterModule then COL:RegisterModule("GameProgression", Progression) end
 
-local floor, min, max, sqrt = math.floor, math.min, math.max, math.sqrt
-local upper, lower = string.upper, string.lower
-
-local GAME_NAMES = {
-    FROGGER = "Frogger",
-    DUNGEON = "Dungeon Dweller",
-    CHESS = "Chess",
-    HOLDEM = "Texas Hold'em",
-    BLACKJACK = "Blackjack",
-    HIGHERLOWER = "Higher or Lower",
-    TETRIS = "Tetris",
-    PONG = "Pong",
-}
+local floor, max, sqrt = math.floor, math.max, math.sqrt
+local lower = string.lower
 
 local function now()
     if type(_G.GetServerTime) == "function" then return _G.GetServerTime() end
@@ -100,141 +89,10 @@ function Progression:Ensure()
     return root
 end
 
-function Progression:XPNeeded(level)
-    level = floor(max(1, tonumber(level) or 1))
-    return 80 + ((level - 1) * 20)
-end
-
-function Progression:GetGameRecord(game)
-    local root = self:Ensure()
-    if not root then return nil end
-    game = upper(tostring(game or "GAME"))
-    root.games[game] = type(root.games[game]) == "table" and root.games[game] or {}
-    local record = root.games[game]
-    record.level = floor(max(1, tonumber(record.level) or 1))
-    record.xp = floor(max(0, tonumber(record.xp) or 0))
-    record.plays = floor(max(0, tonumber(record.plays) or 0))
-    record.wins = floor(max(0, tonumber(record.wins) or 0))
-    record.draws = floor(max(0, tonumber(record.draws) or 0))
-    record.losses = floor(max(0, tonumber(record.losses) or 0))
-    record.lastPlayed = tonumber(record.lastPlayed) or 0
-    local needed = self:XPNeeded(record.level)
-    while record.xp >= needed do
-        record.xp = record.xp - needed
-        record.level = record.level + 1
-        needed = self:XPNeeded(record.level)
-    end
-    return record
-end
-
-function Progression:GetProgress(game)
-    local record = self:GetGameRecord(game)
-    if not record then return 1, 0, 80, 0 end
-    local needed = self:XPNeeded(record.level)
-    return record.level, record.xp, needed, min(1, record.xp / max(1, needed)), record
-end
-
-function Progression:UpdateBar(bar, label, game)
-    if not game or game == "" then
-        if bar then bar:SetMinMaxValues(0, 1); bar:SetValue(0) end
-        if label then label:SetText("") end
-        return
-    end
-    local level, current, needed = self:GetProgress(game)
-    if bar then
-        bar:SetMinMaxValues(0, max(1, needed))
-        bar:SetValue(current)
-        if bar.Show then bar:Show() end
-    end
-    if label then label:SetText("LV " .. level .. "  " .. current .. "/" .. needed) end
-end
-
-function Progression:RefreshUI()
-    if COL.Achievements and COL.Achievements.EvaluateAll then COL.Achievements:EvaluateAll(false) end
-    if CC.SoloGames and CC.SoloGames.hub and CC.SoloGames.RefreshHub then CC.SoloGames:RefreshHub() end
-    if CC.UI and CC.UI.gameDrawer and CC.UI.RefreshGameDrawer then CC.UI:RefreshGameDrawer(true) end
-    if CC.SoloGames and CC.SoloGames.window then
-        self:UpdateBar(CC.SoloGames.window.levelProgress, CC.SoloGames.window.levelText, CC.SoloGames.activeGame)
-    end
-    if CC.Games and CC.Games.gameWindow then
-        self:UpdateBar(CC.Games.gameWindow.levelProgress, CC.Games.gameWindow.levelText, CC.Games.active and CC.Games.active.game)
-    end
-end
-
-function Progression:AwardGameLevel(game, level)
-    local coins, passXP = 10, 10
-    if COL.BattlePass then
-        if COL.BattlePass.AddCoins then COL.BattlePass:AddCoins(coins, "GAME") end
-        if COL.BattlePass.AddPassXP then COL.BattlePass:AddPassXP(passXP, "GAME LEVEL") end
-    end
-    if CC.UI and CC.UI.ShowGameToast then
-        CC.UI:ShowGameToast((GAME_NAMES[game] or game) .. " Level " .. level,
-            "+" .. coins .. " Cresh Coins · +" .. passXP .. " Battle Pass XP", "SUCCESS", "GAMELEVEL:" .. tostring(game) .. ":" .. tostring(level))
-    end
-    if CC.GameAudio and CC.GameAudio.PlayEffect then CC.GameAudio:PlayEffect("LEVEL") end
-    if CC.UI and CC.UI.RefreshConsoleEconomy then CC.UI:RefreshConsoleEconomy() end
-    return coins, passXP
-end
-
-function Progression:AddGameXP(game, amount)
-    game = upper(tostring(game or "GAME"))
-    amount = floor(max(0, tonumber(amount) or 0))
-    local record = self:GetGameRecord(game)
-    if not record or amount <= 0 then return 0, 0 end
-    local levels = 0
-    record.xp = record.xp + amount
-    local needed = self:XPNeeded(record.level)
-    while record.xp >= needed do
-        record.xp = record.xp - needed
-        record.level = record.level + 1
-        levels = levels + 1
-        self:AwardGameLevel(game, record.level)
-        needed = self:XPNeeded(record.level)
-    end
-    if game == "TETRIS" and levels > 0 and CC.Tetris and CC.Tetris.SyncUnlocks then CC.Tetris:SyncUnlocks(true) end
-    self:RefreshUI()
-    return amount, levels
-end
-
-function Progression:OnGameStarted(game, mode)
-    if CC.IsFeatureEnabled and not CC:IsFeatureEnabled("gameProgression") then return 0 end
-    game = upper(tostring(game or "GAME"))
-    mode = upper(tostring(mode or "SOLO"))
-    local gain = (mode == "MULTIPLAYER" or mode == "MULTI") and 10 or 5
-    local record = self:GetGameRecord(game)
-    if record then record.starts = floor(max(0, tonumber(record.starts) or 0)) + 1 end
-    self:AddGameXP(game, gain)
-    if COL.Achievements and COL.Achievements.EvaluateAll then COL.Achievements:EvaluateAll(false) end
-    if CC.GameAudio and CC.GameAudio.PlayEffect then CC.GameAudio:PlayEffect("CLICK") end
-    return gain
-end
-
-function Progression:OnGameCompleted(entry)
-    if CC.IsFeatureEnabled and not CC:IsFeatureEnabled("gameProgression") then return 0 end
-    if type(entry) ~= "table" then return 0 end
-    local game = upper(tostring(entry.game or "GAME"))
-    local mode = upper(tostring(entry.mode or "SOLO"))
-    local result = upper(tostring(entry.result or "RUN"))
-    local score = floor(max(0, tonumber(entry.score) or 0))
-    local record = self:GetGameRecord(game)
-    if not record then return 0 end
-
-    local gain = 10
-    if result == "WIN" then gain = 30; record.wins = record.wins + 1
-    elseif result == "DRAW" then gain = 20; record.draws = record.draws + 1
-    elseif result == "LOSS" then gain = 15; record.losses = record.losses + 1
-    elseif result == "RUN" then gain = 15 + min(20, floor(score / 250)) end
-    if mode == "MULTIPLAYER" or mode == "MULTI" then gain = gain * 2 end
-
-    record.plays = record.plays + 1
-    record.lastPlayed = now()
-    self:AddGameXP(game, gain)
-    if COL.Achievements and COL.Achievements.EvaluateAll then COL.Achievements:EvaluateAll(false) end
-    if CC.GameAudio and CC.GameAudio.PlayEffect then
-        if result == "WIN" then CC.GameAudio:PlayEffect("WIN") elseif result == "LOSS" then CC.GameAudio:PlayEffect("LOSS") else CC.GameAudio:PlayEffect("CLICK") end
-    end
-    return gain
-end
+-- Per-game level/XP tracking (Frogger, Chess, ...) moved to CreshGames/
+-- GameProgression.lua (Phase 10) so game progress bars work without
+-- CreshCollect installed. root.games above is kept populated only as the
+-- one-time migration source CreshGames' Ensure() reads from.
 
 function Progression:AwardExploration(coins, passXP, title, detail, showToast)
     coins = floor(max(0, tonumber(coins) or 0))
@@ -259,10 +117,7 @@ function Progression:ProcessMovement()
     local root = self:Ensure()
     if not root then return end
     local exploration = root.exploration
-    if COL.Achievements then
-        if COL.Achievements.ProcessTaxiState then COL.Achievements:ProcessTaxiState() end
-        if COL.Achievements.CaptureBossUnits then COL.Achievements:CaptureBossUnits() end
-    end
+    if COL.Achievements and COL.Achievements.ProcessTaxiState then COL.Achievements:ProcessTaxiState() end
     if type(_G.UnitOnTaxi) == "function" and _G.UnitOnTaxi("player") then
         self.lastMapID, self.lastX, self.lastY = nil, nil, nil
         return
@@ -289,7 +144,10 @@ function Progression:ProcessMovement()
                     self:AwardExploration(newBlocks * 2, newBlocks * 2, "Explorer Steps", tostring(newBlocks * 1000) .. " steps travelled", true)
                 end
                 if COL.BattlePass and COL.BattlePass.CheckMilestoneGoals then COL.BattlePass:CheckMilestoneGoals("WALK", exploration.totalSteps) end
-                if COL.Achievements and COL.Achievements.EvaluateAll then COL.Achievements:EvaluateAll(false) end
+                if COL.Achievements then
+                    if COL.Achievements.EvaluateStat then COL.Achievements:EvaluateStat("STEPS", false)
+                    elseif COL.Achievements.EvaluateAll then COL.Achievements:EvaluateAll(false) end
+                end
             end
         end
     end

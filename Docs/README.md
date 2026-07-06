@@ -2,7 +2,7 @@
 
 Current runtime build: **0.2**, SavedVariables schema **75**, WoW interface **20505**.
 
-This final compatibility build preserves the complete CreshChat feature set while resetting the public release number to v0.2. It includes live chat routing, account-wide progression, 531 achievements, social rosters, the notification centre, games, Battle Pass, Cresh Coins, themes, voice-call integration and the responsive console UI.
+This final compatibility build preserves the complete CreshChat feature set while resetting the public release number to v0.2. It includes live chat routing, account-wide progression, 537 achievements, social rosters, the notification centre, games, Battle Pass, Cresh Coins, themes, voice-call integration and the responsive console UI.
 
 Start with `DEVELOPER_GUIDE.md`, then use the module, schema, event, UI, game, asset, policy and test references in this directory.
 
@@ -11,7 +11,7 @@ Start with `DEVELOPER_GUIDE.md`, then use the module, schema, event, UI, game, a
 - `Core.lua` owns SavedVariables migration, direct/backup chat capture, native slash-command routing, chat delivery state, party invitations and account/profile binding.
 - `UI.lua` owns the main console, connected composer, responsive two-row header, roster collapse, cards, drawers and pop-outs.
 - `Friends.lua` owns Game Friends, TBC Anniversary Battle.net friends, Guild/group/local rosters and social actions.
-- `Achievements.lua`, `AchievementExpansion.lua` and `ClassAchievements.lua` provide 531 account-wide achievements.
+- `Achievements.lua`, `AchievementExpansion.lua` and `ClassAchievements.lua` provide 537 account-wide achievements.
 - `Games.lua`, `SoloGames.lua`, `DungeonDwellersProgression.lua` and `BattlePass.lua` own multiplayer/solo games, Dungeon Dwellers, shared unlocks and reward progression.
 
 ## Release audit

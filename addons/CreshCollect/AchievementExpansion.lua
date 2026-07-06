@@ -314,7 +314,7 @@ local EXPANSION = {
     { key="EXP_297", category="COMMUNITY", title="Many Companions", description="Group with 25 different players.", tier=2, tierName="Silver", coins=10, xp=10, metric="UNIQUE_GROUP_PLAYERS", subject="", goal=25 },
     { key="EXP_298", category="COMMUNITY", title="Guild Dungeon Night", description="Complete 10 dungeons with at least three guild members in the party.", tier=3, tierName="Gold", coins=20, xp=18, metric="GUILD_DUNGEON_COMPLETES", subject="", goal=10 },
     { key="EXP_299", category="COMMUNITY", title="Friend of Azeroth", description="Have 10 characters on your in-game friends list.", tier=2, tierName="Silver", coins=10, xp=10, metric="GAME_FRIEND_COUNT", subject="", goal=10 },
-    { key="EXP_300", category="COMMUNITY", title="Keeping in Touch", description="Send 100 whispers through CreshChat.", tier=3, tierName="Gold", coins=20, xp=18, metric="WHISPERS_SENT", subject="", goal=100 },
+    { key="EXP_300", category="COMMUNITY", title="Keeping in Touch", description="Send 100 whispers through CreshChat.", tier=3, tierName="Gold", coins=20, xp=18, metric="WHISPERS_SENT", subject="", goal=100, requiredAddon="CreshChat" },
 }
 A.expansionCatalog = EXPANSION
 
@@ -458,6 +458,7 @@ function A:BuildCatalog()
             goal = item.goal, title = item.title, description = item.description,
             coins = item.coins, xp = item.xp, tier = item.tier, tierName = item.tierName,
             expansion = true,
+            requiredAddon = item.requiredAddon,
         }
         self.catalog[#self.catalog + 1] = achievement
         self.byKey[achievement.key] = achievement
@@ -827,6 +828,7 @@ function A:ScanGroupPlayers()
 end
 
 function A:RecordWhisperSent()
+    if not (_G.CreshSuite and _G.CreshSuite:IsProductLoaded("CreshChat")) then return end
     local e = expansionSave(); if not e then return end
     e.stats.WHISPERS_SENT = scalar(e, "WHISPERS_SENT") + 1
     self:EvaluateAll(false)
@@ -977,6 +979,9 @@ function A:RefreshDrawerPanel(drawer, helpers, resetScroll)
     local filter = lower(tostring(panel.searchText or "")); local y = 0
     for _,row in ipairs(panel.rows or {}) do
         local ach = row.achievement; local complete = save.unlocked[ach.key] ~= nil
+        local missingAddon = self.GetMissingAddon and self:GetMissingAddon(ach) or nil
+        local enabled = self.IsAvailable and self:IsAvailable(ach) or true
+        local disabled = missingAddon ~= nil or not enabled
         local categoryMatch = panel.category == "ALL" or panel.category == ach.category
         local classMatch = panel.category ~= "CLASSES" or panel.classFilter == "ALL" or ach.classToken == panel.classFilter
         local statusMatch = panel.status == "ALL" or (panel.status == "COMPLETED" and complete) or (panel.status == "INCOMPLETE" and not complete)
@@ -988,11 +993,20 @@ function A:RefreshDrawerPanel(drawer, helpers, resetScroll)
             local tierText = ach.tierName or ("Tier " .. tostring(ach.tier))
             local categoryLabel = self.categoryNames[ach.category] or ach.category
             if ach.classToken then categoryLabel = categoryLabel .. " · " .. ach.classToken end
-            row.title:SetText((complete and "✓ " or "") .. ach.title .. "  ·  " .. upper(tierText) .. "  ·  " .. categoryLabel)
+            local label = (complete and "✓ " or "") .. ach.title .. "  ·  " .. upper(tierText) .. "  ·  " .. categoryLabel
+            if missingAddon then label = label .. "  ·  REQUIRES " .. upper(missingAddon)
+            elseif disabled then label = label .. "  ·  MODULE OFF" end
+            row.title:SetText(label)
             row.detail:SetText(ach.description)
             row.progress:SetText(complete and "COMPLETED" or (formatNumber(min(value,ach.goal)) .. "/" .. formatNumber(ach.goal)))
             row.reward:SetText("+" .. ach.coins .. " coins · +" .. ach.xp .. " XP")
             applyBackdrop(row, complete and darken(colors.green,0.58) or colors.panelSoft, complete and colors.green or colors.border)
+            if disabled and not complete then
+                row.title:SetTextColor(colors.muted[1], colors.muted[2], colors.muted[3], 1)
+            else
+                row.title:SetTextColor(complete and colors.green[1] or colors.text[1], complete and colors.green[2] or colors.text[2], complete and colors.green[3] or colors.text[3], 1)
+            end
+            row:SetAlpha(disabled and not complete and 0.55 or 1)
             row:Show()
         else row:Hide() end
     end

@@ -79,6 +79,7 @@ end
 loadProductionFile("shared/Suite.lua", "CreshCollect", {})
 
 local CG = { version = "0.2.3" }
+loadProductionFile("addons/CreshGames/CreshGames.lua", "CreshGames", CG)
 loadProductionFile("addons/CreshGames/CardDeckLibrary.lua", "CreshGames", CG)
 loadProductionFile("addons/CreshGames/CardDecks.lua", "CreshGames", CG)
 
@@ -88,9 +89,8 @@ _G.CreshCollectDatabase.Init()
 loadProductionFile("addons/CreshCollect/CreshCollect.lua", "CreshCollect", COL)
 loadProductionFile("addons/CreshCollect/BattlePass.lua", "CreshCollect", COL)
 
--- BattlePass.lua reads CC.CardDecks through the deferred _G.CreshChat proxy,
--- exactly like the real bridge would populate it.
-_G.CreshChat = { CardDecks = CG.CardDecks }
+-- BattlePass communicates through the guarded CreshGamesAPI registered by
+-- CreshGames.lua; no private cross-addon table bridge is needed.
 
 if not COL.BattlePass or not CG.CardDecks then
     print("FATAL: BattlePass / CardDecks not found after loading production files")
@@ -104,7 +104,12 @@ local function freshState()
 end
 
 -- ============================================================
--- 1. The exact reported crash: a claimed tier matching a premium deck
+-- 1. The exact reported crash: a claimed tier matching a premium deck.
+--    Phase 10 note: CreshCollect's Battle Pass no longer syncs ANY reward
+--    into CreshGames (card decks/Tetris themes are CreshGames' own Battle
+--    Pass's rewards now, see addons/CreshGames/GamesBattlePass.lua) -- so
+--    Pass:Ensure() no longer calls into CardDecks at all, which removes this
+--    half of the original cycle entirely rather than merely guarding it.
 -- ============================================================
 section("Pass:Ensure() does not recurse when a claimed Battle Pass tier matches a premium deck")
 freshState()
@@ -119,16 +124,21 @@ CreshCollectDB.arcadeRewards.claimed["5"] = true
 
 local okEnsure, resultOrErr = pcall(function() return COL.BattlePass:Ensure() end)
 ok(okEnsure == true, "Pass:Ensure() returns without a stack overflow (err: " .. tostring(not okEnsure and resultOrErr or "") .. ")")
-ok(COL.BattlePass._ensuring == false, "re-entrancy guard resets to false after the call completes")
 
 -- ============================================================
--- 2. The backfill side effect still actually happens (no silent regression)
+-- 2. Decoupling confirmed: a CreshCollect pass claim no longer reaches into
+--    CreshGames' card decks at all (that link was intentionally removed).
 -- ============================================================
-section("The CardDecks backfill/publish side effect still runs (fix must not just delete the feature)")
-ok(CreshGamesDB.cardDecks.unlocked[firstDeckKey] == true, "the deck matching the claimed tier is unlocked in CreshGamesDB")
+section("CreshCollect's Battle Pass claim no longer backfills CreshGames card decks (intentional decoupling)")
+ok((CreshGamesDB.cardDecks.unlocked or {})[firstDeckKey] ~= true, "the deck stays locked from CreshCollect's claim alone -- decks now come from CreshGames' own pass")
 
 -- ============================================================
--- 3. Entering from the other side of the cycle also does not recurse
+-- 3. Entering from the other side of the cycle still does not recurse.
+--    CardDecks:Ensure() no longer queries CreshCollectAPI at all -- the
+--    legacy battlePassTier backfill (and BackfillFromClaimed/
+--    GetBattlePassReward) was removed as dead code once decks started
+--    unlocking directly from CreshGames' own pass (GamesBattlePass.lua).
+--    That closes off this half of the original cycle entirely too.
 -- ============================================================
 section("CardDecks:Ensure() called directly (the other half of the original cycle) does not recurse either")
 freshState()
@@ -136,36 +146,33 @@ if firstDeckInfo then firstDeckInfo.battlePassTier = 5 end
 CreshCollectDB.arcadeRewards.claimed["5"] = true
 local okDecks, errDecks = pcall(function() return CG.CardDecks:Ensure() end)
 ok(okDecks == true, "CardDecks:Ensure() returns without a stack overflow (err: " .. tostring(not okDecks and errDecks or "") .. ")")
+ok((CreshGamesDB.cardDecks.unlocked or {})[firstDeckKey] ~= true, "CardDecks:Ensure() no longer backfills from CreshCollect's claimed tiers at all")
 
 -- ============================================================
--- 3b. A THIRD entry point into the same cycle: Pass:ClaimReward() (a fresh,
---     user-triggered top-level call, not nested inside Pass:Ensure() the
---     way BackfillFromClaimed is) calls CardDecks:UnlockDeck(), which walks
---     right back into CardDecks:Ensure() -> CreshCollectAPI ->
---     Pass:IsRewardClaimed() -> Pass:Ensure() again. This is a genuinely
---     different call shape than sections 1 and 3 above (the recursion is
---     entered fresh from OUTSIDE Pass:Ensure(), not from inside it), found
---     during the Phase 10 audit -- confirms the guard on Pass:Ensure()
---     itself stops re-entry regardless of which function triggers it.
+-- 3b. Pass:ClaimReward() (a fresh, user-triggered top-level call) no longer
+--     calls into CreshGames at all -- confirms the decoupling holds from
+--     this entry point too, not just Pass:Ensure().
 -- ============================================================
-section("Pass:ClaimReward() -> CardDecks:UnlockDeck() re-entering the cycle from a fresh (non-Ensure) entry point")
+section("Pass:ClaimReward() no longer reaches into CreshGames' card decks")
 freshState()
 if firstDeckInfo then firstDeckInfo.battlePassTier = 5 end
 CreshCollectDB.arcadeRewards.passXP = COL.BattlePass:GetCumulativeXP(5) + 10
 local okClaim, errClaim = pcall(function() return COL.BattlePass:ClaimReward(5) end)
 ok(okClaim == true, "Pass:ClaimReward(5) returns without a stack overflow (err: " .. tostring(not okClaim and errClaim or "") .. ")")
-ok(COL.BattlePass._ensuring == false, "guard resets to false after ClaimReward's nested Ensure() calls settle")
-ok(CreshGamesDB.cardDecks.unlocked[firstDeckKey] == true, "the deck reward from ClaimReward is still unlocked correctly")
+ok((CreshGamesDB.cardDecks.unlocked or {})[firstDeckKey] ~= true, "ClaimReward no longer unlocks a CreshGames card deck -- that reward moved to CreshGames' own pass")
 
 -- ============================================================
--- 4. Repeated calls never leave the guard stuck true
+-- 4. Repeated calls remain safe (no guard needed any more: Ensure() no
+--    longer calls anything that could re-enter it).
 -- ============================================================
-section("Repeated Ensure() calls never leave the re-entrancy guard stuck")
+section("Repeated Ensure() calls remain safe")
 freshState()
-for i = 1, 5 do
-    COL.BattlePass:Ensure()
+local okRepeat = true
+for _ = 1, 5 do
+    local runOk = pcall(function() COL.BattlePass:Ensure() end)
+    okRepeat = okRepeat and runOk
 end
-eq(COL.BattlePass._ensuring, false, "guard is false after 5 consecutive top-level Ensure() calls")
+ok(okRepeat, "5 consecutive top-level Ensure() calls all succeed without error")
 
 -- ============================================================
 -- 5. No claimed tiers at all (the common case): still no recursion, no crash

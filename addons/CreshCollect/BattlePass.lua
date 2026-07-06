@@ -19,6 +19,20 @@ local format = string.format
 
 Pass.themeOrder = { "UBUNTU", "WINDOWS_95", "MSN_MESSENGER", "WOW_CLASSIC", "ZLR" }
 
+local function isProductLoaded(name)
+    return (_G.CreshSuite and _G.CreshSuite.IsProductLoaded and _G.CreshSuite:IsProductLoaded(name)) == true
+end
+
+-- Card decks and Tetris themes are CreshGames' own Battle Pass rewards now
+-- (addons/CreshGames/BattlePass.lua) -- this pass stays exploration/
+-- achievement/quest driven and no longer grants game content. The nine
+-- levels that used to carry a deck/theme reward keep an equivalent bonus
+-- coin payout instead, so no reward slot goes empty for existing players.
+Pass.bonusRewardLevels = {
+    [10] = 150, [15] = 150, [25] = 200, [35] = 200, [40] = 250,
+    [55] = 300, [75] = 350, [95] = 400, [100] = 500,
+}
+
 Pass.levelNames = {
     "Arcade Initiate", "First Hop", "Lucky Draw", "Dungeon Scout", "Bronze Cache",
     "Opening Move", "River Reader", "Twenty-One", "Minion Recruit", "Silver Cache",
@@ -63,14 +77,13 @@ Pass.levelNames = {
     "Last Legend", "Timeless Champion", "Cresh Ascendant", "Immortal of Azeroth", "Grand Eternal Champion",
 }
 
-Pass.requirementRoutes = {
-    { game = "FROGGER", name = "Frogger", action = "PLAY FROGGER", hint = "Complete an endless Frogger run to earn Pass Points and Cresh Coins." },
-    { game = "DUNGEON", name = "Dungeon Dweller", action = "PLAY DUNGEON", hint = "Clear rooms, defeat bosses and extend a Dungeon Dweller run." },
-    { game = "CHESS", name = "Solo Chess", action = "PLAY CHESS", hint = "Play Solo Chess; stronger computer levels reward the same pass progress for a completed result." },
-    { game = "HOLDEM", name = "Texas Hold'em", action = "PLAY HOLDEM", hint = "Complete a Hold'em hand and build your persistent bankroll." },
-    { game = "BLACKJACK", name = "Blackjack", action = "PLAY BLACKJACK", hint = "Finish a Blackjack hand to add natural Battle Pass progress." },
-    { game = "HIGHERLOWER", name = "Higher or Lower", action = "PLAY HIGH/LOW", hint = "Build a streak in Higher or Lower and complete the round." },
-    { mode = "MULTIPLAYER", name = "Multiplayer", action = "FIND A RIVAL", hint = "Challenge an addon-ready friend. Multiplayer results award an additional Pass Point bonus." },
+-- Mini-games no longer feed this pass (Phase 10 split moved that funding to
+-- CreshGames' own Battle Pass) -- so this pass' one and only requirement
+-- route is world/exploration progress, regardless of whether CreshGames is
+-- installed.
+Pass.worldRequirementRoute = {
+    name = "World Progression", action = "KEEP EXPLORING",
+    hint = "Complete achievements, explore Azeroth, and defeat enemies to earn Pass Points.",
 }
 
 Pass.premiumThemes = {
@@ -79,40 +92,46 @@ Pass.premiumThemes = {
         price = 100,
         note = "Warm aubergine panels with vivid orange accents.",
         swatches = { {0.105,0.028,0.090,1}, {0.925,0.315,0.080,1}, {0.640,0.175,0.055,1} },
+        source = "SHOP", requiredAddon = "CreshChat",
     },
     WINDOWS_95 = {
         name = "Windows 95",
         price = 200,
         note = "Teal desktop surfaces with classic grey controls.",
         swatches = { {0.015,0.190,0.190,1}, {0.720,0.730,0.750,1}, {0.000,0.500,0.760,1} },
+        source = "SHOP", requiredAddon = "CreshChat",
     },
     MSN_MESSENGER = {
         name = "MSN Messenger",
         price = 300,
         note = "Bright blue messenger styling inspired by early chat clients.",
         swatches = { {0.025,0.060,0.115,1}, {0.090,0.650,1.000,1}, {0.055,0.385,0.720,1} },
+        source = "SHOP", requiredAddon = "CreshChat",
     },
     WOW_CLASSIC = {
         name = "WoW Classic",
         price = 400,
         note = "Bronze, parchment and gold surfaces for a classic Azeroth feel.",
         swatches = { {0.205,0.135,0.060,1}, {1.000,0.790,0.260,1}, {0.090,0.285,0.535,1} },
+        source = "SHOP", requiredAddon = "CreshChat",
     },
     ZLR = {
         name = "ZLR Arena",
         price = 500,
         note = "Blackened arena-tech panels, Q3A launcher text and red-orange glow.",
         swatches = { {0.012,0.016,0.020,1}, {0.940,0.205,0.035,1}, {0.405,0.060,0.028,1} },
+        source = "SHOP", requiredAddon = "CreshChat",
     },
 }
 
 local function paletteInfo(key, name, price, note, source, level)
-    local preset = CC.UI and CC.UI.THEME_PRESETS and CC.UI.THEME_PRESETS[key]
-    if not preset then return end
+    local apiInfo = _G.CreshChatAPI and _G.CreshChatAPI.GetThemeInfo and _G.CreshChatAPI.GetThemeInfo(key) or nil
+    local preset = apiInfo or (CC.UI and CC.UI.THEME_PRESETS and CC.UI.THEME_PRESETS[key])
+    local fallback = { {0.10,0.11,0.14,1}, {0.38,0.44,0.54,1}, {0.20,0.24,0.30,1} }
     Pass.premiumThemes[key] = {
-        name = name, price = price, note = note,
-        swatches = { preset.panel, preset.accent, preset.outgoing },
-        source = source or "SHOP", level = level,
+        name = (apiInfo and apiInfo.name) or name, price = price, note = note,
+        swatches = preset and { preset.panel, preset.accent, preset.outgoing } or fallback,
+        source = source or "SHOP", level = level, requiredAddon = "CreshChat",
     }
 end
 
@@ -150,11 +169,35 @@ Pass.passThemeRewards = {
     [170] = "SILVERMOON",          [180] = "BLACK_TEMPLE",     [190] = "SUNWELL",
     [200] = "DARK_PORTAL",
 }
+local PASS_THEME_NAMES = {
+    WESTFALL="Westfall", DUSKWOOD="Duskwood", THE_BARRENS="The Barrens", ASHENVALE="Ashenvale",
+    UNGORO="Un'Goro Crater", EASTERN_PLAGUELANDS="Eastern Plaguelands", TEROKKAR_FOREST="Terokkar Forest",
+    BLADES_EDGE="Blade's Edge Mountains", TEMPEST_KEEP="Tempest Keep", SERPENTSHRINE="Serpentshrine Cavern",
+    HELLFIRE_PENINSULA="Hellfire Peninsula", ZANGARMARSH="Zangarmarsh", NAGRAND="Nagrand",
+    NETHERSTORM="Netherstorm", SHADOWMOON_VALLEY="Shadowmoon Valley", SHATTRATH="Shattrath City",
+    SILVERMOON="Silvermoon City", BLACK_TEMPLE="Black Temple", SUNWELL="Sunwell Plateau", DARK_PORTAL="The Dark Portal",
+}
 for level = 10, 200, 10 do
     local key = Pass.passThemeRewards[level]
-    local name = CC.ThemeLibrary and CC.ThemeLibrary.display and CC.ThemeLibrary.display[key] or key
+    local name = PASS_THEME_NAMES[key] or key
     paletteInfo(key, name, 0, "Exclusive Battle Pass theme unlocked at Level " .. level .. ".", "PASS", level)
     Pass.themeOrder[#Pass.themeOrder + 1] = key
+end
+
+function Pass:RefreshThemeMetadata()
+    local chatAPI = _G.CreshChatAPI
+    if not chatAPI or not chatAPI.GetThemeInfo then return false end
+    local changed = false
+    for _, key in ipairs(self.themeOrder or {}) do
+        local info = self.premiumThemes[key]
+        local chatInfo = chatAPI.GetThemeInfo(key)
+        if info and chatInfo then
+            info.name = chatInfo.name or info.name
+            info.swatches = { chatInfo.panel, chatInfo.accent, chatInfo.outgoing }
+            changed = true
+        end
+    end
+    return changed
 end
 
 local function now()
@@ -202,23 +245,22 @@ function Pass:Ensure()
             save.themeUnlockSources[themeKey] = save.themeUnlockSources[themeKey] or ("PASS:" .. tostring(level))
         end
     end
-    -- Re-entrancy guard: CardDecks:BackfillFromClaimed -> CardDecks:Ensure ->
-    -- CreshCollectAPI.IsBattlePassRewardClaimed -> Pass:IsRewardClaimed calls
-    -- straight back into Pass:Ensure. Without this guard that is unbounded
-    -- mutual recursion (confirmed via in-game stack overflow); with it, the
-    -- re-entrant call just reads the already-normalized `save` above instead
-    -- of looping, and the backfill/publish side effect still runs exactly
-    -- once per top-level Ensure() call.
-    if not self._ensuring and CC.CardDecks and CC.CardDecks.BackfillFromClaimed then
-        self._ensuring = true
-        CC.CardDecks:BackfillFromClaimed(save.claimed)
-        self._ensuring = false
-    end
+    -- No CreshGames sync here any more: this pass no longer grants any
+    -- game-owned reward (see bonusRewardLevels above), so there is nothing
+    -- to keep in sync with CreshGames' card deck/Tetris theme state.
     return save
 end
 
 Pass.milestoneDefinitions = {
+    { key="WALK_1000", kind="WALK", goal=1000, coins=4, xp=4, title="First Thousand" },
+    { key="WALK_2000", kind="WALK", goal=2000, coins=4, xp=4, title="Road Tested" },
+    { key="WALK_3000", kind="WALK", goal=3000, coins=5, xp=5, title="Three Thousand Strong" },
+    { key="WALK_4000", kind="WALK", goal=4000, coins=5, xp=5, title="Four Thousand Footfalls" },
     { key="WALK_5000", kind="WALK", goal=5000, coins=10, xp=10, title="Trail Starter" },
+    { key="WALK_6000", kind="WALK", goal=6000, coins=6, xp=6, title="Six Thousand Strides" },
+    { key="WALK_7000", kind="WALK", goal=7000, coins=7, xp=7, title="Seven Thousand Steps" },
+    { key="WALK_8000", kind="WALK", goal=8000, coins=8, xp=8, title="Eight Thousand and Onward" },
+    { key="WALK_9000", kind="WALK", goal=9000, coins=9, xp=9, title="Nine Thousand Wanderings" },
     { key="WALK_10000", kind="WALK", goal=10000, coins=20, xp=15, title="Long Road" },
     { key="WALK_25000", kind="WALK", goal=25000, coins=40, xp=25, title="Zone Wanderer" },
     { key="WALK_50000", kind="WALK", goal=50000, coins=75, xp=40, title="Azeroth Walker" },
@@ -252,20 +294,39 @@ end
 function Pass:CheckMilestoneGoals(kind,value)
     local save=self:Ensure(); if not save then return end
     value=math.floor(math.max(0,tonumber(value) or 0))
+    local unlocked = 0
     for _,goal in ipairs(self.milestoneDefinitions) do
         if goal.kind==kind and value>=goal.goal and not save.milestoneGoals[goal.key] then
             save.milestoneGoals[goal.key]=true
+            unlocked = unlocked + 1
             self:AddCoins(goal.coins,"GOAL")
             self:AddPassXP(goal.xp,"MILESTONE",true)
             if CC.UI and CC.UI.ShowBattlePassToast then CC.UI:ShowBattlePassToast(goal.title, "+"..goal.coins.." Cresh Coins - +"..goal.xp.." Battle Pass XP", "BATTLEPASS", "BP:GOAL:"..tostring(goal.key)) end
         end
     end
-    self:RefreshDrawer()
+    -- Movement calls this every sample. Rebuilding the Battle Pass window and
+    -- its 200-level list when no goal changed caused the periodic frame hitch.
+    if unlocked > 0 then self:RefreshDrawer() end
+    return unlocked
 end
 function Pass:GetPassPanelHeight() return 446 + ((self.maxLevel or 100) * 55) end
 
 function Pass:IsPremiumTheme(theme)
     return self.premiumThemes[upper(tostring(theme or ""))] ~= nil
+end
+
+function Pass:GetThemeMissingAddon(theme)
+    local info = self.premiumThemes[upper(tostring(theme or ""))]
+    local addonName = info and info.requiredAddon or nil
+    if addonName and not isProductLoaded(addonName) then return addonName end
+    return nil
+end
+
+function Pass:IsThemeAvailable(theme)
+    local info = self.premiumThemes[upper(tostring(theme or ""))]
+    if not info then return false, nil end
+    local missingAddon = self:GetThemeMissingAddon(theme)
+    return missingAddon == nil, missingAddon
 end
 
 function Pass:IsThemeUnlocked(theme)
@@ -342,21 +403,20 @@ function Pass:GetReward(level)
     else
         coins = 15 + floor((level - 1) / 5) * 5
     end
+    -- Former game-reward levels keep an equivalent bonus coin payout instead
+    -- of a card deck/Tetris theme -- see the comment on bonusRewardLevels.
+    coins = coins + (self.bonusRewardLevels and self.bonusRewardLevels[level] or 0)
     local themeKey = self.passThemeRewards and self.passThemeRewards[level]
     local themeInfo = themeKey and self.premiumThemes[themeKey] or nil
-    local deckKey, deckInfo
-    if CC.CardDecks and CC.CardDecks.GetBattlePassReward then deckKey, deckInfo = CC.CardDecks:GetBattlePassReward(level) end
-    local tetrisThemeKey = CC.Tetris and CC.Tetris.mainPassThemeRewards and CC.Tetris.mainPassThemeRewards[level] or nil
-    local tetrisTheme = tetrisThemeKey and CC.Tetris and CC.Tetris.GetTheme and CC.Tetris:GetTheme(tetrisThemeKey) or nil
+    local themeMissingAddon
+    if themeKey then local _; _, themeMissingAddon = self:IsThemeAvailable(themeKey) end
     return {
         level = level, coins = coins,
         title = self.levelNames[level] or ("Battle Pass Level " .. level),
         themeKey = themeKey,
         themeName = themeInfo and themeInfo.name or nil,
-        deckKey = deckKey,
-        deckName = deckInfo and deckInfo.displayName or nil,
-        tetrisThemeKey = tetrisThemeKey,
-        tetrisThemeName = tetrisTheme and tetrisTheme.name or nil,
+        themeRequiredAddon = themeMissingAddon,
+        requiredAddonText = themeMissingAddon and upper(themeMissingAddon) or nil,
         -- F1: reward routing metadata
         sourceSystem = "WOW_BATTLE_PASS",
         sourceId     = "BATTLEPASS_LEVEL_" .. level,
@@ -364,9 +424,8 @@ function Pass:GetReward(level)
     }
 end
 
-function Pass:GetRequirementRoute(level)
-    level = floor(clamp(level, 1, self.maxLevel))
-    return self.requirementRoutes[((level - 1) % #self.requirementRoutes) + 1]
+function Pass:GetRequirementRoute()
+    return self.worldRequirementRoute
 end
 
 function Pass:GetRequirement(level)
@@ -377,7 +436,7 @@ function Pass:GetRequirement(level)
     local current = save and save.passXP or 0
     local needed = max(0, target - current)
     local reached = current >= target
-    local route = self:GetRequirementRoute(level)
+    local route = self:GetRequirementRoute()
     local detail
     if reached then
         local extras = ""
@@ -506,18 +565,10 @@ function Pass:ClaimReward(level, silent)
         save.unlockedThemes[reward.themeKey] = true
         save.themeUnlockSources[reward.themeKey] = "PASS:" .. tostring(level)
     end
-    if reward.deckKey and CC.CardDecks and CC.CardDecks.UnlockDeck then
-        CC.CardDecks:UnlockDeck(reward.deckKey, "PASS:" .. tostring(level), true)
-    end
-    if reward.tetrisThemeKey and CC.Tetris and CC.Tetris.UnlockTheme then
-        CC.Tetris:UnlockTheme(reward.tetrisThemeKey, "MAIN_PASS:" .. tostring(level), not silent, true)
-    end
-    save.recent = { text = "Level " .. level .. " unlocked", coins = reward.coins, theme = reward.themeKey, deck = reward.deckKey, at = now() }
+    save.recent = { text = "Level " .. level .. " unlocked", coins = reward.coins, theme = reward.themeKey, at = now() }
     if not silent and CC.Print then
         local extra = ""
         if reward.themeName then extra = extra .. " + " .. reward.themeName .. " theme" end
-        if reward.deckName then extra = extra .. " + " .. reward.deckName .. " card deck" end
-        if reward.tetrisThemeName then extra = extra .. " + " .. reward.tetrisThemeName .. " Tetris set" end
         CC:Print("Battle Pass Level " .. level .. " unlocked: +" .. reward.coins .. " Cresh Coins" .. extra .. ".")
     end
     if not silent then
@@ -623,6 +674,11 @@ function Pass:BuyTheme(theme)
     local info = self.premiumThemes[theme]
     local save = self:Ensure()
     if not info or not save then return false end
+    local available, missingAddon = self:IsThemeAvailable(theme)
+    if not available then
+        if CC.Print then CC:Print(info.name .. " requires " .. tostring(missingAddon) .. " to be enabled before it can be unlocked or equipped.") end
+        return false
+    end
     if save.unlockedThemes[theme] then
         if CC.UI and CC.UI.ApplyThemePreset then CC.UI:ApplyThemePreset(theme) end
         self:RefreshDrawer()
@@ -694,7 +750,7 @@ end
 
 function Pass:ToggleThemePreview(theme)
     theme = upper(tostring(theme or ""))
-    if not self.premiumThemes[theme] or not CC.UI then return false end
+    if not self.premiumThemes[theme] or not self:IsThemeAvailable(theme) or not CC.UI then return false end
     self.selectedTheme = theme
     local drawer = CC.UI.gameDrawer
     local savedScroll = drawer and drawer.scroll and drawer.scroll:GetVerticalScroll() or nil
@@ -771,17 +827,20 @@ function Pass:PopulatePassRow(row, level, save, api)
     row.title:SetText(reward.title .. "  ·  +" .. reward.coins .. " coins"
         .. (reward.themeName       and ("  ·  THEME: "  .. reward.themeName)       or "")
         .. (reward.deckName        and ("  ·  DECK: "   .. reward.deckName)         or "")
-        .. (reward.tetrisThemeName and ("  ·  TETRIS: " .. reward.tetrisThemeName)  or ""))
+        .. (reward.tetrisThemeName and ("  ·  TETRIS: " .. reward.tetrisThemeName)  or "")
+        .. (reward.requiredAddonText and ("  ·  REQUIRES " .. reward.requiredAddonText) or ""))
 
     local borderColor = selected and (colors.quest or colors.blue) or colors.border
     if claimed then
-        row.detail:SetText(selected and "Unlocked · selected" or "Unlocked")
+        row.detail:SetText(reward.requiredAddonText and "Claimed · pending cosmetics activate when their addons are enabled"
+            or (selected and "Unlocked · selected" or "Unlocked"))
         row.button.label:SetText("OWNED")
         setButtonEnabled(row.button, false)
         applyBackdrop(row, darken(colors.green, 0.72),
             selected and (colors.quest or colors.blue) or colors.green)
     elseif reached then
-        row.detail:SetText(selected and "Ready to unlock · selected" or "Ready to unlock")
+        row.detail:SetText(reward.requiredAddonText and "Ready to claim · unavailable cosmetics will be banked safely"
+            or (selected and "Ready to unlock · selected" or "Ready to unlock"))
         row.button.label:SetText("UNLOCK NOW")
         setButtonEnabled(row.button, true)
         if setAccent then setAccent(row.button, colors.green) end
@@ -790,6 +849,7 @@ function Pass:PopulatePassRow(row, level, save, api)
     else
         local need = max(0, self:GetCumulativeXP(level) - save.passXP)
         row.detail:SetText(formatNumber(need) .. " points required"
+            .. (reward.requiredAddonText and (" · cosmetics require " .. reward.requiredAddonText) or "")
             .. (selected and " · selected" or ""))
         row.button.label:SetText("VIEW GOAL")
         setButtonEnabled(row.button, true)
@@ -799,6 +859,8 @@ function Pass:PopulatePassRow(row, level, save, api)
             or (milestone and colors.blue or borderColor)
         applyBackdrop(row, base, edge)
     end
+    local titleColor = reward.requiredAddonText and colors.muted or colors.text
+    row.title:SetTextColor(titleColor[1], titleColor[2], titleColor[3], 1)
 end
 
 -- Positions and (conditionally) repopulates pool frames to cover the viewport.
@@ -857,7 +919,9 @@ function Pass:ScrollToPassLevel(drawer, level)
 end
 
 function Pass:BuildDrawerPanels(drawer, api)
-    if not drawer or not api or drawer.passPanel then return end
+    if not drawer or not api then return end
+    self:RefreshThemeMetadata()
+    if drawer.passPanel then return end
     local createButton = api.createButton
     local createFont = api.createFont
     local applyBackdrop = api.applyBackdrop
@@ -1221,6 +1285,7 @@ function Pass:RefreshDrawerPanel(drawer, api)
 
                 local previewing = previewActive and previewName == theme
                 local selected = self.selectedTheme == theme
+                local available, missingAddon = self:IsThemeAvailable(theme)
                 if previewing then
                     if info.source == "PASS" and info.level then
                         row.price:SetText("PREVIEW ACTIVE · BATTLE PASS LEVEL " .. tostring(info.level))
@@ -1232,18 +1297,28 @@ function Pass:RefreshDrawerPanel(drawer, api)
                 else
                     row.price:SetText(formatNumber(info.price) .. " CRESH COINS")
                 end
-                if row.preview then
+                if not available then
+                    row.price:SetText("REQUIRES " .. upper(tostring(missingAddon or "ADDON")))
+                    row.title:SetTextColor(colors.muted[1], colors.muted[2], colors.muted[3], 1)
+                    row:SetAlpha(0.55)
+                    if row.preview then row.preview.label:SetText("UNAVAILABLE"); setButtonEnabled(row.preview, false) end
+                    row.button.label:SetText("ADDON OFF")
+                    setButtonEnabled(row.button, false)
+                    applyBackdrop(row, colors.panelSoft, colors.muted)
+                elseif row.preview then
+                    row.title:SetTextColor(colors.text[1], colors.text[2], colors.text[3], 1)
+                    row:SetAlpha(1)
                     row.preview.label:SetText(previewing and "REVERT" or "PREVIEW")
                     setButtonEnabled(row.preview, true)
                     if setAccent then setAccent(row.preview, previewing and colors.green or (colors.quest or colors.blue)) end
                 end
-                if info.source == "PASS" and info.level then
+                if available and info.source == "PASS" and info.level then
                     local reached = self:IsLevelReached(info.level)
                     row.button.label:SetText(reached and "VIEW REWARD" or "VIEW LEVEL")
                     setButtonEnabled(row.button, true)
                     if setAccent then setAccent(row.button, reached and colors.green or (colors.quest or colors.blue)) end
                     applyBackdrop(row, colors.panelSoft, (previewing or selected) and (colors.quest or colors.blue) or colors.border)
-                else
+                elseif available then
                     local canBuy = save.coins >= info.price
                     row.button.label:SetText(canBuy and "UNLOCK NOW" or ("NEED " .. formatNumber(info.price - save.coins)))
                     setButtonEnabled(row.button, canBuy)
@@ -1649,11 +1724,10 @@ function Pass:RefreshWindow()
     self.windowHero.progress:SetValue(level >= self.maxLevel and required or current)
     self.windowHero.progressText:SetText(level >= self.maxLevel and "BATTLE PASS COMPLETE"
         or (formatNumber(current) .. " / " .. formatNumber(required) .. " POINTS TO LEVEL " .. (level + 1)))
-    if _G.CreshSuite and _G.CreshSuite:IsProductLoaded("CreshGames") then
-        self.windowHero.notice:SetText("")
-    else
-        self.windowHero.notice:SetText("Card deck and Tetris theme rewards require CreshGames.")
-    end
+    local missing = {}
+    if not isProductLoaded("CreshChat") then missing[#missing + 1] = "chat themes require CreshChat" end
+    if not isProductLoaded("CreshGames") then missing[#missing + 1] = "card decks and Tetris themes require CreshGames" end
+    self.windowHero.notice:SetText(#missing > 0 and (table.concat(missing, " · ") .. ". Claims are banked until those addons are enabled.") or "")
 
     if not self.windowSelectedLevel then
         self.windowSelectedLevel = min(self.maxLevel, max(1, level + (self:IsRewardClaimed(level) and 1 or 0)))

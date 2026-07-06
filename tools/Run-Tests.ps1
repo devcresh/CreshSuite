@@ -70,6 +70,14 @@ $Suites = @(
         )
     },
     @{
+        Label = "Progression Performance Tests"
+        Args  = @(
+            (Join-Path $RepoRoot "tests\ProgressionPerformanceTests.lua"),
+            (Join-Path $RepoRoot "addons\CreshCollect\Progression.lua"),
+            (Join-Path $RepoRoot "addons\CreshCollect\BattlePass.lua")
+        )
+    },
+    @{
         Label = "Progression Window Tests"
         Args  = @(
             (Join-Path $RepoRoot "tests\ProgressionWindowTests.lua"),
@@ -90,7 +98,21 @@ $Suites = @(
         Label = "Launcher Routing Tests"
         Args  = @(
             (Join-Path $RepoRoot "tests\LauncherRoutingTests.lua"),
-            (Join-Path $RepoRoot "addons\CreshChat\UI.lua")
+            (Join-Path $RepoRoot "shared\Launcher.lua")
+        )
+    },
+    @{
+        Label = "Launcher Layout Tests"
+        Args  = @(
+            (Join-Path $RepoRoot "tests\LauncherLayoutTests.lua"),
+            (Join-Path $RepoRoot "shared\Launcher.lua")
+        )
+    },
+    @{
+        Label = "Launcher Animation Tests"
+        Args  = @(
+            (Join-Path $RepoRoot "tests\LauncherAnimationTests.lua"),
+            (Join-Path $RepoRoot "shared\Launcher.lua")
         )
     },
     @{

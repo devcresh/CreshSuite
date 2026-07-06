@@ -8,6 +8,7 @@
 Suite.lua
 CreshGamesDatabase.lua
 CreshGames.lua
+Launcher.lua
 GameAudio.lua
 CardDeckLibrary.lua
 CardDecks.lua
@@ -15,6 +16,8 @@ ChessTextureManifest.lua
 DungeonDwellersAssetSets.lua
 DungeonCrawlerContent.lua
 TetrisThemes.lua
+GamesBattlePass.lua
+GameProgression.lua
 Games.lua
 SoloGames.lua
 DungeonDwellersProgression.lua

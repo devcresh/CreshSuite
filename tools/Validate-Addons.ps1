@@ -130,7 +130,7 @@ else                                                    { Warn "shared\Suite.lua
 # ---------------------------------------------------------------------------
 $allTocEntries  = @{}    # addonName -> list of declared relative paths
 $knownFileOwner = @{}    # normalized-path -> first owner
-$SharedFiles    = @("Suite.lua")
+$SharedFiles    = @("Suite.lua", "Launcher.lua")
 
 # Cross-addon global frame registry: globalName -> "AddonName/File.lua:line"
 $globalFrames = @{}
@@ -312,6 +312,10 @@ foreach ($name in $addonNames) {
         $absPath = Join-Path $addonDir $rel
         $lines   = ReadLines $absPath
         $lineNo  = 0
+        # Shared bootstrap files (Suite.lua, Launcher.lua) are the same
+        # physical copy in all three addons -- their global frame(s) and any
+        # slash commands are intentionally declared identically everywhere.
+        $isSharedFile = $SharedFiles -contains $rel
         foreach ($rawLine in $lines) {
             $lineNo++
             $line = $rawLine
@@ -319,8 +323,11 @@ foreach ($name in $addonNames) {
             # 6a. Named global frames
             if ($line -match 'CreateFrame\s*\(\s*"[^"]*"\s*,\s*"([A-Za-z][^"]*?)"') {
                 $gName = $Matches[1].Trim()
-                # Suite.lua CreshSuiteBridgeFrame is intentionally shared
+                # Suite.lua's CreshSuiteBridgeFrame and Launcher.lua's shared
+                # launcher frames are intentionally the same physical copy in
+                # all three addons -- see $SharedFiles above.
                 if ($gName -eq "CreshSuiteBridgeFrame") { continue }
+                if ($gName -eq "CreshSuiteLauncherBubble") { continue }
                 $tag = "$name/${rel}:$lineNo"
                 if ($globalFrames.ContainsKey($gName)) {
                     Fail "Duplicate global frame '$gName': first in $($globalFrames[$gName]), again in $tag"
@@ -330,7 +337,7 @@ foreach ($name in $addonNames) {
             }
 
             # 7. Slash commands
-            if ($line -match 'SLASH_([A-Z0-9_]+)\s*=\s*"') {
+            if (-not $isSharedFile -and $line -match 'SLASH_([A-Z0-9_]+)\s*=\s*"') {
                 $cmd = $Matches[1]
                 $tag = "$name/${rel}:$lineNo"
                 if ($slashCmds.ContainsKey($cmd)) {
@@ -339,7 +346,7 @@ foreach ($name in $addonNames) {
                     $slashCmds[$cmd] = $tag
                 }
             }
-            if ($line -match 'SlashCmdList\["([^"]+)"\]\s*=') {
+            if (-not $isSharedFile -and $line -match 'SlashCmdList\["([^"]+)"\]\s*=') {
                 $cmd = "SlashCmdList[$($Matches[1])]"
                 $tag = "$name/${rel}:$lineNo"
                 if ($slashCmds.ContainsKey($cmd)) {
@@ -409,7 +416,13 @@ foreach ($name in $addonNames) {
         $xdbErrors = 0
         foreach ($rel in $declared) {
             if ($rel -notmatch '\.lua$') { continue }
-            if ($rel -ieq "Suite.lua")   { continue }
+            # Suite.lua and Launcher.lua are shared, addon-agnostic bootstrap
+            # files (one physical copy per addon, see $SharedFiles) -- they
+            # probe whichever SavedVariables table happens to exist purely to
+            # find a home for shared bridge/launcher state, the same
+            # cross-addon-aware role Suite.lua already plays. Neither reaches
+            # into another addon's data on the addon's behalf.
+            if ($SharedFiles -contains $rel) { continue }
             $lines = ReadLines (Join-Path $addonDir $rel)
             $lineNo = 0
             foreach ($line in $lines) {
@@ -428,7 +441,7 @@ foreach ($name in $addonNames) {
         $xdbErrors = 0
         foreach ($rel in $declared) {
             if ($rel -notmatch '\.lua$') { continue }
-            if ($rel -ieq "Suite.lua")   { continue }
+            if ($SharedFiles -contains $rel) { continue }
             $lines = ReadLines (Join-Path $addonDir $rel)
             $lineNo = 0
             foreach ($line in $lines) {

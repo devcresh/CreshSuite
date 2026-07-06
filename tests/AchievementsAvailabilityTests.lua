@@ -69,13 +69,15 @@ local COL = { version = "0.2.3" }
 loadProductionFile(achievementsPath, "CreshCollect", COL)
 
 local Achievements = COL.Achievements
-if not Achievements or not Achievements._TESTONLY_CategoryMissingAddon or not Achievements._TESTONLY_IsCategoryEnabled then
+if not Achievements or not Achievements._TESTONLY_CategoryMissingAddon or not Achievements._TESTONLY_IsCategoryEnabled
+    or not Achievements._TESTONLY_AchievementMissingAddon then
     print("FATAL: CreshCollect.Achievements / _TESTONLY_ hooks not found after loading Achievements.lua")
     os.exit(2)
 end
 
 local categoryMissingAddon = Achievements._TESTONLY_CategoryMissingAddon
 local isCategoryEnabled = Achievements._TESTONLY_IsCategoryEnabled
+local achievementMissingAddon = Achievements._TESTONLY_AchievementMissingAddon
 
 -- ============================================================
 -- 1. categoryMissingAddon
@@ -96,6 +98,17 @@ _G.CreshSuite = {
 ok(categoryMissingAddon("GAMES") == "CreshGames", "GAMES still reported missing when CreshSuite exists but CreshGames isn't registered")
 _G.CreshSuite._loaded.CRESHGAMES = true
 ok(categoryMissingAddon("GAMES") == nil, "GAMES reports no missing addon once CreshGames is registered")
+
+section("per-achievement addon requirements")
+_G.CreshSuite._loaded.CRESHCHAT = nil
+ok(achievementMissingAddon({ category = "COMMUNITY", requiredAddon = "CreshChat" }) == "CreshChat",
+    "an individual CreshChat achievement reports CreshChat missing")
+_G.CreshSuite._loaded.CRESHCHAT = true
+ok(achievementMissingAddon({ category = "COMMUNITY", requiredAddon = "CreshChat" }) == nil,
+    "the individual achievement becomes available when CreshChat is registered")
+_G.CreshSuite._loaded.CRESHGAMES = nil
+ok(achievementMissingAddon({ category = "GAMES" }) == "CreshGames",
+    "category-owned requirements still apply when no item override is present")
 
 -- ============================================================
 -- 2. isCategoryEnabled (feature-flag path, unaffected by addon presence)

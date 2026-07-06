@@ -20,6 +20,16 @@ local unpack = unpack or table.unpack
 
 local EIGHTBIT_GAME_ICON_ROOT = "Interface\\AddOns\\CreshGames\\Media\\Games\\Icons8Bit\\"
 
+-- CreshGames must work fully without CreshChat: only defer to CreshChat's
+-- own "games" feature toggle when CreshChat is actually loaded (respecting
+-- the user's choice there); otherwise Solo Games is simply on, since
+-- CreshGames being enabled at all is what turns its own games on.
+local function gamesFeatureEnabled()
+    local cc = _G.CreshChat
+    if not (cc and cc.IsFeatureEnabled) then return true end
+    return cc:IsFeatureEnabled("games") == true
+end
+
 local function now()
     if type(GetTime) == "function" then return GetTime() end
     if type(time) == "function" then return time() end
@@ -880,12 +890,12 @@ function Solo:ShowHub()
 end
 
 function Solo:OpenHub()
-    if not (CC.IsFeatureEnabled and CC:IsFeatureEnabled("games")) then return end
+    if not gamesFeatureEnabled() then return end
     self:ShowHub()
 end
 
 function Solo:StartGame(game)
-    if not (CC.IsFeatureEnabled and CC:IsFeatureEnabled("games")) then return false end
+    if not gamesFeatureEnabled() then return false end
     game = upper(tostring(game or ""))
     local builder = self["Build" .. game .. "View"]
     if not builder then return false end
@@ -914,7 +924,7 @@ function Solo:StartGame(game)
 end
 
 function Solo:OpenDungeonDwellers(mode)
-    if not (CC.IsFeatureEnabled and CC:IsFeatureEnabled("games")) then return false end
+    if not gamesFeatureEnabled() then return false end
     local frame = self:BuildWindow()
     if CC.UI and CC.UI.CloseGameDrawer then CC.UI:CloseGameDrawer(true) end
     self:HideViews()

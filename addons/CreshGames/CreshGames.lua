@@ -30,8 +30,30 @@ end
 -- Suite registration
 -- -----------------------------------------------------------------------
 local Suite = _G.CreshSuite
+local API = _G.CreshGamesAPI or {}
+
+function API.IsLoaded() return true end
+function API.GetVersion() return CG.version end
+
+-- Public entry point for CreshGames' own Battle Pass (addons/CreshGames/
+-- BattlePass.lua): in-game level-up events pay coins/XP into it through
+-- here, rather than any other addon reaching into CG.BattlePass directly.
+function API.AddBattlePassCoins(amount, source)
+    if CG.BattlePass and CG.BattlePass.AddCoins then return CG.BattlePass:AddCoins(amount, source) end
+    return 0
+end
+
+function API.AddBattlePassXP(amount, source, silent)
+    if CG.BattlePass and CG.BattlePass.AddXP then return CG.BattlePass:AddXP(amount, source, silent) end
+    return 0
+end
+
+_G.CreshGamesAPI = API
 if Suite then
-    Suite:RegisterProduct("CreshGames", CG.version, {})
+    Suite:RegisterProduct("CreshGames", CG.version, API)
+    Suite:RegisterService("OpenGamesBattlePass", function()
+        if CG.BattlePass and CG.BattlePass.ToggleWindow then CG.BattlePass:ToggleWindow() end
+    end)
 
     -- Formal "open this feature" contract for CreshChat's commands and launcher
     -- buttons, so they can ask "is CreshGames able to do this?" via the Suite
@@ -87,6 +109,16 @@ local function bridgeToCreshChat()
     CC.Games               = CG.Games
     CC.SoloGames           = CG.SoloGames
     CC.DungeonDwellersPass = CG.DungeonDwellersPass
+    -- Per-game level/XP tracking moved here from CreshCollect (Phase 10) so
+    -- it works without CreshCollect installed; still bridged onto CC.* so
+    -- existing CC.GameProgression references elsewhere keep working.
+    -- NOTE: CC.BattlePass is deliberately NOT bridged to CG.BattlePass here
+    -- -- CreshCollect's own bridge (CreshCollect.lua) owns that key for its
+    -- 200-level pass UI (drawer panels, themes, wallet display in CreshChat/
+    -- UI.lua, Settings.lua, Developer.lua). CreshGames' own Battle Pass is
+    -- reached as CG.BattlePass (same-addon) or via CreshGamesAPI, never
+    -- through the shared CC.BattlePass key.
+    CC.GameProgression     = CG.GameProgression
 end
 
 -- -----------------------------------------------------------------------
@@ -113,6 +145,12 @@ _eventFrame:SetScript("OnEvent", function(_, event, ...)
 
         -- Final bridge pass (covers load-order edge cases).
         bridgeToCreshChat()
+
+        -- Ensure the shared launcher exists even when CreshChat is absent --
+        -- idempotent, a no-op if another addon already built it.
+        if _G.CreshSuiteLauncherAPI and _G.CreshSuiteLauncherAPI.EnsureBuilt then
+            _G.CreshSuiteLauncherAPI:EnsureBuilt()
+        end
 
         local CC = _G.CreshChat
         if CC and CC.Notifications then

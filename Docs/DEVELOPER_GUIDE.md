@@ -1,6 +1,6 @@
 # CreshChat Developer Guide — v0.3.56
 
-CreshChat uses one addon namespace (`CC`) loaded by `Core.lua`. Modules register through `CC:RegisterModule`. SavedVariables use `CreshChatDB` at schema 75. Account-wide Battle Pass, Cresh Coins, games, unlocks and all 531 achievements live in the shared progression store; character profiles retain interface placement and profile-specific chat presentation. Schema migrations preserve existing data and expose compatibility aliases only where older modules still require them.
+CreshChat uses one addon namespace (`CC`) loaded by `Core.lua`. Modules register through `CC:RegisterModule`. SavedVariables use `CreshChatDB` at schema 75. Account-wide Battle Pass, Cresh Coins, games, unlocks and all 537 achievements live in the shared progression store; character profiles retain interface placement and profile-specific chat presentation. Schema migrations preserve existing data and expose compatibility aliases only where older modules still require them.
 
 ## Tetris ownership and rewards
 `TetrisThemes.lua` owns the 100-set catalogue, 70-background reveal rotation, 1,000-level speed curve, stable keys, ownership checks, selected set and 100-level Tetris Pass. Do not store full palettes in SavedVariables. Add new sets to the catalogue with a unique key and a supported source (`DEFAULT`, `GAME_LEVEL`, `TETRIS_PASS`, `MAIN_PASS`).

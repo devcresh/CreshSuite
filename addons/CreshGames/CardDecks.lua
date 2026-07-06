@@ -73,22 +73,6 @@ function Decks:Ensure()
     save.unlockSources[self.defaultDeck] = save.unlockSources[self.defaultDeck] or "DEFAULT"
     save.unlockSources[save.starterDeck] = save.unlockSources[save.starterDeck] or "RANDOM_STARTER"
 
-    -- Main Battle Pass claim state is authoritative in CreshCollect, not a
-    -- local copy here. Query it live through the guarded CreshCollectAPI so
-    -- this never drifts from a stale snapshot; if CreshCollect isn't
-    -- installed, premium decks simply stay unsynced until it is.
-    local collectAPI = _G.CreshCollectAPI
-    if collectAPI then
-        for _, deckKey in ipairs(self.premiumOrder) do
-            local info = self:GetDeckInfo(deckKey)
-            local tier = info and tonumber(info.battlePassTier)
-            if deckKey ~= save.starterDeck and tier and collectAPI.IsBattlePassRewardClaimed(tier) then
-                save.unlocked[deckKey] = true
-                save.unlockSources[deckKey] = save.unlockSources[deckKey] or ("PASS:" .. tostring(tier))
-            end
-        end
-    end
-
     for _, gameKey in ipairs(self.gameKeys) do
         local selected = save.selected[gameKey]
         if not self:GetDeckInfo(selected) or save.unlocked[selected] ~= true then
@@ -123,32 +107,6 @@ function Decks:UnlockDeck(deckKey, source, silent)
         end
     end
     return newlyUnlocked
-end
-
-function Decks:BackfillFromClaimed(claimed)
-    if type(claimed) ~= "table" then return end
-    local save = self:Ensure()
-    if not save then return end
-    for _, deckKey in ipairs(self.premiumOrder) do
-        local info = self:GetDeckInfo(deckKey)
-        local tier = info and tonumber(info.battlePassTier)
-        if deckKey ~= save.starterDeck and tier and claimed[tostring(tier)] then
-            self:UnlockDeck(deckKey, "PASS:" .. tostring(tier), true)
-        end
-    end
-end
-
-function Decks:GetBattlePassReward(level)
-    local save = self:Ensure()
-    level = tonumber(level)
-    if not save or not level then return nil end
-    for _, deckKey in ipairs(self.premiumOrder) do
-        local info = self:GetDeckInfo(deckKey)
-        if deckKey ~= save.starterDeck and info and tonumber(info.battlePassTier) == level then
-            return deckKey, info
-        end
-    end
-    return nil
 end
 
 function Decks:GetUnlockedOrder()

@@ -8,6 +8,7 @@
 Suite.lua
 CreshCollectDatabase.lua
 CreshCollect.lua
+Launcher.lua
 BattlePass.lua
 Progression.lua
 ProgressRouter.lua

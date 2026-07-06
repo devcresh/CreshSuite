@@ -14,6 +14,45 @@ CC.schemaVersion = CC.BUILD.schema
 CC.modules = CC.modules or {}
 CC.Assets = CC.Assets or {}
 
+-- Public, nil-safe integration surface for the other CreshSuite addons.
+-- Every method resolves the owning module at call time because Themes.lua and
+-- UI.lua load later in this TOC.  Cross-addon callers must use this API instead
+-- of reaching into the private CC table.
+local ChatAPI = _G.CreshChatAPI or {}
+function ChatAPI.IsLoaded() return true end
+function ChatAPI.GetVersion() return CC.version end
+function ChatAPI.GetThemeInfo(key)
+    key = string.upper(tostring(key or ""))
+    local library = CC.ThemeLibrary
+    local preset = (CC.UI and CC.UI.THEME_PRESETS and CC.UI.THEME_PRESETS[key])
+        or (library and library.presets and library.presets[key])
+    if not preset then return nil end
+    return {
+        key = key,
+        name = (library and library.display and library.display[key]) or key,
+        panel = preset.panel,
+        accent = preset.accent,
+        outgoing = preset.outgoing,
+    }
+end
+function ChatAPI.ApplyThemePreset(key)
+    return CC.UI and CC.UI.ApplyThemePreset and CC.UI:ApplyThemePreset(key) or false
+end
+function ChatAPI.PreviewThemePreset(key)
+    return CC.UI and CC.UI.PreviewThemePreset and CC.UI:PreviewThemePreset(key) or false
+end
+function ChatAPI.CancelThemePreview(silent)
+    return CC.UI and CC.UI.CancelThemePreview and CC.UI:CancelThemePreview(silent) or false
+end
+function ChatAPI.GetThemePreviewName()
+    return CC.UI and CC.UI.GetThemePreviewName and CC.UI:GetThemePreviewName() or nil
+end
+_G.CreshChatAPI = ChatAPI
+
+if _G.CreshSuite and _G.CreshSuite.RegisterProduct then
+    _G.CreshSuite:RegisterProduct("CreshChat", CC.version, ChatAPI)
+end
+
 function CC:RegisterModule(name, module)
     name = tostring(name or "")
     if name == "" or type(module) ~= "table" then return module end
@@ -4830,6 +4869,12 @@ eventFrame:SetScript("OnEvent", function(_, event, ...)
             CC:InstallChatBridge()
         end
         CC:ApplyBlizzardChatVisibility()
+        -- Ensure the shared launcher exists even if CreshGames/CreshCollect
+        -- load after CreshChat or aren't present at all -- idempotent, a
+        -- no-op if another addon already built it.
+        if _G.CreshSuiteLauncherAPI and _G.CreshSuiteLauncherAPI.EnsureBuilt then
+            _G.CreshSuiteLauncherAPI:EnsureBuilt()
+        end
         if CC.UI and CC.UI.Initialize then
             CC.UI:Initialize()
         end

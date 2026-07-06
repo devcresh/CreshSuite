@@ -63,10 +63,31 @@ local function categoryMissingAddon(category)
     if _G.CreshSuite and _G.CreshSuite:IsProductLoaded(addonName) then return nil end
     return addonName
 end
+
+local function achievementMissingAddon(achievement)
+    if type(achievement) ~= "table" then return nil end
+    local addonName = achievement.requiredAddon or categoryRequiredAddon[achievement.category]
+    if not addonName then return nil end
+    if _G.CreshSuite and _G.CreshSuite:IsProductLoaded(addonName) then return nil end
+    return addonName
+end
 -- Test-only hooks (see tests/AchievementsAvailabilityTests.lua) for the pure
 -- logic above; production code should call it only from RefreshDrawerPanel.
 Achievements._TESTONLY_CategoryMissingAddon = categoryMissingAddon
 Achievements._TESTONLY_IsCategoryEnabled = isCategoryEnabled
+Achievements._TESTONLY_AchievementMissingAddon = achievementMissingAddon
+
+function Achievements:GetMissingAddon(achievementOrKey)
+    local achievement = type(achievementOrKey) == "table" and achievementOrKey or self.byKey[tostring(achievementOrKey or "")]
+    return achievementMissingAddon(achievement)
+end
+
+function Achievements:IsAvailable(achievementOrKey)
+    local achievement = type(achievementOrKey) == "table" and achievementOrKey or self.byKey[tostring(achievementOrKey or "")]
+    if not achievement then return false, nil end
+    local missingAddon = achievementMissingAddon(achievement)
+    return missingAddon == nil and isCategoryEnabled(achievement.category), missingAddon
+end
 
 local function now()
     if type(_G.GetServerTime) == "function" then return _G.GetServerTime() end
@@ -149,11 +170,12 @@ function Achievements:BuildCatalog()
     if #self.catalog > 0 then return end
 
     addSeries(self, "EXPLORATION", "STEPS",
-        { 1000, 2000, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000 },
-        { "First Thousand", "Road Tested", "Trail Seeker", "Ten Thousand Steps", "Azeroth Rambler", "Long-Haul Adventurer", "World Walker", "Continental Trekker", "Half-Million Hero", "One Million Steps" },
+        { 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000 },
+        { "First Thousand", "Road Tested", "Three Thousand Strong", "Four Thousand Footfalls", "Trail Seeker", "Six Thousand Strides", "Seven Thousand Steps", "Eight Thousand and Onward", "Nine Thousand Wanderings", "Ten Thousand Steps", "Azeroth Rambler", "Long-Haul Adventurer", "World Walker", "Continental Trekker", "Half-Million Hero", "One Million Steps" },
         function(goal) return "Travel " .. formatNumber(goal) .. " estimated steps on foot or mount." end, 1,
-        { "ACH_WOW_STEPS_001", "ACH_WOW_STEPS_002", "ACH_WOW_STEPS_003", "ACH_WOW_STEPS_004", "ACH_WOW_STEPS_005",
-          "ACH_WOW_STEPS_006", "ACH_WOW_STEPS_007", "ACH_WOW_STEPS_008", "ACH_WOW_STEPS_009", "ACH_WOW_STEPS_010" })
+        { "ACH_WOW_STEPS_001", "ACH_WOW_STEPS_002", "ACH_WOW_STEPS_3000", "ACH_WOW_STEPS_4000", "ACH_WOW_STEPS_003",
+          "ACH_WOW_STEPS_6000", "ACH_WOW_STEPS_7000", "ACH_WOW_STEPS_8000", "ACH_WOW_STEPS_9000", "ACH_WOW_STEPS_004",
+          "ACH_WOW_STEPS_005", "ACH_WOW_STEPS_006", "ACH_WOW_STEPS_007", "ACH_WOW_STEPS_008", "ACH_WOW_STEPS_009", "ACH_WOW_STEPS_010" })
 
     addSeries(self, "EXPLORATION", "ZONES",
         { 1, 5, 10, 25, 50, 75, 100 },
@@ -511,9 +533,16 @@ function Achievements:EvaluateAll(silent)
     self.evaluating = true
     if silent then self.silentRewardBatch = { coins = 0, xp = 0 } end
     local unlocked = 0
+    local values = {}
     for _, achievement in ipairs(self.catalog) do
-        if not save.unlocked[achievement.key]
-            and self:GetStatForScope(achievement.stat, achievement.scope) >= achievement.goal then
+        local available = self:IsAvailable(achievement)
+        local valueKey = tostring(achievement.scope or "ACCOUNT_AGGREGATE") .. "\031" .. tostring(achievement.stat)
+        local value = values[valueKey]
+        if value == nil and available then
+            value = self:GetStatForScope(achievement.stat, achievement.scope)
+            values[valueKey] = value
+        end
+        if available and not save.unlocked[achievement.key] and value >= achievement.goal then
             if self:Unlock(achievement, silent) then unlocked = unlocked + 1 end
         end
     end
@@ -533,6 +562,42 @@ function Achievements:EvaluateAll(silent)
         -- standalone achievements window (see BuildWindow/RefreshWindow
         -- below) and the Progress Overview's achievements card, rather than
         -- adding a second, parallel event hook.
+        self:RefreshWindow()
+        if COL.ProgressOverview and COL.ProgressOverview.RefreshWindow then COL.ProgressOverview:RefreshWindow() end
+    end
+    return unlocked
+end
+
+-- Evaluate only achievements driven by one changed stat.  Movement uses this
+-- path so adding a handful of steps never scans and recomputes the full 500+
+-- achievement catalogue.
+function Achievements:EvaluateStat(stat, silent)
+    stat = tostring(stat or "")
+    if stat == "" then return 0 end
+    local save = self:Ensure()
+    if not save or self.evaluating then return 0 end
+    self.evaluating = true
+    if silent then self.silentRewardBatch = { coins = 0, xp = 0 } end
+    local unlocked, values = 0, {}
+    for _, achievement in ipairs(self.catalog) do
+        if achievement.stat == stat and not save.unlocked[achievement.key] and self:IsAvailable(achievement) then
+            local scope = tostring(achievement.scope or "ACCOUNT_AGGREGATE")
+            local value = values[scope]
+            if value == nil then
+                value = self:GetStatForScope(stat, achievement.scope)
+                values[scope] = value
+            end
+            if value >= achievement.goal and self:Unlock(achievement, silent) then unlocked = unlocked + 1 end
+        end
+    end
+    local batch = self.silentRewardBatch
+    self.silentRewardBatch = nil
+    self.evaluating = false
+    if silent and batch and COL.BattlePass then
+        if batch.coins > 0 and COL.BattlePass.AddCoins then COL.BattlePass:AddCoins(batch.coins, "ACHIEVEMENT") end
+        if batch.xp > 0 and COL.BattlePass.AddPassXP then COL.BattlePass:AddPassXP(batch.xp, "ACHIEVEMENT", true) end
+    end
+    if unlocked > 0 and not silent then
         self:RefreshWindow()
         if COL.ProgressOverview and COL.ProgressOverview.RefreshWindow then COL.ProgressOverview:RefreshWindow() end
     end
@@ -826,7 +891,7 @@ function Achievements:RefreshDrawerPanel(drawer, helpers, resetScroll)
     local y = 0
     for _, row in ipairs(panel.rows or {}) do
         local achievement = row.achievement
-        local missingAddon = categoryMissingAddon(achievement.category)
+        local missingAddon = achievementMissingAddon(achievement)
         local categoryMatch = panel.category == "ALL" or panel.category == achievement.category
         local enabledMatch = not panel.enabledOnly or (isCategoryEnabled(achievement.category) and not missingAddon)
         local haystack = lower(table.concat({ achievement.title, achievement.description, self.categoryNames[achievement.category] or achievement.category }, " "))
@@ -1230,7 +1295,7 @@ function Achievements:RefreshWindow()
     local y = 0
     for _, row in ipairs(self.windowRows or {}) do
         local achievement = row.achievement
-        local missingAddon = categoryMissingAddon(achievement.category)
+        local missingAddon = achievementMissingAddon(achievement)
         local categoryMatch = self.windowCategory == "ALL" or self.windowCategory == achievement.category
         local enabledMatch = not self.windowEnabledOnly or (isCategoryEnabled(achievement.category) and not missingAddon)
         local haystack = lower(table.concat({ achievement.title, achievement.description, self.categoryNames[achievement.category] or achievement.category }, " "))

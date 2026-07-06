@@ -4026,68 +4026,59 @@ function UI:IsLauncherCombatHidden()
     return false
 end
 
+-- ---------------------------------------------------------------------------
+-- Launcher ownership moved to shared/Launcher.lua (Phase 9): the bubble, its
+-- five destination satellites, orientation, positioning, and open/close
+-- animation are now built and owned by _G.CreshSuiteLauncherAPI, a singleton
+-- shared across CreshChat/CreshGames/CreshCollect so the launcher exists
+-- regardless of which of the three happens to be enabled. Everything below
+-- is a thin, nil-safe shim so the rest of this file (composer, combat panel,
+-- notification badges, Settings.lua's orientation dropdown, CreshCollect's
+-- RefreshLauncherButtonStates calls) keeps working unchanged.
+-- ---------------------------------------------------------------------------
 function UI:SetBubbleGroupShown(shown)
     shown = shown and true or false
-    local options = CC.db.ui or {}
-    local effectiveShown = shown and not self:IsLauncherCombatHidden()
-    if self.bubble then self.bubble:SetShown(effectiveShown) end
-    local expanded = options.launcherMode == "EXPANDED"
-    if self.whisperBubble then self.whisperBubble:SetShown(effectiveShown and expanded and options.showWhisperButton ~= false) end
-    if self.generalBubble then self.generalBubble:SetShown(effectiveShown and expanded and options.showGeneralButton ~= false) end
-    if self.combatBubble then self.combatBubble:SetShown(effectiveShown and expanded and options.showCombatButton ~= false) end
-    -- Module buttons are always visible when chat is disabled (they become the
-    -- primary launcher); otherwise they follow EXPANDED mode + their own toggle,
-    -- or the transient click-to-reveal state set by LauncherPrimaryClick.
-    local chatOn     = CC.IsFeatureEnabled and CC:IsFeatureEnabled("chat")
-    local gamesOn    = CC.Games ~= nil
-    local achieveOn  = CC.Achievements ~= nil
-    local progressOn = CC.ProgressHub and CC.ProgressHub:HasAnyEnabled()
-    local revealed = self.launcherExpanded == true
-    local _cgDB  = _G.CreshGamesDB
-    local _colDB = _G.CreshCollectDB
-    local showChat     = effectiveShown and chatOn     and revealed
-    local showGames    = effectiveShown and gamesOn    and (not chatOn or revealed or (expanded and _cgDB  and _cgDB.launcher  and _cgDB.launcher.showButton        == true))
-    local showAchieve  = effectiveShown and achieveOn  and (not chatOn or revealed or (expanded and _colDB and _colDB.launcher and _colDB.launcher.showAchievements == true))
-    local showProgress = effectiveShown and progressOn and (not chatOn or revealed or (expanded and _colDB and _colDB.launcher and _colDB.launcher.showProgress     == true))
-    if self.chatButton     then self.chatButton:SetShown(showChat     == true) end
-    if self.gamesButton    then self.gamesButton:SetShown(showGames    == true) end
-    if self.achieveButton  then self.achieveButton:SetShown(showAchieve  == true) end
-    if self.progressButton then self.progressButton:SetShown(showProgress == true) end
     if not shown and self.quickInput then self.quickInput:Hide() end
     if not shown and self.combatPanel then self.combatPanel:Hide() end
-    self:PositionQuickButtons()
+    local api = _G.CreshSuiteLauncherAPI
+    if not api then return end
+    api.visible = shown
+    local effectiveShown = shown and not self:IsLauncherCombatHidden()
+    api:SetShown(effectiveShown)
     if effectiveShown and self.RefreshLauncherVisibility then self:RefreshLauncherVisibility(true) end
 end
 
+function UI:GetLauncherOrientation()
+    local api = _G.CreshSuiteLauncherAPI
+    return api and api:GetOrientation() or "HORIZONTAL"
+end
+
+function UI:SetLauncherOrientation(orientation)
+    local api = _G.CreshSuiteLauncherAPI
+    if api then api:SetOrientation(orientation) end
+end
+
+-- Whisper/general/combat quick-access buttons remain CreshChat-specific
+-- (they are not part of the five suite-wide destinations) and chain off the
+-- shared bubble instead of a private one.
 function UI:PositionQuickButtons()
-    if not self.bubble then return end
-    local center = self.bubble:GetCenter()
-    local screenWidth = UIParent:GetWidth() or 1
-    local onRight = center and center > (screenWidth / 2)
+    local api = _G.CreshSuiteLauncherAPI
+    local bubble = api and api:GetBubble()
+    if not bubble then return end
     local ordered = {}
     local options = CC.db.ui or {}
     local expanded = options.launcherMode == "EXPANDED"
     if expanded and self.whisperBubble and options.showWhisperButton ~= false then tinsert(ordered, self.whisperBubble) end
     if expanded and self.generalBubble and options.showGeneralButton ~= false then tinsert(ordered, self.generalBubble) end
     if expanded and self.combatBubble and options.showCombatButton ~= false then tinsert(ordered, self.combatBubble) end
-
-    local chatOn     = CC.IsFeatureEnabled and CC:IsFeatureEnabled("chat")
-    local gamesOn    = CC.Games ~= nil
-    local achieveOn  = CC.Achievements ~= nil
-    local progressOn = CC.ProgressHub and CC.ProgressHub:HasAnyEnabled()
-    local revealed = self.launcherExpanded == true
-    local _cgDB2  = _G.CreshGamesDB
-    local _colDB2 = _G.CreshCollectDB
-    local showChat     = chatOn     and revealed
-    local showGames    = gamesOn    and (not chatOn or revealed or (expanded and _cgDB2  and _cgDB2.launcher  and _cgDB2.launcher.showButton        == true))
-    local showAchieve  = achieveOn  and (not chatOn or revealed or (expanded and _colDB2 and _colDB2.launcher and _colDB2.launcher.showAchievements == true))
-    local showProgress = progressOn and (not chatOn or revealed or (expanded and _colDB2 and _colDB2.launcher and _colDB2.launcher.showProgress     == true))
-    if self.chatButton     and showChat     then tinsert(ordered, self.chatButton)     end
-    if self.gamesButton    and showGames    then tinsert(ordered, self.gamesButton)    end
-    if self.achieveButton  and showAchieve  then tinsert(ordered, self.achieveButton)  end
-    if self.progressButton and showProgress then tinsert(ordered, self.progressButton) end
-
-    local previous = self.bubble
+    if #ordered == 0 then
+        self:PositionQuickInput()
+        return
+    end
+    local center = bubble:GetCenter()
+    local screenWidth = UIParent:GetWidth() or 1
+    local onRight = center and center > (screenWidth / 2)
+    local previous = bubble
     for _, button in ipairs(ordered) do
         button:ClearAllPoints()
         if onRight then
@@ -4101,19 +4092,21 @@ function UI:PositionQuickButtons()
 end
 
 function UI:PositionCombatPanel()
-    if not self.combatPanel or not self.bubble then return end
-    local centerX, centerY = self.bubble:GetCenter()
+    local api = _G.CreshSuiteLauncherAPI
+    local bubble = api and api:GetBubble()
+    if not self.combatPanel or not bubble then return end
+    local centerX, centerY = bubble:GetCenter()
     local screenWidth = UIParent:GetWidth() or 1
     local screenHeight = UIParent:GetHeight() or 1
     local onRight = centerX and centerX > (screenWidth / 2)
     local placeAbove = not centerY or centerY < (screenHeight * 0.58)
     self.combatPanel:ClearAllPoints()
     if placeAbove then
-        if onRight then self.combatPanel:SetPoint("BOTTOMRIGHT", self.bubble, "TOPRIGHT", 0, 12)
-        else self.combatPanel:SetPoint("BOTTOMLEFT", self.bubble, "TOPLEFT", 0, 12) end
+        if onRight then self.combatPanel:SetPoint("BOTTOMRIGHT", bubble, "TOPRIGHT", 0, 12)
+        else self.combatPanel:SetPoint("BOTTOMLEFT", bubble, "TOPLEFT", 0, 12) end
     else
-        if onRight then self.combatPanel:SetPoint("TOPRIGHT", self.bubble, "BOTTOMRIGHT", 0, -12)
-        else self.combatPanel:SetPoint("TOPLEFT", self.bubble, "BOTTOMLEFT", 0, -12) end
+        if onRight then self.combatPanel:SetPoint("TOPRIGHT", bubble, "BOTTOMRIGHT", 0, -12)
+        else self.combatPanel:SetPoint("TOPLEFT", bubble, "BOTTOMLEFT", 0, -12) end
     end
 end
 
@@ -4476,18 +4469,21 @@ end
 
 function UI:PositionQuickInput(force)
     if not self.quickInput then return end
+    local api = _G.CreshSuiteLauncherAPI
+    local bubble = api and api:GetBubble()
     local options = CC.db.ui or {}
     local attached = options.composerAttached ~= false or options.launcherMode == "SINGLE"
-    if attached and self.bubble then
-        local x = self.bubble:GetCenter()
+    if attached and bubble then
+        local x = bubble:GetCenter()
         local screenWidth = UIParent:GetWidth() or 1
         local onRight = x and x > (screenWidth / 2)
+        -- Anchored above the tallest currently-visible point of the launcher
+        -- (the C bubble, or a satellite if one is revealed and taller), never
+        -- beside it, so the composer can't land on the same edge/offset the
+        -- satellite chain in the shared launcher uses.
+        local topFrame = api:GetTopFrame()
         self.quickInput:ClearAllPoints()
-        if onRight then
-            self.quickInput:SetPoint("RIGHT", self.bubble, "LEFT", 0, 0)
-        else
-            self.quickInput:SetPoint("LEFT", self.bubble, "RIGHT", 0, 0)
-        end
+        self.quickInput:SetPoint("BOTTOM", topFrame, "TOP", 0, 8)
         self.quickInput.creshAttachedSide = onRight and "RIGHT" or "LEFT"
         if self.quickInput.accent then
             self.quickInput.accent:ClearAllPoints()
@@ -5221,150 +5217,130 @@ function UI:DismissWhisperDockAlert(immediate)
     else chip.dismissing = true end
 end
 
--- Returns the destination the C button should act on, given launcherDefault and
--- which features are actually enabled. Knows about: CHAT, GAMES, ACHIEVEMENTS,
--- PROGRESS, SETTINGS.
+-- Click dispatch, destination-effective-default, and expand/collapse now
+-- live in the shared launcher (shared/Launcher.lua); these are thin shims so
+-- external callers (Settings.lua, CreshCollect's Achievements/BattlePass/
+-- ProgressOverview/ProgressHub) keep working unchanged.
 function UI:GetLauncherEffectiveDest()
-    local options = CC.db and CC.db.ui or {}
-    local dest = options.launcherDefault or "LAST"
-    if dest == "LAST" then dest = options.lastLauncherDest end
-    local chatOn     = CC.IsFeatureEnabled and CC:IsFeatureEnabled("chat")
-    local gamesOn    = CC.Games ~= nil
-    local achieveOn  = CC.Achievements ~= nil
-    local progressOn = CC.ProgressHub and CC.ProgressHub:HasAnyEnabled()
-    if dest == "CHAT"         and not chatOn     then dest = nil end
-    if dest == "GAMES"        and not gamesOn    then dest = nil end
-    if dest == "ACHIEVEMENTS" and not achieveOn  then dest = nil end
-    if dest == "PROGRESS"     and not progressOn then dest = nil end
-    if not dest then
-        if chatOn     then dest = "CHAT"
-        elseif gamesOn    then dest = "GAMES"
-        elseif achieveOn  then dest = "ACHIEVEMENTS"
-        elseif progressOn then dest = "PROGRESS"
-        else                   dest = "SETTINGS" end
-    end
-    return dest
+    local api = _G.CreshSuiteLauncherAPI
+    return api and api:GetEffectiveDest() or "SETTINGS"
 end
 
--- Smart toggle for a given destination. When the drawer is already open in a
--- different mode, switches modes instead of closing and re-opening.
 function UI:LauncherToggleMode(dest)
-    dest = string.upper(tostring(dest or "CHAT"))
-    local options = CC.db and CC.db.ui or {}
-    if dest == "CHAT" then
-        self:ToggleMain()
-        options.lastLauncherDest = "CHAT"
-    elseif dest == "GAMES" then
-        if not (_G.CreshSuite and _G.CreshSuite:GetService("OpenGames")) then
-            CC:Print("CreshGames is not installed or loaded.")
-            return
-        end
-        local drawer = self.gameDrawer
-        local drawerOpen = drawer and drawer.creshOpen and drawer:IsShown()
-        local isGamesMode = drawerOpen and drawer.mode ~= "ACHIEVEMENTS" and drawer.mode ~= "THEMES"
-        if isGamesMode then
-            self:CloseGameDrawer()
-        elseif drawerOpen then
-            local lastMode = options.lastGameMode or "SOLO"
-            if lastMode == "ACHIEVEMENTS" or lastMode == "THEMES" then lastMode = "SOLO" end
-            self:SetGameDrawerMode(lastMode)
-        else
-            self:OpenGameDrawer(options.lastGameMode or "SOLO")
-        end
-        local newMode = self.gameDrawer and self.gameDrawer.mode or "SOLO"
-        if newMode ~= "ACHIEVEMENTS" and newMode ~= "THEMES" then
-            options.lastGameMode = newMode
-        end
-        options.lastLauncherDest = "GAMES"
-    elseif dest == "ACHIEVEMENTS" then
-        -- Routes through the Suite service to the Phase 6 standalone
-        -- Achievements window, matching PROGRESS below. The game drawer's
-        -- own internal ACH tab (see OpenGameDrawer/SetGameDrawerMode) is a
-        -- separate, secondary preview surface and is untouched.
-        local svc = _G.CreshSuite and _G.CreshSuite:GetService("OpenAchievements")
-        if svc then svc()
-        else CC:Print("Requires CreshCollect.") end
-        options.lastLauncherDest = "ACHIEVEMENTS"
-    elseif dest == "PROGRESS" then
-        local svc = _G.CreshSuite and _G.CreshSuite:GetService("OpenProgressHub")
-        if svc then svc()
-        else CC:Print("CreshCollect is not installed or loaded.") end
-        options.lastLauncherDest = "PROGRESS"
-    elseif dest == "SETTINGS" then
-        self:OpenSettings()
-    end
-    self:RefreshLauncherButtonStates()
+    local api = _G.CreshSuiteLauncherAPI
+    if api then api:ToggleMode(dest) end
 end
 
--- Left-click action for the C bubble: delegates to the appropriate destination.
 function UI:LauncherDefaultAction()
-    self:LauncherToggleMode(self:GetLauncherEffectiveDest())
+    local api = _G.CreshSuiteLauncherAPI
+    if api then api:DefaultAction() end
 end
 
--- Left-click handler for the C bubble itself. With zero or one installed
--- destination there is nothing to choose between, so the click opens that
--- destination directly (unchanged single-addon behaviour). With two or more,
--- the click instead reveals one small satellite button per installed
--- destination next to C ("click the circle, circles come out"); clicking C
--- again while revealed collapses the satellites and opens the default
--- destination, so the primary action stays reachable with one more click.
+function UI:CountAvailableLauncherDestinations()
+    local api = _G.CreshSuiteLauncherAPI
+    return api and api:CountAvailableDestinations() or 0
+end
+
 function UI:LauncherPrimaryClick()
-    local chatOn     = CC.IsFeatureEnabled and CC:IsFeatureEnabled("chat")
-    local gamesOn    = CC.Games ~= nil
-    local achieveOn  = CC.Achievements ~= nil
-    local progressOn = CC.ProgressHub and CC.ProgressHub:HasAnyEnabled()
-    local destCount = (chatOn and 1 or 0) + (gamesOn and 1 or 0) + (achieveOn and 1 or 0) + (progressOn and 1 or 0)
-    if destCount <= 1 then
-        self.launcherExpanded = false
-        self:RefreshLauncherExpansion()
-        self:LauncherDefaultAction()
-        return
-    end
-    local wasExpanded = self.launcherExpanded == true
-    self.launcherExpanded = not wasExpanded
-    self:RefreshLauncherExpansion()
-    if wasExpanded then
-        self:LauncherDefaultAction()
-    end
+    local api = _G.CreshSuiteLauncherAPI
+    if api then api:PrimaryClick() end
 end
 
--- A revealed satellite button was clicked: perform its destination action,
--- then collapse the reveal so the cluster stays minimal instead of
--- remaining permanently open.
 function UI:LauncherSatelliteClick(dest)
-    self.launcherExpanded = false
-    self:LauncherToggleMode(dest)
-    self:RefreshLauncherExpansion()
+    local api = _G.CreshSuiteLauncherAPI
+    if api then api:SatelliteClick(dest) end
 end
 
--- Recomputes which quick-access buttons should be visible, honouring both
--- the persistent Settings-driven EXPANDED mode and the transient
--- click-to-reveal state above. Single source of truth lives in
--- SetBubbleGroupShown/PositionQuickButtons; this just re-triggers it.
 function UI:RefreshLauncherExpansion()
-    self:SetBubbleGroupShown(CC.db.bubbleVisible)
+    local api = _G.CreshSuiteLauncherAPI
+    if api then api:RefreshExpansion() end
 end
 
--- Update active-state highlight on satellite launcher buttons.
 function UI:RefreshLauncherButtonStates()
+    local api = _G.CreshSuiteLauncherAPI
+    if api then api:RefreshButtonStates() end
+end
+
+-- Optional decoration hook the shared launcher calls (nil-safe) after its
+-- own availability-based greying: highlights whichever of Games/Achievements/
+-- Progress is the currently-open window/drawer. Pure UI polish, not routing.
+-- Thin 4-edge outline (border only, no fill) framing a satellite icon to
+-- show "this destination's window is currently open" -- deliberately not a
+-- filled backdrop, since that's exactly the unwanted box-behind-the-artwork
+-- look the icons were fixed to avoid.
+local function ensureActiveOutline(button)
+    if button.activeOutline then return button.activeOutline end
+    local edges = {}
+    local top = button:CreateTexture(nil, "OVERLAY")
+    top:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
+    top:SetPoint("TOPRIGHT", button, "TOPRIGHT", 0, 0)
+    top:SetHeight(2)
+    local bottom = button:CreateTexture(nil, "OVERLAY")
+    bottom:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 0, 0)
+    bottom:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, 0)
+    bottom:SetHeight(2)
+    local left = button:CreateTexture(nil, "OVERLAY")
+    left:SetPoint("TOPLEFT", button, "TOPLEFT", 0, -2)
+    left:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 0, 2)
+    left:SetWidth(2)
+    local right = button:CreateTexture(nil, "OVERLAY")
+    right:SetPoint("TOPRIGHT", button, "TOPRIGHT", 0, -2)
+    right:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, 2)
+    right:SetWidth(2)
+    edges[1], edges[2], edges[3], edges[4] = top, bottom, left, right
+    for _, edge in ipairs(edges) do edge:Hide() end
+    button.activeOutline = edges
+    return edges
+end
+
+function UI:RefreshLauncherActiveHighlight()
+    local api = _G.CreshSuiteLauncherAPI
+    if not api then return end
     local drawer = self.gameDrawer
     local drawerOpen   = drawer and drawer.creshOpen and drawer:IsShown()
     local drawerMode   = drawer and drawer.mode or "SOLO"
-    local gamesActive  = drawerOpen and drawerMode ~= "ACHIEVEMENTS" and drawerMode ~= "THEMES"
-    local achieveActive = CC.Achievements and CC.Achievements.IsWindowOpen and CC.Achievements:IsWindowOpen()
-    local progressActive = CC.ProgressOverview and CC.ProgressOverview.IsWindowOpen and CC.ProgressOverview:IsWindowOpen()
-    if self.gamesButton then
-        applyBackdrop(self.gamesButton, gamesActive and COLORS.blue or COLORS.panelRaised, COLORS.border)
-    end
-    if self.achieveButton then
-        applyBackdrop(self.achieveButton, achieveActive and COLORS.quest or COLORS.panelRaised, COLORS.border)
-    end
-    if self.progressButton then
-        applyBackdrop(self.progressButton, progressActive and COLORS.green or COLORS.panelRaised, COLORS.border)
+    local ACTIVE_STATE = {
+        GAMES = drawerOpen and drawerMode ~= "ACHIEVEMENTS" and drawerMode ~= "THEMES",
+        ACHIEVEMENTS = CC.Achievements and CC.Achievements.IsWindowOpen and CC.Achievements:IsWindowOpen(),
+        PROGRESS = CC.ProgressOverview and CC.ProgressOverview.IsWindowOpen and CC.ProgressOverview:IsWindowOpen(),
+    }
+    local ACTIVE_COLOR = { GAMES = COLORS.blue, ACHIEVEMENTS = COLORS.quest, PROGRESS = COLORS.green }
+    for _, key in ipairs({ "GAMES", "ACHIEVEMENTS", "PROGRESS" }) do
+        local destination = api:GetDestination(key)
+        local button = destination and api:GetButton(destination.buttonKey)
+        if button then
+            local edges = ensureActiveOutline(button)
+            local active = ACTIVE_STATE[key]
+            local color = ACTIVE_COLOR[key] or COLORS.blue
+            for _, edge in ipairs(edges) do
+                if active then
+                    edge:SetColorTexture(color[1], color[2], color[3], color[4] or 1)
+                    edge:Show()
+                else
+                    edge:Hide()
+                end
+            end
+        end
     end
 end
 
-function UI:BuildBubble()
+-- CreshChat-specific quick-access extras: whisper/general/combat buttons and
+-- the composer, all chained off the shared launcher's bubble (built by
+-- _G.CreshSuiteLauncherAPI:EnsureBuilt(), called from Core.lua before this
+-- runs). The bubble itself, its five destination satellites, drag handling,
+-- and click dispatch are no longer built here -- see shared/Launcher.lua.
+function UI:BuildLauncherExtras()
+    local api = _G.CreshSuiteLauncherAPI
+    if not api then return end
+    local bubble = api:GetBubble()
+    if not bubble then return end
+    -- Cached for the many pre-existing self.bubble references elsewhere in
+    -- this file (whisper dock alert, unread badge, main-window auto-arrange,
+    -- composer animation source frame, connected-dock sizing, ...). The
+    -- shared bubble is a stable, persistent frame once built, so caching a
+    -- plain reference here is safe -- it never gets rebuilt or replaced.
+    self.bubble = bubble
+
     local function makeQuickButton(name, label, tooltipTitle, tooltipText, callback)
         local button = CreateFrame("Button", name, UIParent, templateName())
         button:SetSize(36, 36)
@@ -5392,133 +5368,7 @@ function UI:BuildBubble()
         return button
     end
 
-    local bubble = CreateFrame("Button", "CreshChatBubble", UIParent, templateName())
-    bubble:SetSize(UI:GetDockButtonWidth(), UI:GetDockHeight())
-    bubble:SetFrameStrata("HIGH")
-    bubble:SetClampedToScreen(true)
-    bubble:SetMovable(true)
-    bubble:RegisterForDrag("RightButton")
-    applyBackdrop(bubble, COLORS.blue, COLORS.blue)
-    self.bubble = bubble
     self:BuildWhisperDockAlert()
-
-    bubble.icon = createFont(bubble, 17, COLORS.text, "CENTER")
-    bubble.icon:SetAllPoints()
-    bubble.icon:SetText(self:GetLauncherBaseText())
-    bubble.badge = createBadge(bubble, 20)
-    bubble.badge:SetPoint("TOPRIGHT", bubble, "TOPRIGHT", 6, 6)
-
-    -- Four lightweight edge textures create a clean notification outline without
-    -- changing the launcher's backdrop or its saved dimensions.
-    bubble.notificationOutline = {}
-    local top = bubble:CreateTexture(nil, "OVERLAY")
-    top:SetPoint("TOPLEFT", bubble, "TOPLEFT", 0, 0)
-    top:SetPoint("TOPRIGHT", bubble, "TOPRIGHT", 0, 0)
-    top:SetHeight(3)
-    local bottom = bubble:CreateTexture(nil, "OVERLAY")
-    bottom:SetPoint("BOTTOMLEFT", bubble, "BOTTOMLEFT", 0, 0)
-    bottom:SetPoint("BOTTOMRIGHT", bubble, "BOTTOMRIGHT", 0, 0)
-    bottom:SetHeight(3)
-    local left = bubble:CreateTexture(nil, "OVERLAY")
-    left:SetPoint("TOPLEFT", bubble, "TOPLEFT", 0, -3)
-    left:SetPoint("BOTTOMLEFT", bubble, "BOTTOMLEFT", 0, 3)
-    left:SetWidth(3)
-    local right = bubble:CreateTexture(nil, "OVERLAY")
-    right:SetPoint("TOPRIGHT", bubble, "TOPRIGHT", 0, -3)
-    right:SetPoint("BOTTOMRIGHT", bubble, "BOTTOMRIGHT", 0, 3)
-    right:SetWidth(3)
-    bubble.notificationOutline[1] = top
-    bubble.notificationOutline[2] = bottom
-    bubble.notificationOutline[3] = left
-    bubble.notificationOutline[4] = right
-    for _, edge in ipairs(bubble.notificationOutline) do edge:Hide() end
-
-    -- A second, wider ADD-blended outline creates a soft glow outside the block.
-    bubble.notificationGlow = {}
-    local glowTop = bubble:CreateTexture(nil, "OVERLAY")
-    glowTop:SetPoint("BOTTOMLEFT", bubble, "TOPLEFT", -4, -2)
-    glowTop:SetPoint("BOTTOMRIGHT", bubble, "TOPRIGHT", 4, -2)
-    glowTop:SetHeight(8)
-    local glowBottom = bubble:CreateTexture(nil, "OVERLAY")
-    glowBottom:SetPoint("TOPLEFT", bubble, "BOTTOMLEFT", -4, 2)
-    glowBottom:SetPoint("TOPRIGHT", bubble, "BOTTOMRIGHT", 4, 2)
-    glowBottom:SetHeight(8)
-    local glowLeft = bubble:CreateTexture(nil, "OVERLAY")
-    glowLeft:SetPoint("TOPRIGHT", bubble, "TOPLEFT", 2, 4)
-    glowLeft:SetPoint("BOTTOMRIGHT", bubble, "BOTTOMLEFT", 2, -4)
-    glowLeft:SetWidth(8)
-    local glowRight = bubble:CreateTexture(nil, "OVERLAY")
-    glowRight:SetPoint("TOPLEFT", bubble, "TOPRIGHT", -2, 4)
-    glowRight:SetPoint("BOTTOMLEFT", bubble, "BOTTOMRIGHT", -2, -4)
-    glowRight:SetWidth(8)
-    bubble.notificationGlow[1] = glowTop
-    bubble.notificationGlow[2] = glowBottom
-    bubble.notificationGlow[3] = glowLeft
-    bubble.notificationGlow[4] = glowRight
-    for _, edge in ipairs(bubble.notificationGlow) do
-        if edge.SetBlendMode then edge:SetBlendMode("ADD") end
-        edge:Hide()
-    end
-    bubble:SetScript("OnClick", function()
-        UI:MarkLauncherActive()
-        if IsShiftKeyDown and IsShiftKeyDown() then
-            UI:OpenSettings()
-            return
-        end
-        UI:LauncherPrimaryClick()
-    end)
-    bubble:SetScript("OnDragStart", function(selfBubble)
-        UI:MarkLauncherActive()
-        selfBubble:StartMoving()
-    end)
-    bubble:SetScript("OnDragStop", function(selfBubble)
-        selfBubble:StopMovingOrSizing()
-        savePosition(selfBubble, "bubble")
-        UI:PositionQuickButtons()
-        UI:PositionCombatPanel()
-        UI:PositionQuickInput()
-        UI:PositionWhisperDockAlert()
-        UI:RepositionToasts()
-        UI:MarkLauncherActive()
-    end)
-    bubble:SetScript("OnEnter", function(selfBubble)
-        UI.launcherHovered = true
-        UI:MarkLauncherActive()
-        local chatOn     = CC.IsFeatureEnabled and CC:IsFeatureEnabled("chat")
-        local gamesOn    = CC.Games ~= nil
-        local achieveOn  = CC.Achievements ~= nil
-        local progressOn = CC.ProgressHub and CC.ProgressHub:HasAnyEnabled()
-        local destCount = (chatOn and 1 or 0) + (gamesOn and 1 or 0) + (achieveOn and 1 or 0) + (progressOn and 1 or 0)
-        GameTooltip:SetOwner(selfBubble, "ANCHOR_LEFT")
-        GameTooltip:AddLine("CreshChat", 1, 1, 1)
-        if destCount >= 2 then
-            if self.launcherExpanded then
-                GameTooltip:AddLine("Left-click: open default destination", 0.75, 0.8, 0.9)
-            else
-                GameTooltip:AddLine("Left-click: show quick-access buttons", 0.75, 0.8, 0.9)
-            end
-        elseif chatOn then
-            GameTooltip:AddLine("Left-click: open chat + typing bar", 0.75, 0.8, 0.9)
-        elseif gamesOn then
-            GameTooltip:AddLine("Left-click: open the games hub", 0.75, 0.8, 0.9)
-        elseif achieveOn then
-            GameTooltip:AddLine("Left-click: open Achievements", 0.75, 0.8, 0.9)
-        elseif progressOn then
-            GameTooltip:AddLine("Left-click: open Progress", 0.75, 0.8, 0.9)
-        end
-        GameTooltip:AddLine("Right-drag: move this launcher", 0.75, 0.8, 0.9)
-        GameTooltip:AddLine("Shift+click: open Settings", 0.75, 0.8, 0.9)
-        if chatOn then
-            GameTooltip:AddLine("Enter: open the bar; typing reveals chat", 0.75, 0.8, 0.9)
-            GameTooltip:AddLine("W / G / Q / P: latest unread notification type", 0.55, 0.75, 1.0)
-        end
-        GameTooltip:Show()
-    end)
-    bubble:SetScript("OnLeave", function()
-        UI.launcherHovered = false
-        UI:MarkLauncherActive()
-        GameTooltip:Hide()
-    end)
 
     self.whisperBubble = makeQuickButton("CreshChatWhisperButton", "W", "Whispers", "Open your whisper conversations", function()
         UI:OpenChannel("WHISPER", UI:GetLatestWhisperTarget())
@@ -5535,47 +5385,10 @@ function UI:BuildBubble()
         UI:ToggleCombatPanel()
     end)
 
-    -- Satellite for CreshChat itself: only ever revealed by the click-to-expand
-    -- gesture (LauncherPrimaryClick), since a single installed addon still
-    -- opens directly with no satellites involved.
-    self.chatButton = makeQuickButton("CreshChatChatButton", "Cht", "CreshChat", "Open the CreshChat window", function()
-        UI:LauncherSatelliteClick("CHAT")
-    end)
-    self.chatButton:SetScript("OnLeave", function()
-        UI:RefreshLauncherButtonStates()
-        GameTooltip:Hide()
-    end)
-
-    self.gamesButton = makeQuickButton("CreshChatGamesButton", "Gm", "Games Hub", "Toggle the CreshChat games hub", function()
-        UI:LauncherSatelliteClick("GAMES")
-    end)
-    self.gamesButton:SetScript("OnLeave", function()
-        UI:RefreshLauncherButtonStates()
-        GameTooltip:Hide()
-    end)
-
-    self.achieveButton = makeQuickButton("CreshChatAchievementsButton", "Ach", "Achievements", "Toggle the Achievements panel", function()
-        UI:LauncherSatelliteClick("ACHIEVEMENTS")
-    end)
-    self.achieveButton:SetScript("OnLeave", function()
-        UI:RefreshLauncherButtonStates()
-        GameTooltip:Hide()
-    end)
-
-    self.progressButton = makeQuickButton("CreshChatProgressButton", "Prg", "Progress Hub", "Toggle the Progress Hub (World · Quests · Combat)", function()
-        UI:LauncherSatelliteClick("PROGRESS")
-    end)
-    self.progressButton:SetScript("OnLeave", function()
-        UI:RefreshLauncherButtonStates()
-        GameTooltip:Hide()
-    end)
-
-    applyPosition(bubble, "bubble")
     self:PositionQuickButtons()
     self:SetBubbleGroupShown(CC.db.bubbleVisible)
     self:RefreshLauncherNotification()
     self:RefreshLauncherButtonStates()
-    self:MarkLauncherActive()
 end
 
 local function launcherTime()
@@ -8291,9 +8104,9 @@ function UI:ApplySavedPositions()
         applySize(self.main, "main", 470, 520)
         applyPosition(self.main, "main")
     end
-    if self.bubble then
-        applyPosition(self.bubble, "bubble")
-    end
+    -- The launcher bubble's position is owned by the shared launcher module
+    -- (shared/Launcher.lua) now, not CC.db.positions.bubble -- nothing to
+    -- re-apply here.
     self:PositionQuickButtons()
     self:PositionCombatPanel()
     if self.quickInput then self.quickInput.creshPositionApplied = false end
@@ -8326,9 +8139,6 @@ function UI:Initialize()
     self:SyncThemeColors()
     self:SyncGuildTheme()
     local chatEnabled     = CC.IsFeatureEnabled and CC:IsFeatureEnabled("chat")
-    local gamesEnabled    = CC.Games ~= nil
-    local achieveEnabled  = CC.Achievements ~= nil
-    local progressEnabled = CC.ProgressHub and CC.ProgressHub:HasAnyEnabled()
     if chatEnabled then
         self:BuildMainFrame()
         self:BuildQuickInput()
@@ -8336,11 +8146,13 @@ function UI:Initialize()
     else
         self:BuildGamesAnchor()
     end
-    -- The C launcher is built whenever any major destination is enabled, even
-    -- with chat disabled, so Games/Achievements/Progress-only players still have a launcher.
-    if chatEnabled or gamesEnabled or achieveEnabled or progressEnabled then
-        self:BuildBubble()
-    end
+    -- The shared launcher bubble itself is already guaranteed to exist by now
+    -- (Core.lua calls _G.CreshSuiteLauncherAPI:EnsureBuilt() before
+    -- UI:Initialize() runs, and CreshGames/CreshCollect do the same from
+    -- their own PLAYER_LOGIN handlers) regardless of which of chatEnabled/
+    -- gamesEnabled/achieveEnabled/progressEnabled is true. This only adds
+    -- CreshChat's own whisper/general/combat quick-access extras to it.
+    self:BuildLauncherExtras()
     self.initialized = true
     if chatEnabled then
         self:InstallEnterChatHook()
