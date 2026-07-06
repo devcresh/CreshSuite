@@ -48,12 +48,95 @@ function API.AddBattlePassXP(amount, source, silent)
     return 0
 end
 
+-- ------------------------------------------------------------------------
+-- Rework Phase 1: forward-looking "Arcade Pass" / "Mastery" naming for the
+-- Progression and Unlockables Rework. These wrap the exact same modules as
+-- the functions above (no data has moved) so existing callers are
+-- unaffected; new code should prefer these names going forward.
+-- ------------------------------------------------------------------------
+
+-- Returns level, currentXP, requiredXP, ratio. (1, 0, 50, 0) when not loaded.
+function API.GetArcadePassProgress()
+    if not CG.BattlePass or not CG.BattlePass.GetProgress then return 1, 0, 50, 0 end
+    return CG.BattlePass:GetProgress()
+end
+
+function API.AddArcadeXP(amount, source, silent)
+    return API.AddBattlePassXP(amount, source, silent)
+end
+
+-- Rework Phase 5 moved CreshGames' own achievements (arcade + Dungeon
+-- Dwellers, 116 total) out of CreshCollect and into CG.Achievements -- this
+-- used to delegate to CreshCollectAPI.IsAchievementUnlocked, which since
+-- that move only ever checks CreshCollect's own World-achievement catalog
+-- and would always return false for a CreshGames achievement key. Same
+-- addon now, so no cross-addon hop is needed at all.
+function API.IsGameAchievementUnlocked(key)
+    if not CG.Achievements or not CG.Achievements.IsUnlocked then return false end
+    return CG.Achievements:IsUnlocked(key)
+end
+
+-- bucket is one of: CARD_DECK, TETRIS_THEME.
+function API.IsGameCollectibleOwned(bucket, key)
+    bucket = tostring(bucket or "")
+    if bucket == "CARD_DECK" then
+        return CG.CardDecks and CG.CardDecks.IsUnlocked and CG.CardDecks:IsUnlocked(key) or false
+    elseif bucket == "TETRIS_THEME" then
+        return CG.Tetris and CG.Tetris.IsThemeUnlocked and CG.Tetris:IsThemeUnlocked(key) or false
+    end
+    return false
+end
+
+function API.OpenArcadePass()
+    if CG.BattlePass and CG.BattlePass.ToggleWindow then CG.BattlePass:ToggleWindow(); return true end
+    return false
+end
+
+-- Rework Phase 9: routes to the requested track's own Mastery tab/panel
+-- (Tetris' "TETRIS MASTERY" tab, Dungeon Dweller's "PASS" panel). An
+-- unrecognised or omitted game falls back to the solo games hub so this
+-- call is never a dead end.
+function API.OpenGameMastery(game)
+    game = string.upper(tostring(game or ""))
+    if game == "TETRIS" then
+        if CG.SoloGames and CG.SoloGames.OpenTetrisMastery then return CG.SoloGames:OpenTetrisMastery() end
+    elseif game == "DUNGEON" or game == "DELVER" or game == "DUNGEONDWELLER" or game == "DUNGEONDWELLERS" then
+        if CG.SoloGames and CG.SoloGames.OpenDungeonDwellers then return CG.SoloGames:OpenDungeonDwellers("PASS") end
+    end
+    if CG.SoloGames and CG.SoloGames.OpenHub then CG.SoloGames:OpenHub(); return true end
+    return false
+end
+
+-- Rework Phase 9: data getters for the Unified Progression UI (CreshCollect's
+-- ProgressOverview surfaces these via this API, never by reaching into
+-- CG.* directly).
+function API.GetGameAchievementCounts(category)
+    if not CG.Achievements or not CG.Achievements.GetCounts then return 0, 0 end
+    return CG.Achievements:GetCounts(category)
+end
+
+-- Returns level, currentXP, requiredXP, ratio for the named Mastery track
+-- ("TETRIS" or "DUNGEON"/"DELVER"/"DUNGEONDWELLER"/"DUNGEONDWELLERS").
+-- (1, 0, 1, 0) for an unrecognised game or when CreshGames isn't loaded.
+function API.GetGameMasteryProgress(game)
+    game = string.upper(tostring(game or ""))
+    if game == "TETRIS" then
+        if CG.Tetris and CG.Tetris.GetMasteryProgress then return CG.Tetris:GetMasteryProgress() end
+    elseif game == "DUNGEON" or game == "DELVER" or game == "DUNGEONDWELLER" or game == "DUNGEONDWELLERS" then
+        if CG.DungeonDwellersPass and CG.DungeonDwellersPass.GetProgress then return CG.DungeonDwellersPass:GetProgress() end
+    end
+    return 1, 0, 1, 0
+end
+
 _G.CreshGamesAPI = API
 if Suite then
     Suite:RegisterProduct("CreshGames", CG.version, API)
     Suite:RegisterService("OpenGamesBattlePass", function()
         if CG.BattlePass and CG.BattlePass.ToggleWindow then CG.BattlePass:ToggleWindow() end
     end)
+    -- Forward-looking alias ("Arcade Pass" is this window's Rework name).
+    Suite:RegisterService("OpenArcadePass", function() API.OpenArcadePass() end)
+    Suite:RegisterService("OpenGameMastery", function(game) API.OpenGameMastery(game) end)
 
     -- Formal "open this feature" contract for CreshChat's commands and launcher
     -- buttons, so they can ask "is CreshGames able to do this?" via the Suite
@@ -97,8 +180,8 @@ end
 -- -----------------------------------------------------------------------
 -- Bridge: populate CreshChat's namespace with CreshGames modules so that
 -- existing CC.SoloGames / CC.Games / etc. references in BattlePass.lua,
--- Progression.lua, Settings.lua, and DungeonAchievements.lua keep working
--- without any changes to those files.
+-- Progression.lua and Settings.lua keep working without any changes to
+-- those files.
 -- -----------------------------------------------------------------------
 local function bridgeToCreshChat()
     local CC = _G.CreshChat
@@ -119,6 +202,12 @@ local function bridgeToCreshChat()
     -- reached as CG.BattlePass (same-addon) or via CreshGamesAPI, never
     -- through the shared CC.BattlePass key.
     CC.GameProgression     = CG.GameProgression
+    -- Rework Phase 5: CG.Achievements (the moved GAMES + Dungeon Dwellers
+    -- catalogs) bridges under a distinct key, never "CC.Achievements" --
+    -- that key is CreshCollect's own bridge, for its own (now World-only)
+    -- catalog, and the same collision risk documented above for BattlePass
+    -- applies here too.
+    CC.GamesAchievements   = CG.Achievements
 end
 
 -- -----------------------------------------------------------------------

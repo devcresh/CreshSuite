@@ -120,6 +120,34 @@ local function addBuff(reward, key, value, label)
     reward.buffs[#reward.buffs + 1] = { key = key, value = value, label = label }
 end
 
+-- Data-driven replacement for the level%20/level== branching this used to be
+-- (Rework Phase 2: "replace hard-coded reward branching with stable
+-- catalogs"). Each rule has its own stable id, independent of any specific
+-- level number, so the schedule can be retuned without renaming anything a
+-- save file or another system might reference. A rule fires on every level
+-- matching cycleOf20 (level % 20 == cycleOf20) or, for milestone rules, any
+-- level listed in `levels`.
+Pass.buffScheduleCatalog = {
+    { id = "MAXHP_EVERY20",       key = "maxHP",         value = 1, label = "+1 starting Max HP",                    cycleOf20 = 5 },
+    { id = "MINIONPOWER_EVERY20", key = "minionPower",   value = 1, label = "+1 recruited minion power",             cycleOf20 = 10 },
+    { id = "REGENROOM_EVERY20",   key = "regenRoom",     value = 1, label = "+1 HP after each cleared room",         cycleOf20 = 15 },
+    { id = "ATTACK_EVERY20",      key = "attack",        value = 1, label = "+1 starting Attack",                    cycleOf20 = 0 },
+    { id = "BOSSDAMAGE_MILESTONE",key = "bossDamage",     value = 1, label = "+1 damage against bosses",              levels = { 25, 50, 75, 100 } },
+    { id = "EXTRADIE_MILESTONE",  key = "extraDieChance", value = 5, label = "+5% chance to roll a bonus die",        levels = { 40, 80 } },
+    { id = "COINBONUS_MILESTONE", key = "coinBonus",      value = 5, label = "+5% Dungeon coin rewards",              levels = { 50, 100 } },
+    { id = "REGENTURN_MILESTONE", key = "regenTurn",      value = 1, label = "+1 HP regeneration after enemy turns",  levels = { 60, 100 } },
+}
+
+local function buffRuleMatchesLevel(rule, level, cycle)
+    if rule.cycleOf20 ~= nil then return cycle == rule.cycleOf20 end
+    if rule.levels then
+        for _, lvl in ipairs(rule.levels) do
+            if lvl == level then return true end
+        end
+    end
+    return false
+end
+
 function Pass:GetReward(level)
     level = floor(clamp(level, 1, self.maxLevel))
     local reward = {
@@ -134,22 +162,10 @@ function Pass:GetReward(level)
     }
 
     local cycle = level % 20
-    if cycle == 5 then addBuff(reward, "maxHP", 1, "+1 starting Max HP") end
-    if cycle == 10 then addBuff(reward, "minionPower", 1, "+1 recruited minion power") end
-    if cycle == 15 then addBuff(reward, "regenRoom", 1, "+1 HP after each cleared room") end
-    if cycle == 0 then addBuff(reward, "attack", 1, "+1 starting Attack") end
-
-    if level == 25 or level == 50 or level == 75 or level == 100 then
-        addBuff(reward, "bossDamage", 1, "+1 damage against bosses")
-    end
-    if level == 40 or level == 80 then
-        addBuff(reward, "extraDieChance", 5, "+5% chance to roll a bonus die")
-    end
-    if level == 50 or level == 100 then
-        addBuff(reward, "coinBonus", 5, "+5% Dungeon coin rewards")
-    end
-    if level == 60 or level == 100 then
-        addBuff(reward, "regenTurn", 1, "+1 HP regeneration after enemy turns")
+    for _, rule in ipairs(self.buffScheduleCatalog) do
+        if buffRuleMatchesLevel(rule, level, cycle) then
+            addBuff(reward, rule.key, rule.value, rule.label)
+        end
     end
 
     if #reward.buffs > 0 then reward.title = "Delver Boon " .. tostring(level) end
@@ -201,57 +217,37 @@ function Pass:AddXP(amount, source, activityKey, silent, isSimulation)
     end
     save.recent = { source = tostring(source or "Activity"), xp = amount, level = newLevel, at = now() }
 
-    if not silent and newLevel > previousLevel then
-        showDungeonPassToast(
-            "Dungeon Dwellers Pass Level " .. tostring(newLevel),
-            "+" .. tostring(amount) .. " XP · " .. self:GetRewardText(newLevel) .. " ready",
-            "DDPASS:LEVEL:" .. tostring(newLevel)
-        )
+    if newLevel > previousLevel then
+        -- Rework Phase 3: "per-game Mastery milestones" Arcade Pass XP
+        -- source -- same addon, no Suite hop needed. Silent: the Delver
+        -- Mastery level-up toast below already covers user feedback.
+        if CG.BattlePass and CG.BattlePass.AwardMasteryLevelUp then CG.BattlePass:AwardMasteryLevelUp(true) end
+        if not silent then
+            showDungeonPassToast(
+                "Delver Mastery Level " .. tostring(newLevel),
+                "+" .. tostring(amount) .. " XP · " .. self:GetRewardText(newLevel) .. " ready",
+                "DDPASS:LEVEL:" .. tostring(newLevel)
+            )
+        end
     end
 
     self:RefreshUI()
     return amount, previousLevel, newLevel
 end
 
--- DORMANT: no callers anywhere in the codebase as of the 2026-06-30 audit.
--- Predates the WOW/DD isolation fix (the "WoW mob defeated" label is a holdover
--- from before Progression:RecordKill was rerouted to call BattlePass:AddPassXP
--- directly instead of going through the DD Pass). Do not wire this to a live
--- WOW_MOB_KILL event without a sourceGame guard matching
--- AchievementExpansion:RecordBoss's pattern -- as written it has none, so any
--- caller would award DD progression for plain WoW kills.
-function Pass:RecordMobKill()
-    return self:AddXP(1, "WoW mob defeated", "mobKills", false)
-end
-
+-- Rework Phase 4 (Delver Mastery): RecordMobKill, RecordQuest, RecordZone and
+-- RecordAchievement were removed here -- they paid Mastery XP for WoW-world
+-- mob kills, quests, zone discovery and World achievements, which the rules
+-- for this conversion explicitly forbid ("Dungeon Mastery receives XP only
+-- from Dungeon Dwellers activity... remove XP from WoW quests, WoW zones,
+-- WoW mobs and World achievements"). Three of the four were already DORMANT
+-- (no live callers); RecordZone was live, called from CreshCollect/
+-- Progression.lua's CheckArea on every new WoW zone discovered -- that call
+-- site was removed in the same change. RecordDungeonKill below is unaffected
+-- -- killing an enemy inside a Dungeon Dweller run is Dungeon Dwellers
+-- activity, not WoW-world activity, and remains this Mastery's own XP source.
 function Pass:RecordDungeonKill(isBoss)
     return self:AddXP(isBoss and 5 or 2, isBoss and "Dungeon boss defeated" or "Dungeon enemy defeated", "dungeonKills", false)
-end
-
--- DORMANT: no callers anywhere in the codebase as of the 2026-06-30 audit.
--- Same pre-isolation-fix origin as RecordMobKill above; has no sourceGame guard.
-function Pass:RecordQuest(questID, title)
-    return self:AddXP(15, title or ("Quest " .. tostring(questID or "completed")), "quests", false)
-end
-
-function Pass:RecordZone(zoneKey, zoneName)
-    local save = self:Ensure()
-    if not save then return 0 end
-    zoneKey = tostring(zoneKey or zoneName or "")
-    if zoneKey == "" or save.visitedZones[zoneKey] then return 0 end
-    save.visitedZones[zoneKey] = { name = tostring(zoneName or zoneKey), at = now() }
-    return self:AddXP(20, "New zone: " .. tostring(zoneName or zoneKey), "zones", false)
-end
-
--- DORMANT: no callers anywhere in the codebase as of the 2026-06-30 audit.
--- Same pre-isolation-fix origin as RecordMobKill above; has no sourceGame guard.
-function Pass:RecordAchievement(achievementID, name)
-    local save = self:Ensure()
-    if not save then return 0 end
-    local key = tostring(achievementID or name or "")
-    if key == "" or save.achievements[key] then return 0 end
-    save.achievements[key] = { name = tostring(name or ("Achievement " .. key)), at = now() }
-    return self:AddXP(50, "Achievement: " .. tostring(name or key), "achievements", false)
 end
 
 function Pass:ClaimReward(level, silent)
@@ -267,7 +263,11 @@ function Pass:ClaimReward(level, silent)
     if Suite and Suite.Publish then
         Suite:Publish("CRESHGAMES_COLLECTION_UNLOCK", { source = "CRESHGAMES", type = "DUNGEON_PASS", key = key })
     end
-    if CC.BattlePass and CC.BattlePass.AddCoins then CC.BattlePass:AddCoins(reward.coins, "DUNGEON_PASS") end
+    -- Dungeon Dwellers coin rewards are CreshGames' own reward currency --
+    -- pay them into CG.BattlePass, never CreshCollect's pass (ownership
+    -- boundary fix; this previously reached CC.BattlePass, which resolves to
+    -- CreshCollect's pass now that the two are decoupled).
+    if CG.BattlePass and CG.BattlePass.AddCoins then CG.BattlePass:AddCoins(reward.coins, "DUNGEON_PASS") end
     for _, buff in ipairs(reward.buffs) do
         local value = tonumber(buff.value) or 0
         save.buffs[buff.key] = floor(max(0, tonumber(save.buffs[buff.key]) or 0)) + value
@@ -288,7 +288,7 @@ function Pass:ClaimReward(level, silent)
 
     if not silent then
         showDungeonPassToast(
-            "Dungeon Dwellers reward claimed",
+            "Delver Mastery reward claimed",
             "Level " .. tostring(level) .. " · " .. self:GetRewardText(level),
             "DDPASS:CLAIM:" .. tostring(level)
         )
@@ -310,7 +310,7 @@ function Pass:ClaimAllAvailable()
     end
     if claimed > 0 then
         showDungeonPassToast(
-            "Dungeon Dwellers rewards claimed",
+            "Delver Mastery rewards claimed",
             tostring(claimed) .. " rewards · +" .. tostring(coins) .. " Cresh Coins",
             "DDPASS:CLAIMALL:" .. tostring(now())
         )

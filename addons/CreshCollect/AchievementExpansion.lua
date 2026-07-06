@@ -443,7 +443,7 @@ function A:BuildCatalog()
     oldBuildCatalog(self)
     if self.expansionBuilt then return end
     self.expansionBuilt = true
-    self.categoryOrder = { "QUESTS", "EXPLORATION", "DUNGEONS", "RAIDS", "COMBAT", "PROFESSIONS", "REPUTATION", "PVP", "COMMUNITY", "CLASSES", "GAMES" }
+    self.categoryOrder = { "QUESTS", "EXPLORATION", "DUNGEONS", "RAIDS", "COMBAT", "PROFESSIONS", "REPUTATION", "PVP", "COMMUNITY", "CLASSES" }
     self.categoryNames.QUESTS = "Questing & Zones"
     self.categoryNames.EXPLORATION = "Exploration & Travel"
     self.categoryNames.RAIDS = "Raids"
@@ -914,7 +914,7 @@ function A:BuildDrawerPanel(drawer, helpers)
     end
     local categoryDefs = {
         {"ALL","ALL",42},{"QUESTS","QUESTS",58},{"EXPLORATION","EXPLORE",62},{"DUNGEONS","DUNGEON",62},{"RAIDS","RAIDS",50},
-        {"COMBAT","COMBAT",54},{"PROFESSIONS","PROF",46},{"REPUTATION","REP",42},{"PVP","PVP",40},{"COMMUNITY","SOCIAL",52},{"CLASSES","CLASSES",58},{"GAMES","GAMES",48},
+        {"COMBAT","COMBAT",54},{"PROFESSIONS","PROF",46},{"REPUTATION","REP",42},{"PVP","PVP",40},{"COMMUNITY","SOCIAL",52},{"CLASSES","CLASSES",58},
     }
     previous = nil
     for index,item in ipairs(categoryDefs) do

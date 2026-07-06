@@ -80,6 +80,51 @@ function API.GetThemeAvailability(key)
     return COL.BattlePass:IsThemeAvailable(key)
 end
 
+-- ------------------------------------------------------------------------
+-- Rework Phase 1: forward-looking "Chronicle" naming and world/chat-theme
+-- entitlement queries for the Progression and Unlockables Rework. These wrap
+-- the same modules as the functions above (no data has moved) so existing
+-- callers are unaffected; new code should prefer these names going forward.
+-- ------------------------------------------------------------------------
+
+-- Same backing data as GetBattlePassProgress today; Phase 6 will repoint
+-- this at the dedicated Azeroth Chronicle track once it exists.
+function API.GetChronicleProgress()
+    return API.GetBattlePassProgress()
+end
+
+-- Every remaining category in COL.Achievements is a World achievement
+-- category now that Rework Phase 5 moved GAMES (and the separate Dungeon
+-- Dwellers catalog) out to CreshGames, so this is just GetCounts() -- kept
+-- as its own named function since callers rely on this exact name.
+function API.GetWorldAchievementCounts()
+    if not COL.Achievements then return 0, 0 end
+    return COL.Achievements:GetCounts()
+end
+
+-- Returns an array of { key, source } for every CreshChat theme currently
+-- entitled through CreshCollect's Battle Pass. This is the authoritative
+-- entitlement list Phase 7's CreshChat union-only cache will sync from.
+function API.GetChatThemeEntitlements()
+    if not COL.BattlePass or not COL.BattlePass.Ensure then return {} end
+    local save = COL.BattlePass:Ensure()
+    if not save or type(save.unlockedThemes) ~= "table" then return {} end
+    local result = {}
+    for key, unlocked in pairs(save.unlockedThemes) do
+        if unlocked then
+            result[#result + 1] = { key = key, source = save.themeUnlockSources and save.themeUnlockSources[key] or nil }
+        end
+    end
+    return result
+end
+
+function API.GetChatThemeUnlockSource(key)
+    if not COL.BattlePass or not COL.BattlePass.Ensure then return nil end
+    local save = COL.BattlePass:Ensure()
+    if not save or type(save.themeUnlockSources) ~= "table" then return nil end
+    return save.themeUnlockSources[tostring(key or "")]
+end
+
 -- Collections -------------------------------------------------------------
 -- bucket is one of: themes, backgrounds, cardDecks, dungeonArmour, cosmetics.
 function API.IsCollectionUnlocked(bucket, key)
@@ -122,6 +167,10 @@ do
         Suite:RegisterService("OpenBattlePass", function()
             if COL.BattlePass and COL.BattlePass.ToggleWindow then COL.BattlePass:ToggleWindow() end
         end)
+        -- Forward-looking alias ("Azeroth Chronicle" is this window's Rework name).
+        Suite:RegisterService("OpenChronicle", function()
+            if COL.BattlePass and COL.BattlePass.ToggleWindow then COL.BattlePass:ToggleWindow() end
+        end)
 
         -- Read-only legacy snapshot for CreshGames' one-time migration of
         -- per-game levels (Phase 10 split): lets GameProgression.lua pick up
@@ -132,6 +181,26 @@ do
             if not _G.CreshCollectDB then return nil end
             local root = _G.CreshCollectDB.gameProgression
             return root and root.games or nil
+        end)
+
+        -- Read-only legacy snapshot for CreshGames' one-time-per-key
+        -- migration of achievement completions (Rework Phase 5: the 23
+        -- ex-GAMES achievements and the 93 Dungeon Dwellers achievements
+        -- both moved to CreshGames). Returns the raw unlocked tables from
+        -- both of CreshCollect's old locations; CreshGames filters by its
+        -- own catalog's keys, so this never needs to know which specific
+        -- keys used to belong to which category. Also subsumes the old
+        -- DungeonAchievements:MigrateFromWoW special case (stray ACH_DD_*
+        -- keys that leaked into the WoW achievements table pre-split) --
+        -- both live in achievementsUnlocked here, both filtered the same way.
+        Suite:RegisterService("GetLegacyGameAchievements", function()
+            if not _G.CreshCollectDB then return nil end
+            local achRoot = _G.CreshCollectDB.achievements
+            local ddRoot = _G.CreshCollectDB.ddAchievements
+            return {
+                achievementsUnlocked = achRoot and type(achRoot.unlocked) == "table" and achRoot.unlocked or nil,
+                dungeonUnlocked      = ddRoot and type(ddRoot.unlocked) == "table" and ddRoot.unlocked or nil,
+            }
         end)
 
         -- Mirror cosmetic unlocks from CreshGames into CreshCollectDB.collections.
@@ -202,10 +271,14 @@ local function bridgeToCreshChat()
     -- own CC.GameProgression. This module keeps only world-exploration
     -- tracking (COL.GameProgression itself), which nothing outside
     -- CreshCollect needs to reach.
+    -- DungeonAchievements is not bridged here any more either (Rework Phase
+    -- 5): it moved to CreshGames/GamesDungeonAchievements.lua, merged into
+    -- CG.Achievements, which bridges as CC.GamesAchievements instead --
+    -- CC.Achievements stays this addon's own (now World-only) catalog.
     local keys = {
         "BattlePass", "ProgressRouter",
         "Achievements", "AchievementExpansion", "ClassAchievements",
-        "DungeonAchievements", "ProgressHub", "ProgressOverview", "CombatTracker",
+        "ProgressHub", "ProgressOverview", "CombatTracker",
     }
     for _, k in ipairs(keys) do
         if COL[k] then cc[k] = COL[k] end

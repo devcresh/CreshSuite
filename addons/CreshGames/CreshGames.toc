@@ -21,4 +21,7 @@ GameProgression.lua
 Games.lua
 SoloGames.lua
 DungeonDwellersProgression.lua
+GamesRewardRegistry.lua
+GamesAchievements.lua
+GamesDungeonAchievements.lua
 GamesSettings.lua

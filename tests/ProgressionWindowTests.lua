@@ -186,30 +186,29 @@ local okAOpen, errAOpen = pcall(function() Achievements:OpenWindow() end)
 ok(okAOpen, "OpenWindow() does not error (err: " .. tostring(errAOpen) .. ")")
 ok(Achievements:IsWindowOpen() == true, "window is open after OpenWindow()")
 
-section("Achievements window: GAMES category reflects real CreshGames presence")
+-- Rework Phase 5: GAMES achievements moved to CreshGames entirely, so no
+-- catalog entry anywhere in CreshCollect's Achievements.lua has
+-- category == "GAMES" any more -- regardless of CreshGames presence.
+section("Achievements window: GAMES category no longer exists in CreshCollect")
 _G.CreshSuite = nil
 Achievements.windowCategory = "GAMES"
 Achievements:RefreshWindow()
-local sawRequiresGames = false
+local gamesRows = 0
 for _, row in ipairs(Achievements.windowRows) do
-    if row.achievement.category == "GAMES" and row:IsShown() then
-        if row.title._text:find("REQUIRES CRESHGAMES") then sawRequiresGames = true end
-    end
+    if row.achievement.category == "GAMES" then gamesRows = gamesRows + 1 end
 end
-ok(sawRequiresGames, "a visible GAMES-category row is labeled REQUIRES CRESHGAMES when CreshGames is absent")
+eq(gamesRows, 0, "no catalog entry has category GAMES when CreshGames is absent")
 
 _G.CreshSuite = {
     _loaded = { CRESHGAMES = true },
     IsProductLoaded = function(self, name) return self._loaded[string.upper(tostring(name or ""))] == true end,
 }
 Achievements:RefreshWindow()
-local stillFlagged = false
+gamesRows = 0
 for _, row in ipairs(Achievements.windowRows) do
-    if row.achievement.category == "GAMES" and row:IsShown() then
-        if row.title._text:find("REQUIRES CRESHGAMES") then stillFlagged = true end
-    end
+    if row.achievement.category == "GAMES" then gamesRows = gamesRows + 1 end
 end
-ok(not stillFlagged, "GAMES-category rows no longer say REQUIRES CRESHGAMES once CreshGames is loaded")
+eq(gamesRows, 0, "no catalog entry has category GAMES even once CreshGames is loaded")
 
 section("Achievements window: close")
 Achievements:CloseWindow()

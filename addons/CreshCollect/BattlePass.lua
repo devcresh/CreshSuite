@@ -124,7 +124,7 @@ Pass.premiumThemes = {
     },
 }
 
-local function paletteInfo(key, name, price, note, source, level)
+local function paletteInfo(key, name, price, note, source, level, achievementKey)
     local apiInfo = _G.CreshChatAPI and _G.CreshChatAPI.GetThemeInfo and _G.CreshChatAPI.GetThemeInfo(key) or nil
     local preset = apiInfo or (CC.UI and CC.UI.THEME_PRESETS and CC.UI.THEME_PRESETS[key])
     local fallback = { {0.10,0.11,0.14,1}, {0.38,0.44,0.54,1}, {0.20,0.24,0.30,1} }
@@ -132,6 +132,7 @@ local function paletteInfo(key, name, price, note, source, level)
         name = (apiInfo and apiInfo.name) or name, price = price, note = note,
         swatches = preset and { preset.panel, preset.accent, preset.outgoing } or fallback,
         source = source or "SHOP", level = level, requiredAddon = "CreshChat",
+        achievementKey = achievementKey,
     }
 end
 
@@ -180,8 +181,64 @@ local PASS_THEME_NAMES = {
 for level = 10, 200, 10 do
     local key = Pass.passThemeRewards[level]
     local name = PASS_THEME_NAMES[key] or key
-    paletteInfo(key, name, 0, "Exclusive Battle Pass theme unlocked at Level " .. level .. ".", "PASS", level)
+    paletteInfo(key, name, 0, "Exclusive Azeroth Chronicle theme unlocked at Level " .. level .. ".", "PASS", level)
     Pass.themeOrder[#Pass.themeOrder + 1] = key
+end
+
+-- Rework Phase 7: the forty-five remaining named CreshChat themes (Class,
+-- Profession, Raid, Faction, Zone and Special categories in
+-- CreshChat/Themes.lua) that were not already claimed by the shop or the
+-- Chronicle pass above. Each one now has an explicit, stable source: a real
+-- World of Warcraft achievement. Ownership is granted the moment the backing
+-- achievement unlocks (see the achievementThemeRewards loop in Ensure()
+-- below) -- the same "grant from source of truth" pattern passThemeRewards
+-- already uses for claimed pass levels.
+--
+-- Faction/race and Zone/capital-city themes have no achievement content of
+-- their own in this codebase (ClassAchievements.lua only covers classes, and
+-- AchievementExpansion.lua's REPUTATION/EXPLORATION series are not
+-- race-or-city specific), so those two buckets are assigned systematically
+-- (in theme-list order, against the matching category's real achievement
+-- keys) rather than by forced lore-matching that the source data can't
+-- support. Every other bucket (Class capstones, Profession masters, the one
+-- remaining Raid theme, and Special) maps to a thematically exact
+-- achievement.
+Pass.achievementThemeRewards = {
+    -- Class capstones (ACH_CLASS_<TOKEN>_010, the "Legendary" tier of each
+    -- class's own 15-tier series in ClassAchievements.lua).
+    DRUID_GROVE   = "ACH_CLASS_DRUID_010",   HUNTER_WILD  = "ACH_CLASS_HUNTER_010",
+    MAGE_ARCANE   = "ACH_CLASS_MAGE_010",    PALADIN_GOLD = "ACH_CLASS_PALADIN_010",
+    PRIEST_HOLY   = "ACH_CLASS_PRIEST_010",  ROGUE_SHADOW = "ACH_CLASS_ROGUE_010",
+    SHAMAN_STORM  = "ACH_CLASS_SHAMAN_010",  WARLOCK_FEL  = "ACH_CLASS_WARLOCK_010",
+    WARRIOR_STEEL = "ACH_CLASS_WARRIOR_010",
+    -- Professions (the Master tier of each profession's pair in
+    -- AchievementExpansion.lua's PROFESSIONS series).
+    ALCHEMY = "EXP_232", BLACKSMITH = "EXP_234", ENCHANTING = "EXP_236",
+    ENGINEERING = "EXP_238", HERBALISM = "EXP_240", MINING = "EXP_246",
+    -- Raid: the one raid theme not already claimed by the Chronicle pass.
+    KARAZHAN = "EXP_177",
+    -- Faction/race (systematic assignment against REPUTATION's ten Exalted
+    -- tiers, plus two Honored tiers to cover the two extra race themes).
+    NIGHT_ELF_MOON = "EXP_267", BLOOD_ELF_SUN = "EXP_269", DRAENEI_CRYSTAL = "EXP_271",
+    ORCISH_WARSONG = "EXP_273", TAUREN_EARTH = "EXP_275",  DWARVEN_FORGE = "EXP_277",
+    GNOMISH_GADGET = "EXP_279", HUMAN_LION = "EXP_281",    TROLL_VOODOO = "EXP_283",
+    DARK_IRON = "EXP_285",      HIGH_ELF = "EXP_266",      GOBLIN_CARTEL = "EXP_268",
+    -- Zone/capital city (systematic assignment against EXPLORATION's ZONES
+    -- and STEPS series in Achievements.lua).
+    TELDRASSIL = "ACH_WOW_ZONES_001",  MULGORE = "ACH_WOW_ZONES_002",     REDRIDGE = "ACH_WOW_ZONES_003",
+    SILITHUS = "ACH_WOW_ZONES_004",    EVERSONG_WOODS = "ACH_WOW_ZONES_005", GHOSTLANDS = "ACH_WOW_ZONES_006",
+    AZUREMYST = "ACH_WOW_ZONES_007",   BLOODMYST = "ACH_WOW_STEPS_001",  UNDERCITY = "ACH_WOW_STEPS_002",
+    IRONFORGE = "ACH_WOW_STEPS_3000",  DARNASSUS = "ACH_WOW_STEPS_4000", THUNDER_BLUFF = "ACH_WOW_STEPS_003",
+    EXODAR = "ACH_WOW_STEPS_6000",
+    -- Special: each paired with a thematically fitting Legendary/Epic
+    -- achievement (the game's ultimate legendary weapon with the game's most
+    -- prestigious Meta achievement; raid- and flight-flavoured themes with
+    -- raid-boss and flying-distance achievements).
+    FROSTMOURNE = "META_007", MOLTEN_CORE = "EXP_210", AQ_SAND = "EXP_183", OUTLAND_SKY = "EXP_081",
+}
+for themeKey, achievementKey in pairs(Pass.achievementThemeRewards) do
+    paletteInfo(themeKey, themeKey, 0, "Unlocked by completing a World of Warcraft achievement.", "ACHIEVEMENT", nil, achievementKey)
+    Pass.themeOrder[#Pass.themeOrder + 1] = themeKey
 end
 
 function Pass:RefreshThemeMetadata()
@@ -235,6 +292,13 @@ function Pass:Ensure()
     save.recent = type(save.recent) == "table" and save.recent or {}
     save.gamesRewarded = floor(max(0, tonumber(save.gamesRewarded) or 0))
     save.milestoneGoals = type(save.milestoneGoals) == "table" and save.milestoneGoals or {}
+    -- Rework Phase 6: Renown -- a non-destructive, endless rank track that
+    -- starts once level 200 (GetMaxXP()) is fully reached, so continued
+    -- World activity keeps paying off after the Chronicle's fixed levels
+    -- run out. renownClaimed is the only new save field; Renown rank itself
+    -- is a pure function of the passXP overflow past GetMaxXP(), so nothing
+    -- else needs migrating.
+    save.renownClaimed = type(save.renownClaimed) == "table" and save.renownClaimed or {}
 
     -- Ownership must only come from a purchase or a claimed Battle Pass reward.
     -- Theme preview temporarily changes ui.themePreset, so inferring ownership from
@@ -245,70 +309,52 @@ function Pass:Ensure()
             save.themeUnlockSources[themeKey] = save.themeUnlockSources[themeKey] or ("PASS:" .. tostring(level))
         end
     end
+    -- Rework Phase 7: the forty-five achievement-gated themes above. Granted
+    -- the moment the backing World achievement is unlocked -- same
+    -- normalize-from-source-of-truth pattern as the loop above.
+    if COL.Achievements and COL.Achievements.IsUnlocked then
+        for themeKey, achievementKey in pairs(self.achievementThemeRewards or {}) do
+            if COL.Achievements:IsUnlocked(achievementKey) then
+                save.unlockedThemes[themeKey] = true
+                save.themeUnlockSources[themeKey] = save.themeUnlockSources[themeKey] or ("ACHIEVEMENT:" .. achievementKey)
+            end
+        end
+    end
     -- No CreshGames sync here any more: this pass no longer grants any
     -- game-owned reward (see bonusRewardLevels above), so there is nothing
     -- to keep in sync with CreshGames' card deck/Tetris theme state.
     return save
 end
 
-Pass.milestoneDefinitions = {
-    { key="WALK_1000", kind="WALK", goal=1000, coins=4, xp=4, title="First Thousand" },
-    { key="WALK_2000", kind="WALK", goal=2000, coins=4, xp=4, title="Road Tested" },
-    { key="WALK_3000", kind="WALK", goal=3000, coins=5, xp=5, title="Three Thousand Strong" },
-    { key="WALK_4000", kind="WALK", goal=4000, coins=5, xp=5, title="Four Thousand Footfalls" },
-    { key="WALK_5000", kind="WALK", goal=5000, coins=10, xp=10, title="Trail Starter" },
-    { key="WALK_6000", kind="WALK", goal=6000, coins=6, xp=6, title="Six Thousand Strides" },
-    { key="WALK_7000", kind="WALK", goal=7000, coins=7, xp=7, title="Seven Thousand Steps" },
-    { key="WALK_8000", kind="WALK", goal=8000, coins=8, xp=8, title="Eight Thousand and Onward" },
-    { key="WALK_9000", kind="WALK", goal=9000, coins=9, xp=9, title="Nine Thousand Wanderings" },
-    { key="WALK_10000", kind="WALK", goal=10000, coins=20, xp=15, title="Long Road" },
-    { key="WALK_25000", kind="WALK", goal=25000, coins=40, xp=25, title="Zone Wanderer" },
-    { key="WALK_50000", kind="WALK", goal=50000, coins=75, xp=40, title="Azeroth Walker" },
-    { key="WALK_100000", kind="WALK", goal=100000, coins=150, xp=75, title="Endless Journey" },
-    { key="KILL_25", kind="KILL", goal=25, coins=10, xp=10, title="First Hunt" },
-    { key="KILL_100", kind="KILL", goal=100, coins=25, xp=20, title="Mob Breaker" },
-    { key="KILL_250", kind="KILL", goal=250, coins=50, xp=35, title="Threat Cleaner" },
-    { key="KILL_500", kind="KILL", goal=500, coins=100, xp=60, title="Enemy Reaper" },
-    { key="KILL_1000", kind="KILL", goal=1000, coins=200, xp=100, title="Azeroth Defender" },
-    -- Extended milestones for levels 101-200
-    { key="WALK_250000",  kind="WALK", goal=250000,  coins=300,  xp=150, title="Marathon Marcher" },
-    { key="WALK_500000",  kind="WALK", goal=500000,  coins=600,  xp=300, title="World Traverser" },
-    { key="WALK_1000000", kind="WALK", goal=1000000, coins=1200, xp=600, title="Azeroth Pilgrim" },
-    { key="KILL_2500",  kind="KILL", goal=2500,  coins=400,  xp=200, title="Unstoppable" },
-    { key="KILL_5000",  kind="KILL", goal=5000,  coins=750,  xp=375, title="Five Thousand Felled" },
-    { key="KILL_10000", kind="KILL", goal=10000, coins=1500, xp=750, title="Slayer of Thousands" },
-}
+-- Rework Phase 6: the WALK/KILL milestone table that used to live here was
+-- removed -- it duplicated the EXPLORATION "STEPS" and COMBAT "KILLS"
+-- achievement series in Achievements.lua (both tracked the exact same
+-- exploration.totalSteps/totalKills counters and paid coins+XP
+-- independently). "Keep one canonical progression series per statistic":
+-- the achievement series is now the sole source for both, and still funds
+-- Chronicle XP the same way it always did, via Achievements:Unlock. Existing
+-- players' already-claimed milestoneGoals stay in the save (Ensure() below
+-- still normalizes the field) so nothing is lost, it just no longer grants
+-- anything new.
 
-function Pass:GetGoalProgress(kind)
-    local steps, _, _, kills = 0,0,0,0
-    if COL.GameProgression and COL.GameProgression.GetExplorationSummary then steps,_,_,kills = COL.GameProgression:GetExplorationSummary() end
-    return kind == "KILL" and (kills or 0) or (steps or 0)
-end
-function Pass:GetNextMilestone(kind)
-    local save=self:Ensure(); local value=self:GetGoalProgress(kind)
-    for _,goal in ipairs(self.milestoneDefinitions) do
-        if goal.kind==kind and not save.milestoneGoals[goal.key] then return goal,value end
-    end
-    return nil,value
-end
-function Pass:CheckMilestoneGoals(kind,value)
-    local save=self:Ensure(); if not save then return end
-    value=math.floor(math.max(0,tonumber(value) or 0))
-    local unlocked = 0
-    for _,goal in ipairs(self.milestoneDefinitions) do
-        if goal.kind==kind and value>=goal.goal and not save.milestoneGoals[goal.key] then
-            save.milestoneGoals[goal.key]=true
-            unlocked = unlocked + 1
-            self:AddCoins(goal.coins,"GOAL")
-            self:AddPassXP(goal.xp,"MILESTONE",true)
-            if CC.UI and CC.UI.ShowBattlePassToast then CC.UI:ShowBattlePassToast(goal.title, "+"..goal.coins.." Cresh Coins - +"..goal.xp.." Battle Pass XP", "BATTLEPASS", "BP:GOAL:"..tostring(goal.key)) end
+-- Returns the next un-unlocked tier of `stat`'s canonical achievement series
+-- (nil if every tier is already unlocked), plus the raw current stat value.
+-- Used by the drawer's goal panel below in place of the removed milestone
+-- table, so the UI has exactly one source of truth for step/kill progress.
+function Pass:GetNextAchievementTier(stat)
+    local Ach = COL.Achievements
+    if not Ach then return nil, 0 end
+    local save = Ach:Ensure()
+    if not save then return nil, 0 end
+    local value = Ach:GetStat(stat)
+    for _, achievement in ipairs(Ach.catalog) do
+        if achievement.stat == stat and not save.unlocked[achievement.key] then
+            return achievement, value
         end
     end
-    -- Movement calls this every sample. Rebuilding the Battle Pass window and
-    -- its 200-level list when no goal changed caused the periodic frame hitch.
-    if unlocked > 0 then self:RefreshDrawer() end
-    return unlocked
+    return nil, value
 end
+
 function Pass:GetPassPanelHeight() return 446 + ((self.maxLevel or 100) * 55) end
 
 function Pass:IsPremiumTheme(theme)
@@ -380,6 +426,68 @@ function Pass:GetMaxXP()
     return self:GetCumulativeXP(self.maxLevel)
 end
 
+-- ---------------------------------------------------------------------------
+-- Rework Phase 6: Renown. Once level 200 (GetMaxXP()) is fully reached,
+-- every further AddPassXP call keeps accumulating into the same save.passXP
+-- field (it already had no ceiling -- only the *displayed level* clamped at
+-- maxLevel). Renown rank is a pure derived view of that overflow, so no new
+-- XP-tracking field is needed; only a rank-claimed table (added in Ensure()
+-- above). Renown rewards are flat, repeatable Cresh Coins only -- never a
+-- theme, deck, or anything from the fixed level 1-200 reward catalog, so
+-- Renown can never duplicate a fixed Chronicle reward.
+-- ---------------------------------------------------------------------------
+Pass.renownXPPerRank = 250
+Pass.renownCoinsPerRank = 50
+
+-- Returns rank, currentXP, neededXP, ratio -- same shape as GetProgress().
+function Pass:GetRenownRank()
+    local save = self:Ensure()
+    if not save then return 0, 0, self.renownXPPerRank, 0 end
+    local overflow = max(0, save.passXP - self:GetMaxXP())
+    local rank = floor(overflow / self.renownXPPerRank)
+    local current = overflow - (rank * self.renownXPPerRank)
+    return rank, current, self.renownXPPerRank, clamp(current / max(1, self.renownXPPerRank), 0, 1)
+end
+
+function Pass:IsRenownRewardClaimed(rank)
+    local save = self:Ensure()
+    return save and save.renownClaimed[tostring(rank)] == true or false
+end
+
+function Pass:ClaimRenownReward(rank, silent)
+    local save = self:Ensure()
+    if not save then return false end
+    rank = floor(max(1, tonumber(rank) or 1))
+    local currentRank = self:GetRenownRank()
+    if rank > currentRank then return false end
+    local key = tostring(rank)
+    if save.renownClaimed[key] then return false end
+    save.renownClaimed[key] = true
+    self:AddCoins(self.renownCoinsPerRank, "RENOWN")
+    if not silent then
+        self:RefreshDrawer()
+        if CC.UI and CC.UI.ShowBattlePassToast then
+            CC.UI:ShowBattlePassToast("Renown Rank " .. rank, "+" .. self.renownCoinsPerRank .. " Cresh Coins", "BATTLEPASS", "RENOWN:CLAIM:" .. rank)
+        end
+    end
+    return true
+end
+
+function Pass:ClaimAllRenownAvailable()
+    local claimed, coins = 0, 0
+    local currentRank = self:GetRenownRank()
+    for rank = 1, currentRank do
+        if not self:IsRenownRewardClaimed(rank) then
+            if self:ClaimRenownReward(rank, true) then
+                claimed = claimed + 1
+                coins = coins + self.renownCoinsPerRank
+            end
+        end
+    end
+    if claimed > 0 then self:RefreshDrawer() end
+    return claimed, coins
+end
+
 function Pass:GetProgress()
     local save = self:Ensure()
     if not save then return 1, 0, 50, 0 end
@@ -412,7 +520,7 @@ function Pass:GetReward(level)
     if themeKey then local _; _, themeMissingAddon = self:IsThemeAvailable(themeKey) end
     return {
         level = level, coins = coins,
-        title = self.levelNames[level] or ("Battle Pass Level " .. level),
+        title = self.levelNames[level] or ("Azeroth Chronicle Level " .. level),
         themeKey = themeKey,
         themeName = themeInfo and themeInfo.name or nil,
         themeRequiredAddon = themeMissingAddon,
@@ -529,8 +637,10 @@ function Pass:AddPassXP(amount, source, silent, isSimulation)
     amount = floor(max(0, tonumber(amount) or 0))
     if not save or amount <= 0 then return 0 end
     local previousLevel = self:GetLevelFromXP(save.passXP)
+    local previousRenownRank = self:GetRenownRank()
     save.passXP = save.passXP + amount
     local newLevel = self:GetLevelFromXP(save.passXP)
+    local newRenownRank = self:GetRenownRank()
     save.recent = { text = tostring(source or "Activity") .. " reward", xp = amount, level = newLevel, at = now() }
     if CC.UI and CC.UI.RefreshConsoleEconomy then CC.UI:RefreshConsoleEconomy() end
     if not silent then
@@ -541,7 +651,9 @@ function Pass:AddPassXP(amount, source, silent, isSimulation)
             if reward.themeName then detail = detail .. " - " .. reward.themeName .. " theme" end
             if reward.deckName then detail = detail .. " - " .. reward.deckName .. " deck" end
             if reward.tetrisThemeName then detail = detail .. " - " .. reward.tetrisThemeName .. " Tetris set" end
-            CC.UI:ShowBattlePassToast("Battle Pass Level " .. newLevel, detail, "BATTLEPASS", "BP:LEVEL:" .. tostring(newLevel))
+            CC.UI:ShowBattlePassToast("Azeroth Chronicle Level " .. newLevel, detail, "BATTLEPASS", "BP:LEVEL:" .. tostring(newLevel))
+        elseif newRenownRank > previousRenownRank and CC.UI and CC.UI.ShowBattlePassToast then
+            CC.UI:ShowBattlePassToast("Renown Rank " .. newRenownRank, "+" .. self.renownCoinsPerRank .. " Cresh Coins - reward ready", "BATTLEPASS", "RENOWN:" .. tostring(newRenownRank))
         end
     end
     return amount, previousLevel, newLevel
@@ -553,7 +665,7 @@ function Pass:ClaimReward(level, silent)
     if not save then return false end
     if not self:IsLevelReached(level) then
         local needed = max(0, self:GetCumulativeXP(level) - save.passXP)
-        if not silent and CC.Print then CC:Print("Battle Pass Level " .. level .. " needs " .. formatNumber(needed) .. " more points.") end
+        if not silent and CC.Print then CC:Print("Azeroth Chronicle Level " .. level .. " needs " .. formatNumber(needed) .. " more points.") end
         return false
     end
     local key = tostring(level)
@@ -564,12 +676,16 @@ function Pass:ClaimReward(level, silent)
     if reward.themeKey then
         save.unlockedThemes[reward.themeKey] = true
         save.themeUnlockSources[reward.themeKey] = "PASS:" .. tostring(level)
+        local suite = _G.CreshSuite
+        if suite and suite.Publish then
+            suite:Publish("CRESHCOLLECT_CHAT_THEME_UNLOCKED", { source = "CRESHCOLLECT", themeKey = reward.themeKey, unlockSource = "PASS:" .. tostring(level) })
+        end
     end
     save.recent = { text = "Level " .. level .. " unlocked", coins = reward.coins, theme = reward.themeKey, at = now() }
     if not silent and CC.Print then
         local extra = ""
         if reward.themeName then extra = extra .. " + " .. reward.themeName .. " theme" end
-        CC:Print("Battle Pass Level " .. level .. " unlocked: +" .. reward.coins .. " Cresh Coins" .. extra .. ".")
+        CC:Print("Azeroth Chronicle Level " .. level .. " unlocked: +" .. reward.coins .. " Cresh Coins" .. extra .. ".")
     end
     if not silent then
         self:RefreshDrawer()
@@ -579,7 +695,7 @@ function Pass:ClaimReward(level, silent)
             if reward.themeName then detail = detail .. " - " .. reward.themeName .. " theme unlocked" end
             if reward.deckName then detail = detail .. " - " .. reward.deckName .. " deck unlocked" end
             if reward.tetrisThemeName then detail = detail .. " - " .. reward.tetrisThemeName .. " Tetris set unlocked" end
-            CC.UI:ShowBattlePassToast("Battle Pass reward unlocked", "Level " .. level .. " - " .. detail, "BATTLEPASS", "BP:CLAIM:" .. tostring(level))
+            CC.UI:ShowBattlePassToast("Azeroth Chronicle reward unlocked", "Level " .. level .. " - " .. detail, "BATTLEPASS", "BP:CLAIM:" .. tostring(level))
         end
     end
     return true
@@ -597,14 +713,14 @@ function Pass:ClaimAllAvailable()
         end
     end
     if CC.Print then
-        if claimed == 0 then CC:Print("No Battle Pass rewards are ready to unlock.")
-        else CC:Print(claimed .. " Battle Pass rewards unlocked: +" .. formatNumber(total) .. " Cresh Coins.") end
+        if claimed == 0 then CC:Print("No Azeroth Chronicle rewards are ready to unlock.")
+        else CC:Print(claimed .. " Azeroth Chronicle rewards unlocked: +" .. formatNumber(total) .. " Cresh Coins.") end
     end
     self:RefreshDrawer()
     if claimed > 0 then
         if CC.SoloGames and CC.SoloGames.RefreshTetrisPanels then CC.SoloGames:RefreshTetrisPanels(true) end
         if CC.UI and CC.UI.ShowBattlePassToast then
-            CC.UI:ShowBattlePassToast("Battle Pass rewards unlocked", tostring(claimed) .. " rewards - +" .. formatNumber(total) .. " Cresh Coins", "BATTLEPASS", "BP:CLAIMALL:" .. tostring(now()))
+            CC.UI:ShowBattlePassToast("Azeroth Chronicle rewards unlocked", tostring(claimed) .. " rewards - +" .. formatNumber(total) .. " Cresh Coins", "BATTLEPASS", "BP:CLAIMALL:" .. tostring(now()))
         end
     end
     return claimed, total
@@ -622,52 +738,12 @@ function Pass:GetClaimedRewardCount()
     return claimed, self.maxLevel
 end
 
--- DORMANT: no callers as of the Phase 3 progression-routing audit (2026-06-30).
--- SoloGames:RecordHistory used to call this alongside GameProgression:OnGameCompleted,
--- double-funding Cresh Coins/Pass XP from a single game result. GameProgression's
--- AddGameXP/AwardGameLevel path is now the sole game-completion route into the
--- shared Battle Pass pools. Do not re-wire this without removing that duplication.
-function Pass:AwardForGame(entry)
-    local save = self:Ensure()
-    if not save or type(entry) ~= "table" then return 0, 0 end
-    local result = upper(tostring(entry.result or "RUN"))
-    local mode = upper(tostring(entry.mode or "SOLO"))
-    local score = floor(max(0, tonumber(entry.score) or 0))
-    local previousLevel = self:GetLevelFromXP(save.passXP)
-
-    local xp, coins = 20, 5
-    if result == "WIN" then xp, coins = xp + 18, coins + 9
-    elseif result == "DRAW" then xp, coins = xp + 10, coins + 5
-    elseif result == "LOSS" then xp, coins = xp + 6, coins + 3
-    elseif result == "RUN" then
-        local runBonus = min(20, floor(score / 100))
-        xp = xp + runBonus
-        coins = coins + min(10, floor(runBonus / 2))
-    end
-
-    local game = upper(tostring(entry.game or "GAME"))
-    if game == "DUNGEON" then xp = xp + min(20, floor(score / 5)) end
-    if game == "FROGGER" then xp = xp + min(15, floor(score / 500)) end
-    if mode == "MULTIPLAYER" or mode == "MULTI" then xp, coins = xp * 2, coins * 2 end
-
-    save.passXP = save.passXP + xp
-    save.gamesRewarded = save.gamesRewarded + 1
-    self:AddCoins(coins, "GAME")
-    local newLevel = self:GetLevelFromXP(save.passXP)
-    save.recent = { text = tostring(entry.game or "Game") .. " completed", xp = xp, coins = coins, level = newLevel, at = now() }
-    if newLevel > previousLevel and CC.UI and CC.UI.ShowBattlePassToast then
-        local reward = self:GetReward(newLevel)
-        local extra = " - reward ready"
-        if reward.themeName then extra = extra .. " - " .. reward.themeName .. " theme" end
-        if reward.deckName then extra = extra .. " - " .. reward.deckName .. " deck" end
-        if reward.tetrisThemeName then extra = extra .. " - " .. reward.tetrisThemeName .. " Tetris" end
-        CC.UI:ShowBattlePassToast("Battle Pass Level " .. newLevel, "+" .. xp .. " points - +" .. coins .. " Cresh Coins" .. extra, "BATTLEPASS", "BP:GAMELEVEL:" .. tostring(newLevel))
-    elseif CC.UI and CC.UI.gameDrawer and CC.UI.gameDrawer.creshOpen and CC.UI.SetGameDrawerStatus then
-        CC.UI:SetGameDrawerStatus("+" .. xp .. " Pass Points · +" .. coins .. " Cresh Coins from " .. tostring(entry.game or "game") .. ".")
-    end
-    self:RefreshDrawer()
-    return xp, coins
-end
+-- Rework Phase 6 removed Pass:AwardForGame here -- it was already DORMANT
+-- (no callers, explicitly deprecated in favor of GameProgression's own
+-- CreshGames-side route) and awarded CreshGames-specific game results
+-- (DUNGEON/FROGGER score bonuses, multiplayer doubling) into this pass,
+-- which the rework's ownership rules ("remove only CreshGames-specific
+-- content"; "do not fund CreshGames XP or rewards" in reverse) forbid.
 
 function Pass:BuyTheme(theme)
     theme = upper(tostring(theme or ""))
@@ -687,6 +763,14 @@ function Pass:BuyTheme(theme)
     if info.source == "PASS" and info.level then
         self.selectedTheme = theme
         self:SelectRequirement(info.level)
+        return false
+    end
+    if info.source == "ACHIEVEMENT" then
+        local achievement = COL.Achievements and COL.Achievements.byKey and COL.Achievements.byKey[info.achievementKey]
+        if CC.Print then
+            CC:Print((info.name or theme) .. " unlocks by completing the achievement: "
+                .. tostring(achievement and achievement.title or info.achievementKey) .. ".")
+        end
         return false
     end
     if save.coins < info.price then
@@ -944,10 +1028,10 @@ function Pass:BuildDrawerPanels(drawer, api)
 
     hero.title = createFont(hero, 16, colors.text, "LEFT")
     hero.title:SetPoint("TOPLEFT", hero, "TOPLEFT", 12, -10)
-    hero.title:SetText("CRESH BATTLE PASS")
+    hero.title:SetText("AZEROTH CHRONICLE")
     hero.subtitle = createFont(hero, 9, colors.muted, "LEFT")
     hero.subtitle:SetPoint("TOPLEFT", hero.title, "BOTTOMLEFT", 0, -4)
-    hero.subtitle:SetText(tostring(self.maxLevel) .. " levels · play any solo or multiplayer game to earn Pass Points, coins and themes.")
+    hero.subtitle:SetText(tostring(self.maxLevel) .. " levels · explore Azeroth and earn achievements to gain Pass Points, coins and themes.")
 
     hero.level = createFont(hero, 24, colors.text, "LEFT")
     hero.level:SetPoint("TOPLEFT", hero, "TOPLEFT", 12, -49)
@@ -1173,20 +1257,15 @@ function Pass:RefreshDrawerPanel(drawer, api)
     local level, current, required, ratio = self:GetProgress()
     drawer.passHero.level:SetText("LEVEL " .. level .. " / " .. self.maxLevel)
     drawer.passHero.wallet:SetText(self:GetWalletText() .. " CRESH COINS")
-    -- Reward rows can't say which levels specifically grant a card deck or
-    -- Tetris theme without CreshGames' own reward-tier data (see GetReward),
-    -- so rather than guess, this single always-visible line names the addon
-    -- those specific extras require whenever it isn't loaded.
+    -- Rework Phase 6: this pass no longer grants card decks/Tetris themes at
+    -- all (that split to CreshGames' own Arcade Pass back in Phase 10), so
+    -- the subtitle no longer needs a CreshGames-presence branch.
     if drawer.passHero.subtitle then
-        if _G.CreshSuite and _G.CreshSuite:IsProductLoaded("CreshGames") then
-            drawer.passHero.subtitle:SetText(tostring(self.maxLevel) .. " levels · play any solo or multiplayer game to earn Pass Points, coins and themes.")
-        else
-            drawer.passHero.subtitle:SetText(tostring(self.maxLevel) .. " levels · card deck and Tetris theme rewards require CreshGames.")
-        end
+        drawer.passHero.subtitle:SetText(tostring(self.maxLevel) .. " levels · explore Azeroth and earn achievements to gain Pass Points, coins and themes.")
     end
     drawer.passHero.progress:SetMinMaxValues(0, max(1, required))
     drawer.passHero.progress:SetValue(level >= self.maxLevel and required or current)
-    drawer.passHero.progressText:SetText(level >= self.maxLevel and "BATTLE PASS COMPLETE" or (formatNumber(current) .. " / " .. formatNumber(required) .. " POINTS TO LEVEL " .. (level + 1)))
+    drawer.passHero.progressText:SetText(level >= self.maxLevel and "AZEROTH CHRONICLE COMPLETE" or (formatNumber(current) .. " / " .. formatNumber(required) .. " POINTS TO LEVEL " .. (level + 1)))
     if drawer.goalBox then
         local worldOn = CC.IsFeatureEnabled and CC:IsFeatureEnabled("worldProgression")
         if worldOn == false then
@@ -1197,8 +1276,8 @@ function Pass:RefreshDrawerPanel(drawer, api)
             drawer.goalBox.killBar:SetMinMaxValues(0,1); drawer.goalBox.killBar:SetValue(0)
         else
             drawer.goalBox.title:SetText("EXPLORATION GOALS")
-            local walk,walkValue=self:GetNextMilestone("WALK")
-            local kill,killValue=self:GetNextMilestone("KILL")
+            local walk,walkValue=self:GetNextAchievementTier("STEPS")
+            local kill,killValue=self:GetNextAchievementTier("KILLS")
             if walk then
                 drawer.goalBox.walk:SetText(walk.title .. " · " .. formatNumber(walkValue) .. "/" .. formatNumber(walk.goal) .. " steps · +" .. walk.coins .. " coins / +" .. walk.xp .. " XP")
                 drawer.goalBox.walkBar:SetMinMaxValues(0,walk.goal); drawer.goalBox.walkBar:SetValue(math.min(walk.goal,walkValue))
@@ -1218,11 +1297,16 @@ function Pass:RefreshDrawerPanel(drawer, api)
     local selectedRequirement = self:GetRequirement(self.selectedLevel)
     drawer.passRequirementLevel = selectedRequirement.level
     local route = selectedRequirement.route
-    local gamesOn = CC.IsFeatureEnabled and CC:IsFeatureEnabled("games")
-    local routeOn = gamesOn and (route.mode ~= "MULTIPLAYER" or CC:IsFeatureEnabled("multiplayerGames"))
-    if not selectedRequirement.reached and not routeOn then
+    -- Rework Phase 6: the requirement route is always worldRequirementRoute
+    -- now (no CreshGames-mode routes exist since Phase 3), so this gate must
+    -- check the world-progression feature flag, not "games"/"multiplayerGames"
+    -- -- checking the latter let a player with World Progression enabled but
+    -- Games disabled see an incorrect "MODULE OFF" state on a requirement
+    -- that has nothing to do with CreshGames.
+    local worldOn = CC.IsFeatureEnabled and CC:IsFeatureEnabled("worldProgression")
+    if not selectedRequirement.reached and worldOn == false then
         drawer.passRequirement.title:SetText("LEVEL " .. selectedRequirement.level .. " REQUIREMENT · MODULE OFF")
-        drawer.passRequirement.detail:SetText("Games is disabled in Settings > Modules, so this requirement can't progress. Re-enable Games to continue the Battle Pass.")
+        drawer.passRequirement.detail:SetText("World Progression is disabled in Settings > Modules, so this requirement can't progress. Re-enable World Progression to continue the Azeroth Chronicle.")
         drawer.passRequirement.action.label:SetText("MODULE OFF")
         setButtonEnabled(drawer.passRequirement.action, false)
         applyBackdrop(drawer.passRequirement, darken(colors.muted, 0.78), colors.muted)
@@ -1286,14 +1370,20 @@ function Pass:RefreshDrawerPanel(drawer, api)
                 local previewing = previewActive and previewName == theme
                 local selected = self.selectedTheme == theme
                 local available, missingAddon = self:IsThemeAvailable(theme)
+                local achievementInfo = info.source == "ACHIEVEMENT" and COL.Achievements and COL.Achievements.byKey
+                    and COL.Achievements.byKey[info.achievementKey] or nil
                 if previewing then
                     if info.source == "PASS" and info.level then
-                        row.price:SetText("PREVIEW ACTIVE · BATTLE PASS LEVEL " .. tostring(info.level))
+                        row.price:SetText("PREVIEW ACTIVE · CHRONICLE LEVEL " .. tostring(info.level))
+                    elseif info.source == "ACHIEVEMENT" then
+                        row.price:SetText("PREVIEW ACTIVE · ACHIEVEMENT: " .. upper(tostring(achievementInfo and achievementInfo.title or info.achievementKey)))
                     else
                         row.price:SetText("PREVIEW ACTIVE · " .. formatNumber(info.price) .. " CRESH COINS")
                     end
                 elseif info.source == "PASS" and info.level then
-                    row.price:SetText("BATTLE PASS LEVEL " .. tostring(info.level))
+                    row.price:SetText("CHRONICLE LEVEL " .. tostring(info.level))
+                elseif info.source == "ACHIEVEMENT" then
+                    row.price:SetText("ACHIEVEMENT: " .. upper(tostring(achievementInfo and achievementInfo.title or info.achievementKey)))
                 else
                     row.price:SetText(formatNumber(info.price) .. " CRESH COINS")
                 end
@@ -1317,6 +1407,11 @@ function Pass:RefreshDrawerPanel(drawer, api)
                     row.button.label:SetText(reached and "VIEW REWARD" or "VIEW LEVEL")
                     setButtonEnabled(row.button, true)
                     if setAccent then setAccent(row.button, reached and colors.green or (colors.quest or colors.blue)) end
+                    applyBackdrop(row, colors.panelSoft, (previewing or selected) and (colors.quest or colors.blue) or colors.border)
+                elseif available and info.source == "ACHIEVEMENT" then
+                    row.button.label:SetText("LOCKED")
+                    setButtonEnabled(row.button, false)
+                    if setAccent then setAccent(row.button, colors.muted) end
                     applyBackdrop(row, colors.panelSoft, (previewing or selected) and (colors.quest or colors.blue) or colors.border)
                 elseif available then
                     local canBuy = save.coins >= info.price
@@ -1535,7 +1630,7 @@ function Pass:BuildWindow()
     winApplyBackdrop(header, winDarken(colors.quest, 0.32), colors.quest)
     local titleLabel = winCreateText(header, 11, colors.text, "LEFT")
     titleLabel:SetPoint("TOPLEFT", header, "TOPLEFT", 10, -10)
-    titleLabel:SetText("BATTLE PASS")
+    titleLabel:SetText("AZEROTH CHRONICLE")
     local closeBtn = CreateFrame("Button", nil, header, winTemplateName())
     closeBtn:SetSize(22, 22)
     closeBtn:SetPoint("TOPRIGHT", header, "TOPRIGHT", -4, -6)
@@ -1722,11 +1817,13 @@ function Pass:RefreshWindow()
     self.windowHero.wallet:SetText(self:GetWalletText() .. " CRESH COINS")
     self.windowHero.progress:SetMinMaxValues(0, max(1, required))
     self.windowHero.progress:SetValue(level >= self.maxLevel and required or current)
-    self.windowHero.progressText:SetText(level >= self.maxLevel and "BATTLE PASS COMPLETE"
+    self.windowHero.progressText:SetText(level >= self.maxLevel and "AZEROTH CHRONICLE COMPLETE"
         or (formatNumber(current) .. " / " .. formatNumber(required) .. " POINTS TO LEVEL " .. (level + 1)))
+    -- Rework Phase 6: this pass only grants chat themes now (card decks/
+    -- Tetris themes moved to CreshGames' own Arcade Pass back in Phase 10),
+    -- so only a missing CreshChat is ever relevant here.
     local missing = {}
     if not isProductLoaded("CreshChat") then missing[#missing + 1] = "chat themes require CreshChat" end
-    if not isProductLoaded("CreshGames") then missing[#missing + 1] = "card decks and Tetris themes require CreshGames" end
     self.windowHero.notice:SetText(#missing > 0 and (table.concat(missing, " · ") .. ". Claims are banked until those addons are enabled.") or "")
 
     if not self.windowSelectedLevel then

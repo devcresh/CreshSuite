@@ -56,18 +56,45 @@ local function progressionFeatureEnabled()
     return cc:IsFeatureEnabled("gameProgression") ~= false
 end
 
+-- Rework Phase 8: one-time, self-healing migration from CreshCollect's
+-- pre-split per-game level data, so existing players don't lose their
+-- levels. Read via the Suite service, never CreshCollectDB directly.
+--
+-- This used to commit to gameLevels = {} the very first time Ensure() ran,
+-- even if CreshCollect's GetLegacyGameLevels service wasn't registered yet
+-- (e.g. an unusual inter-addon load order) -- since that empty table is
+-- truthy, the "not yet migrated" check could never be true again, silently
+-- and permanently losing the import for that player. gameLevels is now
+-- populated immediately so every other method keeps working, while a
+-- separate migratedLegacyLevels flag (not "is the table non-nil") gates the
+-- one-shot import, and only a confirmed PLAYER_LOGIN attempt -- guaranteed
+-- to run after every addon has finished loading, mirroring
+-- CreshCollectDatabase.lua's v3 "isFinalAttempt" migration -- is allowed to
+-- permanently record "nothing to import". Union, not overwrite: any level
+-- already recorded by real gameplay before the import lands is preserved.
+local function importLegacyGameLevels(isFinalAttempt)
+    if not _G.CreshGamesDB then return end
+    _G.CreshGamesDB.gameLevels = type(_G.CreshGamesDB.gameLevels) == "table" and _G.CreshGamesDB.gameLevels or {}
+    if _G.CreshGamesDB.migratedLegacyLevels then return end
+
+    local suite = _G.CreshSuite
+    local getter = suite and suite.GetService and suite:GetService("GetLegacyGameLevels")
+    local legacy = getter and getter()
+    if type(legacy) == "table" then
+        for game, record in pairs(legacy) do
+            if _G.CreshGamesDB.gameLevels[game] == nil then
+                _G.CreshGamesDB.gameLevels[game] = record
+            end
+        end
+        _G.CreshGamesDB.migratedLegacyLevels = true
+    elseif isFinalAttempt then
+        _G.CreshGamesDB.migratedLegacyLevels = true
+    end
+end
+
 function Progression:Ensure()
     if not _G.CreshGamesDB then return nil end
-    _G.CreshGamesDB.gameLevels = type(_G.CreshGamesDB.gameLevels) == "table" and _G.CreshGamesDB.gameLevels or nil
-    if not _G.CreshGamesDB.gameLevels then
-        -- One-time, self-healing migration from CreshCollect's pre-split
-        -- per-game level data, so existing players don't lose their levels.
-        -- Read via the Suite service, never CreshCollectDB directly.
-        local suite = _G.CreshSuite
-        local getter = suite and suite.GetService and suite:GetService("GetLegacyGameLevels")
-        local legacy = getter and getter()
-        _G.CreshGamesDB.gameLevels = type(legacy) == "table" and legacy or {}
-    end
+    importLegacyGameLevels(false)
     return _G.CreshGamesDB.gameLevels
 end
 
@@ -173,6 +200,10 @@ function Progression:OnGameStarted(game, mode)
     if not progressionFeatureEnabled() then return 0 end
     game = upper(tostring(game or "GAME"))
     mode = upper(tostring(mode or "SOLO"))
+    -- Rework Phase 3: Arcade Pass XP pays in directly here, independent of
+    -- the per-game Mastery XP below -- a Mastery level-up is never a
+    -- precondition for funding the Arcade Pass on a game start.
+    if CG.BattlePass and CG.BattlePass.AwardGameStart then CG.BattlePass:AwardGameStart(game, mode, true) end
     local gain = (mode == "MULTIPLAYER" or mode == "MULTI") and 10 or 5
     local record = self:GetGameRecord(game)
     if record then record.starts = floor(max(0, tonumber(record.starts) or 0)) + 1 end
@@ -192,6 +223,12 @@ function Progression:OnGameCompleted(entry)
     local record = self:GetGameRecord(game)
     if not record then return 0 end
 
+    -- Rework Phase 3: Arcade Pass XP pays in directly from the completed
+    -- result -- covers "completed game", "win/loss/draw", "score
+    -- milestones" and "multiplayer completion" in one call, independent of
+    -- the per-game Mastery XP below (no Mastery level-up required first).
+    if CG.BattlePass and CG.BattlePass.AwardGameResult then CG.BattlePass:AwardGameResult(entry, false) end
+
     local gain = 10
     if result == "WIN" then gain = 30; record.wins = record.wins + 1
     elseif result == "DRAW" then gain = 20; record.draws = record.draws + 1
@@ -208,3 +245,20 @@ function Progression:OnGameCompleted(entry)
     end
     return gain
 end
+
+-- Final-attempt safety net: PLAYER_LOGIN always fires after every addon has
+-- finished loading, so if CreshCollect is installed its GetLegacyGameLevels
+-- service is guaranteed to be registered by now. Only this call is allowed
+-- to permanently record "nothing to import" (see importLegacyGameLevels
+-- above); ordinary Ensure() calls before this point may retry harmlessly.
+local eventFrame = CreateFrame("Frame")
+local function safeRegister(event)
+    if eventFrame and eventFrame.RegisterEvent then pcall(eventFrame.RegisterEvent, eventFrame, event) end
+end
+safeRegister("PLAYER_LOGIN")
+
+eventFrame:SetScript("OnEvent", function(_, event)
+    if event == "PLAYER_LOGIN" then
+        importLegacyGameLevels(true)
+    end
+end)

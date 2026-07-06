@@ -156,6 +156,8 @@ eq(s1.collections.totalUnlocked, 0, "fresh save has 0 unlocked collection items"
 eq(s1.collections.totalKnown, nil, "totalKnown is nil (unknowable) when CreshGames is absent")
 ok(s1.gamesLoaded == false, "gamesLoaded correctly false with no CreshSuite/CreshChat at all")
 
+ok(s1.creshGames.hasData == false, "creshGames section has no data when CreshGames is absent (Rework Phase 9)")
+
 for _, bucket in ipairs(s1.collections.buckets) do
     ok(bucket.total == nil or bucket.key == "dungeonArmour" or bucket.key == "cosmetics" or bucket.total == nil,
         "bucket '" .. bucket.key .. "' has no total without CreshGames (avoids a fabricated number)")
@@ -229,8 +231,28 @@ _G.CreshChat = {
     },
     CardDecks = { premiumOrder = { "A", "B", "C", "D", "E", "F" } },
 }
+-- Rework Phase 9: the creshGames section reads exclusively through
+-- CreshGamesAPI (never CC.* directly), unlike the pre-existing collections
+-- totals above.
+_G.CreshGamesAPI = {
+    GetArcadePassProgress   = function() return 42, 10, 100, 0.1 end,
+    GetGameMasteryProgress  = function(game)
+        if game == "TETRIS" then return 7, 5, 50, 0.1 end
+        if game == "DUNGEON" then return 3, 2, 40, 0.05 end
+        return 1, 0, 1, 0
+    end,
+    GetGameAchievementCounts = function() return 12, 116 end,
+}
 local s5 = Overview:GetSummary()
 ok(s5.gamesLoaded, "gamesLoaded is true once CreshSuite reports CreshGames registered")
+
+ok(s5.creshGames.hasData, "creshGames section has data once CreshGames + CreshGamesAPI are present")
+eq(s5.creshGames.arcadePass.level, 42, "arcadePass level comes from CreshGamesAPI.GetArcadePassProgress()")
+eq(s5.creshGames.tetrisMastery.level, 7, "tetrisMastery level comes from CreshGamesAPI.GetGameMasteryProgress('TETRIS')")
+eq(s5.creshGames.delverMastery.level, 3, "delverMastery level comes from CreshGamesAPI.GetGameMasteryProgress('DUNGEON')")
+eq(s5.creshGames.achievements.unlocked, 12, "creshGames achievements unlocked comes from CreshGamesAPI.GetGameAchievementCounts()")
+eq(s5.creshGames.achievements.total, 116, "creshGames achievements total comes from CreshGamesAPI.GetGameAchievementCounts()")
+eq(s5.creshGames.achievements.ratio, Overview.safeRatio(12, 116), "creshGames achievements ratio computed via safeRatio")
 local themesBucket, decksBucket
 for _, b in ipairs(s5.collections.buckets) do
     if b.key == "themes" then themesBucket = b end
@@ -240,21 +262,37 @@ eq(themesBucket.total, 50, "themes total now comes from CC.Tetris:GetThemeCount(
 eq(decksBucket.total, 6, "cardDecks total now comes from #CC.CardDecks.premiumOrder")
 eq(s5.collections.totalKnown, 50 + 50 + 6, "totalKnown sums the three buckets with known totals")
 
+-- Rework Phase 5: GAMES achievements (and Dungeon Dwellers') moved to
+-- CreshGames entirely, so COL.Achievements.categoryOrder no longer has a
+-- GAMES entry at all -- CreshCollect's achievement breakdown is World-only
+-- now, regardless of whether CreshGames is loaded.
 local gamesCat
 for _, cat in ipairs(s5.achievements.categories) do
     if cat.key == "GAMES" then gamesCat = cat end
 end
-ok(gamesCat ~= nil, "GAMES category is present in the achievements breakdown")
-ok(gamesCat.missingAddon == nil, "GAMES category no longer flags a missing addon once CreshGames is loaded")
+ok(gamesCat == nil, "GAMES category is absent from CreshCollect's achievements breakdown even when CreshGames is loaded")
+
+-- Rendering check while CreshGamesAPI is still mocked, before the reset
+-- below -- confirms the CreshGames card actually reflects "available".
+local okBuild5, errBuild5 = pcall(function() Overview:BuildWindow() end)
+ok(okBuild5, "BuildWindow() does not error while CreshGames is loaded (err: " .. tostring(errBuild5) .. ")")
+Overview:OpenWindow()
+ok(Overview.gamesCard._alpha == 1, "CreshGames card is fully opaque once CreshGamesAPI data is available")
+ok(Overview.gamesCard.rows[1].value._text:find("42") ~= nil, "Arcade Pass row shows the mocked level 42")
+ok(Overview.gamesCard.rows[2].value._text:find("7") ~= nil, "Tetris Mastery row shows the mocked level 7")
+ok(Overview.gamesCard.rows[3].value._text:find("3") ~= nil, "Delver Mastery row shows the mocked level 3")
+ok(Overview.gamesCard.rows[4].value._text:find("12") ~= nil, "Achievements row shows the mocked unlocked count 12")
 
 _G.CreshSuite = nil
 _G.CreshChat = nil
+_G.CreshGamesAPI = nil
 local s6 = Overview:GetSummary()
 local gamesCat2
 for _, cat in ipairs(s6.achievements.categories) do
     if cat.key == "GAMES" then gamesCat2 = cat end
 end
-eq(gamesCat2.missingAddon, "CreshGames", "GAMES category flags CreshGames missing once it's unloaded again")
+ok(gamesCat2 == nil, "GAMES category stays absent when CreshGames is unloaded too -- CreshCollect never had it")
+ok(s6.creshGames.hasData == false, "creshGames section has no data once CreshGames is unloaded again")
 
 -- ============================================================
 -- 6. Rendering: window build/open/refresh, using the calculations above
@@ -271,6 +309,7 @@ ok(Overview.bpCard._alpha == 1, "Battle Pass card is fully opaque when its data 
 ok(Overview.achCard._alpha == 1, "Achievements card is fully opaque when its data is available")
 ok(Overview.colCard._alpha == 1, "Collections card is fully opaque when its data is available")
 ok(Overview.bpCard.levelText._text:find(tostring(Pass.maxLevel)) ~= nil, "Battle Pass card shows the maxed level text")
+ok(Overview.gamesCard._alpha == 0.5, "CreshGames card is dimmed once CreshGames is unloaded again (Rework Phase 9)")
 
 Overview:CloseWindow()
 ok(not Overview:IsWindowOpen(), "window reports closed after CloseWindow()")

@@ -109,6 +109,25 @@ function Decks:UnlockDeck(deckKey, source, silent)
     return newlyUnlocked
 end
 
+-- A reward slot that names a specific deck (e.g. an Arcade Pass level) can
+-- target a deck the player already owns -- most commonly their own randomly
+-- assigned starter deck. Rather than let that reward silently do nothing,
+-- substitute the next locked premium deck; if every premium deck is already
+-- owned, tell the caller so it can substitute a coin voucher instead.
+-- Returns true if a deck was newly unlocked (the named one or a substitute),
+-- false if every premium deck was already owned (nothing left to grant).
+function Decks:GrantDeckOrVoucher(deckKey, source, silent)
+    if self:UnlockDeck(deckKey, source, silent) then return true end
+    local save = self:Ensure()
+    if not save then return false end
+    for _, candidate in ipairs(self.premiumOrder) do
+        if candidate ~= save.starterDeck and not save.unlocked[candidate] then
+            return self:UnlockDeck(candidate, tostring(source or "REWARD") .. ":VOUCHER", silent)
+        end
+    end
+    return false
+end
+
 function Decks:GetUnlockedOrder()
     local save = self:Ensure()
     local result, seen = {}, {}

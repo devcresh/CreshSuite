@@ -46,52 +46,49 @@ Suite:RegisterSettingsProvider("CreshCollect", {
                 local db  = colDB()
                 local ach = db and db.achievements
                 b:Section("Achievement summary")
-                if ach then
-                    local count = 0
-                    if type(ach.unlocked) == "table" then for _ in pairs(ach.unlocked) do count = count + 1 end end
-                    b:Note("Achievements tracked: " .. tostring(count))
+                -- Counted via COL.Achievements:GetCounts() rather than the raw
+                -- SavedVariables table: CreshCollect's achievement catalog is
+                -- World-only now (Rework Phase 5 moved GAMES achievements to
+                -- CreshGames), but db.achievements.unlocked may still carry
+                -- old GAMES-category entries from before that move -- the
+                -- module's own catalog-driven count already excludes those.
+                if ach and COL.Achievements then
+                    local unlocked, total = COL.Achievements:GetCounts()
+                    b:Note("World achievements unlocked: " .. tostring(unlocked) .. " / " .. tostring(total))
                     b:Note("Lifetime Pass XP from achievements: " .. tostring(ach.totalPassXP or 0))
                     b:Note("Lifetime Cresh Coins from achievements: " .. tostring(ach.totalCoins or 0))
                 else
                     b:Note("No achievement data yet. Play with CreshCollect loaded to begin tracking.")
                 end
-                b:Section("Dungeon achievements")
-                local ddA = db and db.ddAchievements
-                if ddA then
-                    local ddCount = 0
-                    if type(ddA.unlocked) == "table" then for _ in pairs(ddA.unlocked) do ddCount = ddCount + 1 end end
-                    b:Note("Dungeon achievements unlocked: " .. tostring(ddCount))
-                else
-                    b:Note("No Dungeon Dwellers achievement data yet.")
-                end
+                b:Note("Cresh Games and Dungeon Dwellers achievements moved to CreshGames' own Achievements panel.")
             end,
         },
         {
             key   = "BATTLEPASS",
-            label = "Battle Pass",
-            desc  = "Battle Pass progress, XP and level reward history.",
+            label = "Azeroth Chronicle",
+            desc  = "Azeroth Chronicle progress, XP and level reward history.",
             build = function(b)
                 local db  = colDB()
                 local arc = db and db.arcadeRewards
-                b:Section("Battle Pass progress")
+                b:Section("Azeroth Chronicle progress")
                 if arc then
                     b:Note("Pass XP earned: " .. tostring(arc.passXP or 0))
                     local claimedCount = 0
                     if type(arc.claimed) == "table" then for _ in pairs(arc.claimed) do claimedCount = claimedCount + 1 end end
                     b:Note("Level rewards claimed: " .. tostring(claimedCount))
                 else
-                    b:Note("No Battle Pass data yet. Play games and complete activities with CreshCollect loaded.")
+                    b:Note("No Azeroth Chronicle data yet. Explore Azeroth and complete achievements with CreshCollect loaded.")
                 end
                 b:Section("Actions")
                 if COL.BattlePass then
                     b:Buttons({
-                        { "OPEN BATTLE PASS", function()
+                        { "OPEN AZEROTH CHRONICLE", function()
                             if COL.BattlePass.Open then COL.BattlePass:Open()
                             elseif CC.UI and CC.UI.OpenGameDrawer then CC.UI:OpenGameDrawer("BATTLEPASS") end
-                        end, 160 },
+                        end, 190 },
                     })
                 else
-                    b:Note("Battle Pass module is not loaded.")
+                    b:Note("Azeroth Chronicle module is not loaded.")
                 end
             end,
         },
@@ -134,7 +131,7 @@ Suite:RegisterSettingsProvider("CreshCollect", {
                     b:Note("Dungeon armour: " .. tostring(countTable(col.dungeonArmour)))
                     b:Note("Other cosmetics: " .. tostring(countTable(col.cosmetics)))
                 else
-                    b:Note("No collection data yet. Earn Cresh Coins and complete Battle Pass levels to unlock cosmetics.")
+                    b:Note("No collection data yet. Earn Cresh Coins and complete Azeroth Chronicle levels to unlock cosmetics.")
                 end
                 b:Note("Unlocks are synced from CreshGames via the CreshSuite event bus and are never duplicated or overwritten.")
             end,

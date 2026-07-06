@@ -108,7 +108,7 @@ function Progression:AwardExploration(coins, passXP, title, detail, showToast)
     exploration.passXP = exploration.passXP + passXP
     if showToast and CC.UI and CC.UI.ShowGameToast then
         CC.UI:ShowGameToast(title or "Explorer Reward",
-            tostring(detail or "") .. " · +" .. coins .. " Cresh Coins · +" .. passXP .. " Battle Pass XP", "SUCCESS", "EXPLORATION:" .. tostring(title or detail or time()))
+            tostring(detail or "") .. " · +" .. coins .. " Cresh Coins · +" .. passXP .. " Chronicle XP", "SUCCESS", "EXPLORATION:" .. tostring(title or detail or time()))
     end
     if CC.UI and CC.UI.gameDrawer and CC.UI.RefreshGameDrawer then CC.UI:RefreshGameDrawer(true) end
 end
@@ -143,7 +143,6 @@ function Progression:ProcessMovement()
                     exploration.rewardedStepBlocks = blocks
                     self:AwardExploration(newBlocks * 2, newBlocks * 2, "Explorer Steps", tostring(newBlocks * 1000) .. " steps travelled", true)
                 end
-                if COL.BattlePass and COL.BattlePass.CheckMilestoneGoals then COL.BattlePass:CheckMilestoneGoals("WALK", exploration.totalSteps) end
                 if COL.Achievements then
                     if COL.Achievements.EvaluateStat then COL.Achievements:EvaluateStat("STEPS", false)
                     elseif COL.Achievements.EvaluateAll then COL.Achievements:EvaluateAll(false) end
@@ -177,10 +176,6 @@ function Progression:CheckArea(initial)
     else
         self:AwardExploration(3, 2, "New Area Discovered", area, not initial)
     end
-    if CC.IsFeatureEnabled and CC:IsFeatureEnabled("games") and CC.DungeonDwellersPass and CC.DungeonDwellersPass.RecordZone then
-        local dungeonZoneKey = tostring(mapID) .. ":" .. lower(tostring(zone ~= "" and zone or area))
-        CC.DungeonDwellersPass:RecordZone(dungeonZoneKey, zone ~= "" and zone or area)
-    end
 end
 
 function Progression:AwardDungeonClear(dungeonName)
@@ -211,7 +206,6 @@ function Progression:RecordKill(destGUID, destName)
     if self.killCacheSize > 250 then self.killCache = {}; self.killCacheSize = 0 end
     root.exploration.totalKills = (root.exploration.totalKills or 0) + 1
     if COL.Achievements and COL.Achievements.RecordWorldKill then COL.Achievements:RecordWorldKill(destGUID, destName) end
-    if COL.BattlePass and COL.BattlePass.CheckMilestoneGoals then COL.BattlePass:CheckMilestoneGoals("KILL", root.exploration.totalKills) end
     if COL.BattlePass and COL.BattlePass.AddPassXP then COL.BattlePass:AddPassXP(1, "WoW mob defeated", true) end
 end
 
