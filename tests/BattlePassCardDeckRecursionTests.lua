@@ -87,6 +87,8 @@ local COL = { version = "0.2.3" }
 loadProductionFile("addons/CreshCollect/CreshCollectDatabase.lua", "CreshCollect", COL)
 _G.CreshCollectDatabase.Init()
 loadProductionFile("addons/CreshCollect/CreshCollect.lua", "CreshCollect", COL)
+loadProductionFile("shared/SuiteNotifications.lua", "CreshCollect", COL)
+loadProductionFile("addons/CreshCollect/CollectNotifications.lua", "CreshCollect", COL)
 loadProductionFile("addons/CreshCollect/BattlePass.lua", "CreshCollect", COL)
 
 -- BattlePass communicates through the guarded CreshGamesAPI registered by

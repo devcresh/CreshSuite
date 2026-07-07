@@ -9,6 +9,9 @@ Suite.lua
 CreshCollectDatabase.lua
 CreshCollect.lua
 Launcher.lua
+CreshUI.lua
+SuiteNotifications.lua
+CollectNotifications.lua
 BattlePass.lua
 CollectRewardRegistry.lua
 Progression.lua

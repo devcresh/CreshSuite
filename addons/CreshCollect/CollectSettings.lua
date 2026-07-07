@@ -8,55 +8,64 @@ end })
 
 local function colDB() return _G.CreshCollectDB end
 
+local function countTable(t)
+    local n = 0
+    if type(t) == "table" then for _ in pairs(t) do n = n + 1 end end
+    return n
+end
+
 local Suite = _G.CreshSuite
 if not Suite then return end
 
 Suite:RegisterSettingsProvider("CreshCollect", {
     pages = {
         {
-            key   = "PROGRESS",
-            label = "Progress Hub",
-            desc  = "Exploration, zone discovery and overall progression tracking.",
+            key      = "TRACKING",
+            label    = "Tracking",
+            desc     = "Exploration, combat and world-event tracking. Live totals live in the Progress Hub, not here.",
+            keywords = "progress hub exploration combat world zones steps",
             build = function(b)
                 b:Section("Progress Hub")
                 if COL.ProgressHub then
                     b:Buttons({
                         { "OPEN PROGRESS HUB", function() COL.ProgressHub:Toggle() end, 170 },
                     })
-                    b:Note("The Progress Hub shows exploration progress, zone visits, quest completions and combat statistics collected by CreshCollect.")
+                    b:Note("Exploration progress, zone visits, quest completions and combat statistics all live in the Progress Hub.")
                 else
                     b:Note("Progress Hub module is not loaded.")
                 end
-                b:Section("Exploration tracking")
-                local db   = colDB()
-                local exp  = db and db.gameProgression and db.gameProgression.exploration
+                b:Section("Tracking status")
+                local db  = colDB()
+                local exp = db and db.gameProgression and db.gameProgression.exploration
+                if COL.CombatTracker then
+                    b:Note("Combat tracking is active and feeding Progress Hub totals.")
+                else
+                    b:Note("CombatTracker module is not loaded.")
+                end
                 if exp then
-                    b:Note("Total steps: " .. tostring(exp.totalSteps or 0) .. "  \xc2\xb7  New areas: " .. tostring(exp.newAreas or 0) .. "  \xc2\xb7  New zones: " .. tostring(exp.newZones or 0))
-                    b:Note("Dungeon clears: " .. tostring(exp.dungeonClears or 0) .. "  \xc2\xb7  Total kills: " .. tostring(exp.totalKills or 0))
+                    b:Note("Total steps: " .. tostring(exp.totalSteps or 0) .. "  \194\183  New zones: " .. tostring(exp.newZones or 0) .. "  \194\183  Dungeon clears: " .. tostring(exp.dungeonClears or 0))
                 else
                     b:Note("No exploration data yet. Play with CreshCollect loaded to begin tracking.")
                 end
             end,
         },
         {
-            key   = "ACHIEVEMENTS",
-            label = "Achievements",
-            desc  = "WoW achievement tracking and class challenge records.",
+            key      = "ACHIEVEMENTS",
+            label    = "Achievements",
+            desc     = "WoW achievement tracking. CreshGames and Dungeon Dweller achievements live in CreshGames' own Achievements panel.",
+            keywords = "achievements unlocked points",
             build = function(b)
                 local db  = colDB()
                 local ach = db and db.achievements
-                b:Section("Achievement summary")
-                -- Counted via COL.Achievements:GetCounts() rather than the raw
-                -- SavedVariables table: CreshCollect's achievement catalog is
-                -- World-only now (Rework Phase 5 moved GAMES achievements to
-                -- CreshGames), but db.achievements.unlocked may still carry
-                -- old GAMES-category entries from before that move -- the
-                -- module's own catalog-driven count already excludes those.
+                b:Section("Achievements")
+                if COL.Achievements then
+                    b:Buttons({
+                        { "OPEN ACHIEVEMENTS", function() COL.Achievements:ToggleWindow() end, 170 },
+                    })
+                end
                 if ach and COL.Achievements then
                     local unlocked, total = COL.Achievements:GetCounts()
                     b:Note("World achievements unlocked: " .. tostring(unlocked) .. " / " .. tostring(total))
-                    b:Note("Lifetime Pass XP from achievements: " .. tostring(ach.totalPassXP or 0))
-                    b:Note("Lifetime Cresh Coins from achievements: " .. tostring(ach.totalCoins or 0))
                 else
                     b:Note("No achievement data yet. Play with CreshCollect loaded to begin tracking.")
                 end
@@ -64,107 +73,51 @@ Suite:RegisterSettingsProvider("CreshCollect", {
             end,
         },
         {
-            key   = "BATTLEPASS",
-            label = "Azeroth Chronicle",
-            desc  = "Azeroth Chronicle progress, XP and level reward history.",
+            key      = "CHRONICLE",
+            label    = "Chronicle & Collections",
+            desc     = "Azeroth Chronicle progress and cosmetic unlock counts. The full browsable catalogue lives in CreshGames' Unlocks tab.",
+            keywords = "battlepass chronicle currency coins collections themes cardDecks armour cosmetics",
             build = function(b)
                 local db  = colDB()
                 local arc = db and db.arcadeRewards
-                b:Section("Azeroth Chronicle progress")
-                if arc then
-                    b:Note("Pass XP earned: " .. tostring(arc.passXP or 0))
-                    local claimedCount = 0
-                    if type(arc.claimed) == "table" then for _ in pairs(arc.claimed) do claimedCount = claimedCount + 1 end end
-                    b:Note("Level rewards claimed: " .. tostring(claimedCount))
-                else
-                    b:Note("No Azeroth Chronicle data yet. Explore Azeroth and complete achievements with CreshCollect loaded.")
-                end
-                b:Section("Actions")
+                local col = db and db.collections
+                b:Section("Azeroth Chronicle")
                 if COL.BattlePass then
+                    -- Phase 6 bug fix: this used to check COL.BattlePass.Open,
+                    -- a method that does not exist on this module (only
+                    -- OpenWindow does) -- the button always silently fell
+                    -- through to the CC.UI drawer fallback below.
                     b:Buttons({
-                        { "OPEN AZEROTH CHRONICLE", function()
-                            if COL.BattlePass.Open then COL.BattlePass:Open()
-                            elseif CC.UI and CC.UI.OpenGameDrawer then CC.UI:OpenGameDrawer("BATTLEPASS") end
-                        end, 190 },
+                        { "OPEN AZEROTH CHRONICLE", function() COL.BattlePass:OpenWindow() end, 190 },
                     })
                 else
                     b:Note("Azeroth Chronicle module is not loaded.")
                 end
-            end,
-        },
-        {
-            key   = "CURRENCY",
-            label = "Currency",
-            desc  = "Cresh Coin balance, lifetime earnings and spending history.",
-            build = function(b)
-                local db  = colDB()
-                local arc = db and db.arcadeRewards
-                b:Section("Cresh Coins")
                 if arc then
-                    b:Note("Current balance: " .. tostring(arc.coins or 0))
-                    b:Note("Lifetime earned: " .. tostring(arc.lifetimeCoins or 0) .. "  \xc2\xb7  Spent: " .. tostring(arc.spentCoins or 0))
-                    b:Section("Coin sources")
-                    b:Note("From games: " .. tostring(arc.gameCoins or 0))
-                    b:Note("From activities: " .. tostring(arc.activityCoins or 0))
-                    b:Note("From exploration: " .. tostring(arc.explorationCoins or 0))
-                    if (arc.gamesRewarded or 0) > 0 then
-                        b:Note("Games with coin rewards: " .. tostring(arc.gamesRewarded))
-                    end
+                    local claimedCount = 0
+                    if type(arc.claimed) == "table" then for _ in pairs(arc.claimed) do claimedCount = claimedCount + 1 end end
+                    b:Note("Pass XP earned: " .. tostring(arc.passXP or 0) .. "  \194\183  Level rewards claimed: " .. tostring(claimedCount))
+                    b:Note("Cresh Coins: " .. tostring(arc.coins or 0) .. " current  \194\183  " .. tostring(arc.lifetimeCoins or 0) .. " lifetime  \194\183  " .. tostring(arc.spentCoins or 0) .. " spent")
                 else
-                    b:Note("No currency data yet. Earn Cresh Coins by playing games and completing activities.")
+                    b:Note("No Azeroth Chronicle data yet. Explore Azeroth and complete achievements with CreshCollect loaded.")
                 end
-            end,
-        },
-        {
-            key   = "COLLECTIONS",
-            label = "Collections",
-            desc  = "Cosmetic unlocks: themes, card decks, dungeon armour and more.",
-            build = function(b)
-                local db  = colDB()
-                local col = db and db.collections
-                b:Section("Cosmetic unlocks")
+
+                b:Section("Collections")
                 if col then
-                    local function countTable(t) local n = 0; if type(t) == "table" then for _ in pairs(t) do n = n + 1 end end; return n end
-                    b:Note("Themes: "        .. tostring(countTable(col.themes)))
-                    b:Note("Backgrounds: "   .. tostring(countTable(col.backgrounds)))
-                    b:Note("Card decks: "    .. tostring(countTable(col.cardDecks)))
-                    b:Note("Dungeon armour: " .. tostring(countTable(col.dungeonArmour)))
-                    b:Note("Other cosmetics: " .. tostring(countTable(col.cosmetics)))
+                    local themes  = countTable(col.themes) + countTable(col.backgrounds)
+                    local other   = countTable(col.cardDecks) + countTable(col.dungeonArmour) + countTable(col.cosmetics)
+                    b:Note("Themes/backgrounds unlocked: " .. tostring(themes) .. "  \194\183  Card decks/armour/other cosmetics: " .. tostring(other))
+                    b:Note("The full browsable catalogue (with search, filters and requirements) is in CreshGames \226\134\146 Unlocks. Counts here are synced from CreshGames and never duplicated or overwritten.")
                 else
                     b:Note("No collection data yet. Earn Cresh Coins and complete Azeroth Chronicle levels to unlock cosmetics.")
                 end
-                b:Note("Unlocks are synced from CreshGames via the CreshSuite event bus and are never duplicated or overwritten.")
             end,
         },
         {
-            key   = "COMBAT",
-            label = "Combat",
-            desc  = "Combat and world event tracking preferences.",
-            build = function(b)
-                b:Section("Combat tracking")
-                if COL.CombatTracker then
-                    b:Note("CombatTracker is active and logging combat events for Progress Hub statistics.")
-                    b:Note("Combat data is stored in CreshCollect and contributes to Progress Hub totals and exploration rewards.")
-                else
-                    b:Note("CombatTracker module is not loaded.")
-                end
-                b:Section("World tracking")
-                local db  = colDB()
-                local exp = db and db.gameProgression and db.gameProgression.exploration
-                if exp then
-                    local visitedAreas = 0; if type(exp.visitedAreas) == "table" then for _ in pairs(exp.visitedAreas) do visitedAreas = visitedAreas + 1 end end
-                    local visitedZones = 0; if type(exp.visitedZones) == "table" then for _ in pairs(exp.visitedZones) do visitedZones = visitedZones + 1 end end
-                    b:Note("Visited areas: " .. tostring(visitedAreas) .. "  \xc2\xb7  Visited zones: " .. tostring(visitedZones))
-                    b:Note("Dungeon clears tracked: " .. tostring(exp.dungeonClears or 0))
-                else
-                    b:Note("No world tracking data yet.")
-                end
-            end,
-        },
-        {
-            key   = "NOTIFICATIONS",
-            label = "Notifications",
-            desc  = "CreshCollect notification card categories. Requires CreshChat.",
+            key      = "NOTIFICATIONS",
+            label    = "Notifications",
+            desc     = "CreshCollect notification card categories. Requires CreshChat.",
+            keywords = "notifications cards sound alerts",
             build = function(b)
                 local ccObj = _G.CreshChat
                 b:Section("CreshCollect notification cards")
@@ -198,30 +151,39 @@ Suite:RegisterSettingsProvider("CreshCollect", {
             end,
         },
         {
-            key   = "RESET",
-            label = "Reset",
-            desc  = "Permanently reset CreshCollect data. Cannot be undone.",
+            key      = "ADVANCED",
+            label    = "Advanced",
+            desc     = "Permanently reset CreshCollect data. Cannot be undone.",
+            keywords = "reset advanced delete achievements collections",
             build = function(b)
                 b:Section("Reset collection data")
                 b:Note("WARNING: The buttons below permanently delete CreshCollect data. CreshChat settings, chat history and CreshGames data are not affected.")
                 b:Buttons({
                     { "RESET ACHIEVEMENTS", function()
-                        local db = colDB()
-                        if db then
-                            db.achievements  = nil
-                            db.ddAchievements = nil
-                            if _G.ReloadUI then _G.ReloadUI() end
-                        end
+                        b:ConfirmAction(
+                            "Permanently delete all tracked CreshCollect achievement records, then reload the UI?\n\nThis cannot be undone.",
+                            function()
+                                local db = colDB()
+                                if db then
+                                    db.achievements  = nil
+                                    db.ddAchievements = nil
+                                    if _G.ReloadUI then _G.ReloadUI() end
+                                end
+                            end)
                     end, 170 },
                 })
                 b:Note("Clears all tracked achievement records. A UI reload follows to reinitialise the database.")
                 b:Buttons({
                     { "RESET COLLECTIONS", function()
-                        local db = colDB()
-                        if db then
-                            db.collections = nil
-                            if _G.ReloadUI then _G.ReloadUI() end
-                        end
+                        b:ConfirmAction(
+                            "Permanently delete all CreshCollect cosmetic-unlock records?\n\nUnlocks can be re-earned by playing games. This cannot be undone.",
+                            function()
+                                local db = colDB()
+                                if db then
+                                    db.collections = nil
+                                    if _G.ReloadUI then _G.ReloadUI() end
+                                end
+                            end)
                     end, 170 },
                 })
                 b:Note("Clears all cosmetic unlock records. Unlocks can be re-earned by playing games.")

@@ -1081,6 +1081,17 @@ function Content:GetArmourForLevel(classKey, level)
     return selected
 end
 
+-- Phase 5: the one unlock-check function this catalog was missing (every
+-- call site elsewhere re-probed CreshGamesDB.soloGames.dungeon.
+-- unlockedArmour by hand instead) -- added here, next to the other
+-- catalog-side Get* functions, for the Unlocks catalogue to use.
+function Content:IsArmourUnlocked(classKey, setKey)
+    setKey = string.upper(tostring(setKey or ""))
+    local db = _G.CreshGamesDB
+    local unlocked = db and db.soloGames and db.soloGames.dungeon and db.soloGames.dungeon.unlockedArmour
+    return unlocked and unlocked[setKey] == true or false
+end
+
 _G.CreshGamesDungeonCrawlerContent = Content
 if CG then
     CG.DungeonCrawlerContent = Content

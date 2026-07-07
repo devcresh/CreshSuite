@@ -35,6 +35,25 @@ function ChatAPI.GetThemeInfo(key)
         outgoing = preset.outgoing,
     }
 end
+-- Public palette accessor for the cross-addon UI service (shared/CreshUI.lua).
+-- Returns a shallow copy of the flat { r, g, b, a } color entries in
+-- CC.db.colors (panel, accent, border, ...) so callers never touch the
+-- private CC.db table directly. Nested sub-tables such as colors.guild and
+-- colors.channels are intentionally excluded -- those are CreshChat-internal
+-- chat styling, not part of the cross-addon UI contract. Returns nil (not an
+-- empty table) when CC.db isn't ready yet, so CreshSuiteUI:GetPalette() can
+-- tell "not available" apart from "available but empty".
+function ChatAPI.GetActivePalette()
+    if not CC.db or type(CC.db.colors) ~= "table" then return nil end
+    local copy = {}
+    for key, value in pairs(CC.db.colors) do
+        if type(value) == "table" and type(value[1]) == "number" then
+            copy[key] = { value[1], value[2], value[3], value[4] }
+        end
+    end
+    return copy
+end
+
 function ChatAPI.ApplyThemePreset(key)
     return CC.UI and CC.UI.ApplyThemePreset and CC.UI:ApplyThemePreset(key) or false
 end

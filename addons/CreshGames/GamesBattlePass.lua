@@ -259,9 +259,7 @@ function Pass:AddXP(amount, source, silent)
             local detail = "+" .. amount .. " Pass Points -- reward ready"
             if reward.deckName then detail = detail .. " -- " .. reward.deckName .. " deck" end
             if reward.tetrisThemeName then detail = detail .. " -- " .. reward.tetrisThemeName .. " Tetris set" end
-            if CC.UI and CC.UI.ShowGameToast then
-                CC.UI:ShowGameToast("Games Battle Pass Level " .. newLevel, detail, "SUCCESS", "GBP:LEVEL:" .. tostring(newLevel))
-            end
+            CG:ShowBattlePassToast("Games Battle Pass Level " .. newLevel, detail, "SUCCESS", "GBP:LEVEL:" .. tostring(newLevel))
         end
     end
     return amount, previousLevel, newLevel
@@ -393,11 +391,11 @@ function Pass:ClaimReward(level, silent)
     if not silent then
         self:RefreshWindow()
         if CG.SoloGames and CG.SoloGames.RefreshTetrisPanels then CG.SoloGames:RefreshTetrisPanels(true) end
-        if CC.UI and CC.UI.ShowGameToast then
+        do
             local detail = "+" .. tostring(reward.coins or 0) .. " Cresh Coins"
             if reward.deckName then detail = detail .. " -- " .. reward.deckName .. " deck unlocked" end
             if reward.tetrisThemeName then detail = detail .. " -- " .. reward.tetrisThemeName .. " Tetris set unlocked" end
-            CC.UI:ShowGameToast("Games Battle Pass reward unlocked", "Level " .. level .. " -- " .. detail, "SUCCESS", "GBP:CLAIM:" .. tostring(level))
+            CG:ShowBattlePassToast("Games Battle Pass reward unlocked", "Level " .. level .. " -- " .. detail, "SUCCESS", "GBP:CLAIM:" .. tostring(level))
         end
     end
     return true
@@ -472,6 +470,8 @@ function Pass:BuildWindow()
     frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
     applyBackdrop(frame, COLORS.panel)
     frame:Hide()
+    local uiSvc = _G.CreshSuiteUI
+    if uiSvc and uiSvc.InstallWindowFocus then uiSvc:InstallWindowFocus(frame) end
 
     frame.title = createFont(frame, 15, COLORS.text, "CENTER")
     frame.title:SetPoint("TOP", frame, "TOP", 0, -12)

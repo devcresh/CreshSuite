@@ -258,10 +258,10 @@ function Achievements:Unlock(achievement, silent)
         if CG.BattlePass.AwardAchievementCompletion then CG.BattlePass:AwardAchievementCompletion(silent) end
     end
 
-    if not silent and CC.UI and CC.UI.ShowGameToast then
-        CC.UI:ShowGameToast("Achievement: " .. achievement.title,
+    if not silent then
+        CG:ShowAchievementToast("Achievement: " .. achievement.title,
             "+" .. tostring(achievement.coins) .. " Cresh Coins · +" .. tostring(achievement.xp) .. " Arcade Pass XP",
-            "SUCCESS", "GAMESACH:" .. achievement.key)
+            "GAMESACH:" .. achievement.key)
     end
     if not silent and CG.GameAudio and CG.GameAudio.PlayEffect then CG.GameAudio:PlayEffect("LEVEL") end
     return true

@@ -29,112 +29,40 @@ local function formatNumber(value)
     return grouped
 end
 
-local BACKDROP = {
-    bgFile = "Interface\\Buttons\\WHITE8X8",
-    edgeFile = "Interface\\Buttons\\WHITE8X8",
-    tile = false, edgeSize = 1,
-    insets = { left = 1, right = 1, top = 1, bottom = 1 },
-}
-local FALLBACK = {
-    panel      = { 0.022, 0.026, 0.034, 0.98 },
-    panelSoft  = { 0.038, 0.044, 0.056, 0.98 },
-    panelRaised= { 0.066, 0.074, 0.092, 1 },
-    border     = { 0.105, 0.120, 0.145, 1 },
-    accent     = { 0.130, 0.620, 0.950, 1 },
-    text       = { 0.93,  0.95,  0.98,  1 },
-    muted      = { 0.56,  0.61,  0.69,  1 },
-    green      = { 0.18,  0.78,  0.36,  1 },
-    red        = { 0.92,  0.24,  0.25,  1 },
-    gold       = { 0.95,  0.70,  0.20,  1 },
-    quest      = { 1.00,  0.82,  0.26,  1 },
-    blue       = { 0.13,  0.62,  0.95,  1 },
-}
+-- Proof-of-contract integration for the shared cross-addon UI service
+-- (shared/CreshUI.lua, ships as CreshUI.lua inside this addon and loads
+-- before this file per the TOC). Palette/backdrop/text/tab helpers below
+-- delegate to it instead of each window re-implementing its own copy; the
+-- `if UISvc` guards are cheap insurance against load-order edge cases, not
+-- an expected runtime path -- CreshUI.lua is always present in this addon.
+local UISvc = _G.CreshSuiteUI
 
 local function palette()
-    local c = CC.db and CC.db.colors or {}
-    return {
-        panel      = c.panel      or FALLBACK.panel,
-        panelSoft  = c.panelSoft  or FALLBACK.panelSoft,
-        panelRaised= c.panelRaised or FALLBACK.panelRaised,
-        border     = c.border     or FALLBACK.border,
-        accent     = c.accent     or FALLBACK.accent,
-        text       = FALLBACK.text,
-        muted      = FALLBACK.muted,
-        green      = FALLBACK.green,
-        red        = FALLBACK.red,
-        gold       = FALLBACK.gold,
-        quest      = c.quest      or FALLBACK.quest,
-        blue       = c.blue       or FALLBACK.blue,
-    }
+    if UISvc then return UISvc:GetPalette() end
+    return {}
 end
 
 local function templateName()
+    if UISvc then return UISvc:TemplateName() end
     return _G.BackdropTemplateMixin and "BackdropTemplate" or nil
 end
 
 local function applyBackdrop(frame, bg, border)
-    if not frame then return end
-    if frame.SetBackdrop then frame:SetBackdrop(BACKDROP) end
-    bg     = bg     or FALLBACK.panel
-    border = border or FALLBACK.border
-    if frame.SetBackdropColor       then frame:SetBackdropColor(bg[1],     bg[2],     bg[3],     bg[4] or 1) end
-    if frame.SetBackdropBorderColor then frame:SetBackdropBorderColor(border[1], border[2], border[3], border[4] or 1) end
+    if UISvc then UISvc:ApplyBackdrop(frame, bg, border) end
 end
 
 local function createText(parent, size, color, justify)
-    local f = parent:CreateFontString(nil, "OVERLAY")
-    f:SetFont(_G.STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", size or 11, "")
-    color = color or FALLBACK.text
-    f:SetTextColor(color[1], color[2], color[3], color[4] or 1)
-    f:SetJustifyH(justify or "LEFT")
-    f:SetJustifyV("MIDDLE")
-    return f
+    if UISvc then return UISvc:CreateText(parent, size, color, justify) end
+    return parent:CreateFontString(nil, "OVERLAY")
 end
 
 local function darken(color, amount)
-    amount = tonumber(amount) or 0.18
-    return {
-        max(0, (color[1] or 0) - amount),
-        max(0, (color[2] or 0) - amount),
-        max(0, (color[3] or 0) - amount),
-        color[4] or 1,
-    }
-end
-
-local function createButton(parent, label, width, height, callback)
-    local btn = CreateFrame("Button", nil, parent, templateName())
-    btn:SetSize(width or 80, height or 24)
-    local colors = palette()
-    applyBackdrop(btn, colors.panelRaised, colors.border)
-    btn.label = createText(btn, 9, colors.text, "CENTER")
-    btn.label:SetAllPoints()
-    btn.label:SetText(label or "")
-    btn:SetScript("OnClick", function(self, ...)
-        if callback then callback(self, ...) end
-    end)
-    btn:SetScript("OnEnter", function(self)
-        local c = palette()
-        applyBackdrop(self, darken(c.accent, 0.22), c.accent)
-    end)
-    btn:SetScript("OnLeave", function(self)
-        if self.creshActive then return end
-        local c = palette()
-        applyBackdrop(self, c.panelRaised, c.border)
-    end)
-    return btn
+    if UISvc then return UISvc:Darken(color, amount) end
+    return color
 end
 
 local function setTabActive(btn, active)
-    if not btn then return end
-    local c = palette()
-    local bg = active and darken(c.accent, 0.22) or c.panelRaised
-    local bd = active and c.accent              or c.border
-    applyBackdrop(btn, bg, bd)
-    btn.creshActive = active
-    if btn.label then
-        local tc = active and c.accent or c.muted
-        btn.label:SetTextColor(tc[1], tc[2], tc[3], 1)
-    end
+    if UISvc then UISvc:SetTabActive(btn, active) end
 end
 
 -- ── Public API ────────────────────────────────────────────────────────────────
@@ -283,19 +211,28 @@ local WINDOW_H = 470
 
 function Hub:Build()
     if self.frame then return self.frame end
+    -- CreshChat's own UI module (window focus/animation/launcher-refresh
+    -- helpers) is an optional enhancement, not a requirement -- every use
+    -- below is individually guarded with `UI and UI.X`, matching Open()/
+    -- Close() elsewhere in this file. The window itself is built entirely
+    -- through the addon-agnostic UISvc bridge and must work standalone.
     local UI = CC.UI
-    if not UI then return nil end
 
-    local colors     = palette()
-    local savedPos   = CC.db and CC.db.positions and CC.db.positions.progressHub or nil
+    local colors = palette()
+    -- One-time migration: earlier builds saved this window's position into
+    -- CreshChat's SavedVariables (CC.db.positions.progressHub) instead of
+    -- CreshCollect's own -- a cross-addon private-table write. Read the old
+    -- value once as the initial default; every save from here on goes into
+    -- CreshCollectDB via CreshSuiteUI:SavePosition, never CC.db again.
+    local legacyPos = CC.db and CC.db.positions and CC.db.positions.progressHub
+    local defaultPos = legacyPos or { point = "CENTER", relPoint = "CENTER", x = 80, y = 0 }
 
     local frame = CreateFrame("Frame", "CreshChatProgressHubFrame", UIParent, templateName())
     frame:SetSize(WINDOW_W, WINDOW_H)
-    if savedPos then
-        frame:SetPoint(savedPos.point or "CENTER", UIParent, savedPos.relPoint or "CENTER",
-                       tonumber(savedPos.x) or 60, tonumber(savedPos.y) or 0)
+    if UISvc then
+        UISvc:RestorePosition(_G.CreshCollectDB, "progressHub", frame, defaultPos)
     else
-        frame:SetPoint("CENTER", UIParent, "CENTER", 80, 0)
+        frame:SetPoint(defaultPos.point, UIParent, defaultPos.relPoint, defaultPos.x, defaultPos.y)
     end
     frame:SetFrameStrata("HIGH")
     frame:SetClampedToScreen(true)
@@ -307,26 +244,23 @@ function Hub:Build()
 
     frame:SetScript("OnMouseDown", function(self2, btn)
         if btn == "LeftButton" then
-            if UI.FocusWindow then UI:FocusWindow(self2) end
+            local focusSvc = UISvc or UI
+            if focusSvc and focusSvc.FocusWindow then focusSvc:FocusWindow(self2) end
             self2:StartMoving()
         end
     end)
     frame:SetScript("OnMouseUp", function(self2)
         self2:StopMovingOrSizing()
-        if CC.db then
-            CC.db.positions = CC.db.positions or {}
-            local point, _, relPoint, x, y = self2:GetPoint()
-            CC.db.positions.progressHub = {
-                point = point, relPoint = relPoint,
-                x = floor(x or 0), y = floor(y or 0),
-            }
-        end
+        if UISvc then UISvc:SavePosition(_G.CreshCollectDB, "progressHub", self2) end
     end)
     frame:SetScript("OnHide", function()
-        if UI.RefreshLauncherButtonStates then UI:RefreshLauncherButtonStates() end
+        if UI and UI.RefreshLauncherButtonStates then UI:RefreshLauncherButtonStates() end
     end)
 
-    if UI.InstallWindowFocus then UI:InstallWindowFocus(frame) end
+    -- Prefer the shared, addon-agnostic bridge so this window shares one
+    -- z-order with every other suite window even when CreshChat is absent.
+    local focusSvc = UISvc or UI
+    if focusSvc and focusSvc.InstallWindowFocus then focusSvc:InstallWindowFocus(frame) end
 
     -- ── Header ────────────────────────────────────────────────────────────────
     local header = CreateFrame("Frame", nil, frame, templateName())
@@ -359,7 +293,7 @@ function Hub:Build()
     settingsLbl:SetText("SET")
     settingsBtn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     settingsBtn:SetScript("OnClick", function(_, mouseButton)
-        if UI.OpenSettings then UI:OpenSettings() end
+        if UI and UI.OpenSettings then UI:OpenSettings() end
         if mouseButton == "RightButton" then
             if CC.Settings and CC.Settings.SetPage then CC.Settings:SetPage("MODULES") end
         end

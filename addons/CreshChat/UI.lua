@@ -92,8 +92,18 @@ UI.GUILD_THEME = GUILD_THEME
 
 -- All normal CreshChat windows share one click-to-front layer. Notification cards
 -- remain on TOOLTIP/FULLSCREEN_DIALOG, while Settings uses an explicit always-on-top layer.
+--
+-- Delegates to the shared _G.CreshSuiteUI bridge so CreshChat's own windows
+-- share exactly one z-order counter with CreshGames'/CreshCollect's windows
+-- (which call the same shared implementation, either directly via
+-- _G.CreshSuiteUI or via CC.UI when CreshChat is loaded) -- otherwise two
+-- independently-incrementing counters could disagree about which window was
+-- raised more recently. Falls back to a local copy of the old standalone
+-- logic only in the unexpected case CreshUI.lua hasn't loaded.
 UI.windowFocusCounter = 100
 function UI:FocusWindow(frame)
+    local shared = _G.CreshSuiteUI
+    if shared and shared.FocusWindow then return shared:FocusWindow(frame) end
     if not frame then return end
     if frame.creshAlwaysOnTop then
         if frame.SetFrameStrata then frame:SetFrameStrata("FULLSCREEN_DIALOG") end
@@ -110,6 +120,8 @@ function UI:FocusWindow(frame)
 end
 
 function UI:InstallWindowFocus(frame)
+    local shared = _G.CreshSuiteUI
+    if shared and shared.InstallWindowFocus then return shared:InstallWindowFocus(frame) end
     if not frame or frame.creshWindowFocusInstalled then return end
     frame.creshWindowFocusInstalled = true
     frame.creshFocusable = true
@@ -3280,7 +3292,12 @@ function UI:SetGameDrawerMode(mode, preserveScroll)
     self:SetTabButtonStyle(drawer.achievementMode, mode == "ACHIEVEMENTS", COLORS.quest, COLORS.quest, COLORS.panelRaised)
     self:SetTabButtonStyle(drawer.themesMode, mode == "THEMES", COLORS.green, COLORS.green, COLORS.panelRaised)
     local passHeight = (CC.BattlePass and CC.BattlePass.GetPassPanelHeight and CC.BattlePass:GetPassPanelHeight()) or 5910
-    local achievementHeight = (CC.Achievements and CC.Achievements.GetPanelHeight and CC.Achievements:GetPanelHeight(drawer.achievementPanel and drawer.achievementPanel.searchText, drawer.achievementPanel and drawer.achievementPanel.category, drawer.achievementPanel and drawer.achievementPanel.status)) or 640
+    local achievementHeight = (CC.Achievements and CC.Achievements.GetPanelHeight and CC.Achievements:GetPanelHeight(
+        drawer.achievementPanel and drawer.achievementPanel.searchText,
+        drawer.achievementPanel and drawer.achievementPanel.category,
+        drawer.achievementPanel and drawer.achievementPanel.status,
+        drawer.achievementPanel and drawer.achievementPanel.classFilter
+    )) or 640
     local themeHeight = (CC.BattlePass and CC.BattlePass.GetThemePanelHeight and CC.BattlePass:GetThemePanelHeight()) or 640
     local heights = { SOLO = 720, MULTIPLAYER = 760, BATTLEPASS = passHeight, ACHIEVEMENTS = math.max(240, achievementHeight), THEMES = math.max(240, themeHeight) }
     drawer.content:SetHeight(heights[mode] or 620)
@@ -6396,6 +6413,10 @@ function UI:ApplyVisualSettings()
     self:SyncGuildTheme()
     if CC.Games and CC.Games.ApplyTheme then CC.Games:ApplyTheme() end
     if CC.SoloGames and CC.SoloGames.ApplyTheme then CC.SoloGames:ApplyTheme() end
+    -- Nil-safe cross-addon notification: CreshGames/CreshCollect windows
+    -- built on shared/CreshUI.lua re-pull GetPalette() on this event instead
+    -- of reaching into CC.db directly. No-op if the Suite bridge is absent.
+    if _G.CreshSuite and _G.CreshSuite.Publish then _G.CreshSuite:Publish("SUITE_THEME_CHANGED") end
     local options = CC.db.ui or {}
     local scale = max(0.70, min(1.50, tonumber(options.scale) or 1))
     CC.db.panelScale = scale

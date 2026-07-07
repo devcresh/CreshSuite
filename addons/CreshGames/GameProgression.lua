@@ -167,10 +167,8 @@ function Progression:AwardGameLevel(game, level)
         if CG.BattlePass.AddCoins then CG.BattlePass:AddCoins(coins, "GAME") end
         if CG.BattlePass.AddXP then CG.BattlePass:AddXP(passXP, "GAME LEVEL") end
     end
-    if CC.UI and CC.UI.ShowGameToast then
-        CC.UI:ShowGameToast((GAME_NAMES[game] or game) .. " Level " .. level,
-            "+" .. coins .. " Cresh Coins · +" .. passXP .. " Games Battle Pass XP", "SUCCESS", "GAMELEVEL:" .. tostring(game) .. ":" .. tostring(level))
-    end
+    CG:ShowGameToast((GAME_NAMES[game] or game) .. " Level " .. level,
+        "+" .. coins .. " Cresh Coins · +" .. passXP .. " Games Battle Pass XP", "SUCCESS", "GAMELEVEL:" .. tostring(game) .. ":" .. tostring(level))
     if CG.GameAudio and CG.GameAudio.PlayEffect then CG.GameAudio:PlayEffect("LEVEL") end
     if CC.UI and CC.UI.RefreshConsoleEconomy then CC.UI:RefreshConsoleEconomy() end
     return coins, passXP

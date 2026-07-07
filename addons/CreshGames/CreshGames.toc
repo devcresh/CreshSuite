@@ -9,6 +9,9 @@ Suite.lua
 CreshGamesDatabase.lua
 CreshGames.lua
 Launcher.lua
+CreshUI.lua
+SuiteNotifications.lua
+GamesNotifications.lua
 GameAudio.lua
 CardDeckLibrary.lua
 CardDecks.lua
@@ -22,6 +25,7 @@ Games.lua
 SoloGames.lua
 DungeonDwellersProgression.lua
 GamesRewardRegistry.lua
+GamesUnlocksCatalog.lua
 GamesAchievements.lua
 GamesDungeonAchievements.lua
 GamesSettings.lua

@@ -50,6 +50,8 @@ loadProductionFile("shared/Suite.lua", "CreshGames", {})
 
 local CG = { version = "0.2.3" }
 loadProductionFile("addons/CreshGames/CreshGames.lua", "CreshGames", CG)
+loadProductionFile("shared/SuiteNotifications.lua", "CreshGames", CG)
+loadProductionFile("addons/CreshGames/GamesNotifications.lua", "CreshGames", CG)
 loadProductionFile("addons/CreshGames/CardDeckLibrary.lua", "CreshGames", CG)
 loadProductionFile("addons/CreshGames/CardDecks.lua", "CreshGames", CG)
 loadProductionFile("addons/CreshGames/DungeonCrawlerContent.lua", "CreshGames", CG)
@@ -62,6 +64,7 @@ local COL = { version = "0.2.3" }
 loadProductionFile("addons/CreshCollect/CreshCollectDatabase.lua", "CreshCollect", COL)
 _G.CreshCollectDatabase.Init()
 loadProductionFile("addons/CreshCollect/CreshCollect.lua", "CreshCollect", COL)
+loadProductionFile("addons/CreshCollect/CollectNotifications.lua", "CreshCollect", COL)
 loadProductionFile("addons/CreshCollect/BattlePass.lua", "CreshCollect", COL)
 loadProductionFile("addons/CreshCollect/CollectRewardRegistry.lua", "CreshCollect", COL)
 

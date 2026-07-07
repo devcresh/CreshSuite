@@ -33,6 +33,21 @@ $Suites = @(
         )
     },
     @{
+        Label = "CreshSuite UI Service Tests"
+        Args  = @(
+            (Join-Path $RepoRoot "tests\CreshUITests.lua"),
+            (Join-Path $RepoRoot "shared\CreshUI.lua"),
+            (Join-Path $RepoRoot "shared\Suite.lua")
+        )
+    },
+    @{
+        Label = "Suite Notifications Tests"
+        Args  = @(
+            (Join-Path $RepoRoot "tests\SuiteNotificationsTests.lua"),
+            (Join-Path $RepoRoot "shared\SuiteNotifications.lua")
+        )
+    },
+    @{
         Label = "Database Migration Tests"
         Args  = @(
             (Join-Path $RepoRoot "tests\DatabaseMigrationTests.lua"),
@@ -67,6 +82,14 @@ $Suites = @(
         Args  = @(
             (Join-Path $RepoRoot "tests\AchievementsAvailabilityTests.lua"),
             (Join-Path $RepoRoot "addons\CreshCollect\Achievements.lua")
+        )
+    },
+    @{
+        Label = "Class Mastery Filter Tests"
+        Args  = @(
+            (Join-Path $RepoRoot "tests\ClassMasteryFilterTests.lua"),
+            (Join-Path $RepoRoot "addons\CreshCollect\Achievements.lua"),
+            (Join-Path $RepoRoot "addons\CreshCollect\ClassAchievements.lua")
         )
     },
     @{
@@ -176,6 +199,18 @@ $Suites = @(
         Label = "Unified Progression UI Tests"
         Args  = @(
             (Join-Path $RepoRoot "tests\UnifiedProgressionUITests.lua")
+        )
+    },
+    @{
+        Label = "Games Hub Routing Tests"
+        Args  = @(
+            (Join-Path $RepoRoot "tests\GamesHubRoutingTests.lua")
+        )
+    },
+    @{
+        Label = "Games Unlocks Catalogue Tests"
+        Args  = @(
+            (Join-Path $RepoRoot "tests\GamesUnlocksCatalogTests.lua")
         )
     }
 )

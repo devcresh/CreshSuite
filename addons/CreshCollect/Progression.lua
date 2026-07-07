@@ -106,8 +106,8 @@ function Progression:AwardExploration(coins, passXP, title, detail, showToast)
     end
     exploration.coins = exploration.coins + coins
     exploration.passXP = exploration.passXP + passXP
-    if showToast and CC.UI and CC.UI.ShowGameToast then
-        CC.UI:ShowGameToast(title or "Explorer Reward",
+    if showToast then
+        COL:ShowGameToast(title or "Explorer Reward",
             tostring(detail or "") .. " · +" .. coins .. " Cresh Coins · +" .. passXP .. " Chronicle XP", "SUCCESS", "EXPLORATION:" .. tostring(title or detail or time()))
     end
     if CC.UI and CC.UI.gameDrawer and CC.UI.RefreshGameDrawer then CC.UI:RefreshGameDrawer(true) end

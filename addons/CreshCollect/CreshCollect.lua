@@ -1,11 +1,5 @@
 local addonName, COL = ...
 
--- Defer CreshChat access to call time (CreshChat may load before or after us)
-local CC = setmetatable({}, { __index = function(_, k)
-    local c = _G.CreshChat
-    return c and c[k]
-end })
-
 -- Module registry
 COL.version  = "0.2.3"
 COL._modules = {}
@@ -285,21 +279,9 @@ local function bridgeToCreshChat()
     end
 end
 
--- Register CreshCollect as a notification producer in CC.Notifications.
--- Called after CreshChat is confirmed loaded; RegisterSource is idempotent.
-local _notifDone = false
-local function registerNotifications()
-    if _notifDone then return end
-    local notif = CC.Notifications
-    if not notif then return end
-    notif:RegisterSource("CRESHCOLLECT", "CreshCollect")
-    notif:RegisterCategory("CRESHCOLLECT", "ACHIEVEMENT",          "Achievement Earned",   "Achievement completion notifications.",            { priority = "NORMAL" })
-    notif:RegisterCategory("CRESHCOLLECT", "ACHIEVEMENT_PROGRESS", "Achievement Progress", "Incremental achievement progress updates.",        { priority = "LOW"    })
-    notif:RegisterCategory("CRESHCOLLECT", "COLLECTION_UNLOCK",    "Collection Unlocks",   "New collectible or cosmetic unlock notices.",      { priority = "NORMAL" })
-    notif:RegisterCategory("CRESHCOLLECT", "COSMETIC_REWARD",      "Cosmetic Rewards",     "Cosmetic item reward notifications.",              { priority = "LOW"    })
-    notif:RegisterCategory("CRESHCOLLECT", "MILESTONE",            "Milestones",           "Collection or progression milestone completions.", { priority = "LOW"    })
-    _notifDone = true
-end
+-- Notification source/category registration moved to
+-- CollectNotifications.lua, which registers unconditionally against
+-- _G.CreshSuiteNotifications at load time instead of waiting for CreshChat.
 
 local _frame = CreateFrame("Frame", "CreshCollectFrame")
 _frame:RegisterEvent("ADDON_LOADED")
@@ -311,12 +293,10 @@ _frame:SetScript("OnEvent", function(_, event, arg1)
         -- loads after us (no fixed load order without a Dependencies directive).
         if arg1 == addonName or arg1 == "CreshChat" then
             bridgeToCreshChat()
-            registerNotifications()
         end
     elseif event == "PLAYER_LOGIN" then
-        -- Safety net: ensure bridge and notifications are wired before gameplay.
+        -- Safety net: ensure bridge is wired before gameplay.
         bridgeToCreshChat()
-        registerNotifications()
         -- Ensure the shared launcher exists even when CreshChat is absent --
         -- idempotent, a no-op if another addon already built it.
         if _G.CreshSuiteLauncherAPI and _G.CreshSuiteLauncherAPI.EnsureBuilt then

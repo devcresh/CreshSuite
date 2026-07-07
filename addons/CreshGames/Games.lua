@@ -344,17 +344,14 @@ function Games:RecordResult(result, detail, roundKey)
         else stats.draws = (tonumber(stats.draws) or 0) + 1 end
         CreshGamesDB.multiplayerStats[active.game] = stats
     end
-    if CC.Notifications and CC:IsFeatureEnabled("notifications") then
+    do
         local n = self:GetGameName(active.game)
-        CC.Notifications:Push({
-            sourceAddon = "CRESHGAMES",
-            category    = "GAME_RESULT",
-            priority    = "NORMAL",
-            status      = result == "WIN" and "SUCCESS" or (result == "LOSS" and "ERROR" or "INFO"),
-            title       = result == "WIN" and "You won!" or (result == "LOSS" and "You lost" or "Draw"),
-            detail      = n .. " vs " .. shortName(active.opponent) .. (detail and (" · " .. detail) or ""),
-            coalesceKey = "GAME_RESULT:" .. tostring(active.id or "match"),
-        })
+        CG:ShowGameResultToast(
+            result == "WIN" and "You won!" or (result == "LOSS" and "You lost" or "Draw"),
+            n .. " vs " .. shortName(active.opponent) .. (detail and (" · " .. detail) or ""),
+            "GAME_RESULT:" .. tostring(active.id or "match"),
+            result == "WIN" and "SUCCESS" or (result == "LOSS" and "ERROR" or "INFO")
+        )
     end
     return true
 end
@@ -674,20 +671,22 @@ function Games:BuildHub(parent)
     return hub
 end
 
+-- Phase 4: the multiplayer hub now lives inside the unified CreshGames shell
+-- (CG.SoloGames' "MULTIPLAYER" tab) instead of CreshChat's own drawer body,
+-- so this builds/shows/hides without any CC.UI dependency at all.
 function Games:SetHubVisible(visible)
-    if not self.hub and CC.UI and CC.UI.main and CC.UI.main.body then self:BuildHub(CC.UI.main.body) end
+    if not self.hub and CG.SoloGames and CG.SoloGames.BuildWindow then
+        local shell = CG.SoloGames:BuildWindow()
+        if shell and shell.multiPanel then self:BuildHub(shell.multiPanel) end
+    end
     if not self.hub then return end
     self.hub:SetShown(visible == true)
     if visible then self:RefreshHub() end
 end
 
 function Games:OpenHub(target)
+    if CG.SoloGames and CG.SoloGames.SelectHubTab then CG.SoloGames:SelectHubTab("MULTIPLAYER") end
     if target then self:SetTarget(target) end
-    if CC.UI and CC.UI.OpenGameDrawer then
-        CC.UI:OpenGameDrawer("MULTIPLAYER", target)
-    elseif self.hub then
-        self.hub:Show()
-    end
 end
 
 function Games:Challenge(target, game)
@@ -709,17 +708,7 @@ function Games:Challenge(target, game)
     end
     if CC.Print then CC:Print(self:GetGameName(game) .. " challenge sent to " .. shortName(target) .. ".") end
     self:RefreshHub()
-    if CC.Notifications and CC:IsFeatureEnabled("notifications") then
-        CC.Notifications:Push({
-            sourceAddon = "CRESHGAMES",
-            category    = "CHALLENGE",
-            priority    = "NORMAL",
-            status      = "GAME",
-            title       = "Challenge sent",
-            detail      = self:GetGameName(game) .. " · waiting for " .. shortName(target) .. " to respond.",
-            coalesceKey = "CHALLENGE:SENT:" .. tostring(target),
-        })
-    end
+    CG:ShowChallengeToast("Challenge sent", self:GetGameName(game) .. " · waiting for " .. shortName(target) .. " to respond.", "CHALLENGE:SENT:" .. tostring(target))
     if _G.C_Timer and type(_G.C_Timer.After) == "function" then
         _G.C_Timer.After(15, function()
             local pending = Games.pendingOutgoing
@@ -763,33 +752,22 @@ function Games:ShowChallengePopup(sender, game, id)
         setButtonAccent(popup.decline, colors.red)
         popup:Hide()
         self.challengePopup = popup
-        if CC.UI and CC.UI.ApplySafeFrameScale then CC.UI:ApplySafeFrameScale(popup, (CC.db.ui and CC.db.ui.scale) or 1, 22) end
+        local uiSvc = _G.CreshSuiteUI
+        if uiSvc and uiSvc.InstallWindowFocus then uiSvc:InstallWindowFocus(popup) end
+        if CC.UI and CC.UI.ApplySafeFrameScale then CC.UI:ApplySafeFrameScale(popup, (CC.db and CC.db.ui and CC.db.ui.scale) or 1, 22) end
     end
     self.challengePopup.message:SetText(shortName(sender) .. " challenged you to " .. self:GetGameName(game) .. ".")
-    local usedNewSystem = false
-    if CC.Notifications and CC:IsFeatureEnabled("notifications") then
-        local pushed = CC.Notifications:Push({
-            sourceAddon  = "CRESHGAMES",
-            category     = "GAME_INVITE",
-            priority     = "CRITICAL",
-            destination  = "ACTIONABLE",
-            status       = "GAME",
-            title        = shortName(sender),
-            detail       = "challenged you to " .. self:GetGameName(game) .. ".",
-            duration     = 30,
-            coalesceKey  = "GAME_INVITE:" .. tostring(sender),
-            actions      = {
-                accept       = function(card) CC.Notifications:DismissCard(card); Games:AcceptChallenge() end,
-                acceptLabel  = "ACCEPT",
-                decline      = function(card) CC.Notifications:DismissCard(card); Games:DeclineChallenge("Declined") end,
-                declineLabel = "DECLINE",
-            },
-        })
-        usedNewSystem = pushed ~= nil and pushed ~= false
-    end
-    if not usedNewSystem then self.challengePopup:Show() end
+    -- No CC.Notifications/CC.UI dependency: pushes straight to the suite
+    -- service (works with CreshChat absent); sound is handled inside Push
+    -- itself, so it's not triggered separately here any more.
+    local pushed = CG:ShowGameInvite(shortName(sender), "challenged you to " .. self:GetGameName(game) .. ".", "GAME_INVITE:" .. tostring(sender), {
+        accept       = function(card) _G.CreshSuiteNotifications:DismissCard(card); Games:AcceptChallenge() end,
+        acceptLabel  = "ACCEPT",
+        decline      = function(card) _G.CreshSuiteNotifications:DismissCard(card); Games:DeclineChallenge("Declined") end,
+        declineLabel = "DECLINE",
+    })
+    if not pushed then self.challengePopup:Show() end
     if (not CC.IsNotificationEnabled or CC:IsNotificationEnabled("GAME")) and CC.UI and CC.UI.NotifyLauncher then CC.UI:NotifyLauncher("GAME", sender, 12) end
-    if CC.PlayAlertSound then CC:PlayAlertSound("GAME") end
 end
 
 function Games:AcceptChallenge()
@@ -888,17 +866,7 @@ function Games:OnDecline(sender, parts)
     local reason = parts[3] or "Declined"
     self.pendingOutgoing = nil
     self:SetHubStatus(shortName(sender) .. " declined the challenge: " .. reason .. ".", palette().red)
-    if CC.Notifications and CC:IsFeatureEnabled("notifications") then
-        CC.Notifications:Push({
-            sourceAddon = "CRESHGAMES",
-            category    = "CHALLENGE",
-            priority    = "NORMAL",
-            status      = "INFO",
-            title       = "Challenge declined",
-            detail      = shortName(sender) .. " declined: " .. tostring(reason),
-            coalesceKey = "CHALLENGE:DECLINE:" .. tostring(sender),
-        })
-    end
+    CG:ShowChallengeToast("Challenge declined", shortName(sender) .. " declined: " .. tostring(reason), "CHALLENGE:DECLINE:" .. tostring(sender), "INFO")
     self:RefreshHub()
 end
 
@@ -966,7 +934,9 @@ function Games:BuildGameWindow()
     applyBackdrop(frame, colors.panel, colors.border)
     frame:Hide()
     self.gameWindow = frame
-    if CC.UI and CC.UI.ApplySafeFrameScale then CC.UI:ApplySafeFrameScale(frame, (CC.db.ui and CC.db.ui.scale) or 1, 22) end
+    local uiSvc = _G.CreshSuiteUI
+    if uiSvc and uiSvc.InstallWindowFocus then uiSvc:InstallWindowFocus(frame) end
+    if CC.UI and CC.UI.ApplySafeFrameScale then CC.UI:ApplySafeFrameScale(frame, (CC.db and CC.db.ui and CC.db.ui.scale) or 1, 22) end
 
     frame.header = CreateFrame("Frame", nil, frame, templateName())
     frame.header:SetPoint("TOPLEFT", frame, "TOPLEFT", 1, -1)
@@ -975,7 +945,11 @@ function Games:BuildGameWindow()
     applyBackdrop(frame.header, colors.panelRaised, colors.border)
     frame.header:EnableMouse(true)
     frame.header:RegisterForDrag("LeftButton")
-    frame.header:SetScript("OnDragStart", function() frame:StartMoving() end)
+    frame.header:SetScript("OnDragStart", function()
+        local svc = _G.CreshSuiteUI
+        if svc then svc:FocusWindow(frame) end
+        frame:StartMoving()
+    end)
     frame.header:SetScript("OnDragStop", function() frame:StopMovingOrSizing() end)
 
     frame.title = createText(frame.header, 15, colors.text, "LEFT")

@@ -114,9 +114,12 @@ local LAUNCHER_DESTINATIONS = {
         label = "Gm", tooltipTitle = "Games Hub", tooltipText = "Open the CreshGames Solo Arcade",
         texture = "Interface\\AddOns\\CreshChat\\Media\\Icons\\Games_Button_Transparent.tga",
         requirementText = "Requires CreshGames",
-        -- Routes to the Solo Games window specifically, not the multiplayer
-        -- hub (OpenGames) -- that one only ever opens CreshChat's internal
-        -- multiplayer drawer and requires CreshChat to be loaded at all.
+        -- Phase 4: routes to the unified CreshGames hub shell, restoring
+        -- whichever top-level tab (SOLO/MULTIPLAYER/UNLOCKS) was last active
+        -- -- works without CreshChat. "OpenGames" (the multiplayer-specific
+        -- service) opens the same shell but always forces the MULTIPLAYER
+        -- tab; this button intentionally targets the generic "open the hub"
+        -- service instead.
         IsAvailable = function() return getSuiteService("OpenSoloGames") ~= nil end,
         Open = function()
             local svc = getSuiteService("OpenSoloGames")

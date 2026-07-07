@@ -85,41 +85,15 @@ local DISCOVERY_TITLES = {
 }
 
 -- ----------------------------------------------------------------
--- Suite source routing  (CreshGames + CreshCollect)
--- ShowSlideToast calls whose coalesce key matches a known prefix belong
--- to CRESHGAMES or CRESHCOLLECT rather than CRESHCHAT.  If the owning
--- addon is not loaded/registered, the notification falls back to
--- CRESHCHAT/GAME so it is never silently dropped.
--- ----------------------------------------------------------------
-
-local function suiteSourceFromKey(keyStr)
-    local gSrc, gCat
-    -- CreshGames keys
-    if string.match(keyStr, "^TETRIS:PASS") or string.match(keyStr, "^TETRIS:CLAIMALL") then
-        gSrc, gCat = "CRESHGAMES", "BATTLE_PASS"
-    elseif string.match(keyStr, "^TETRIS:") then
-        gSrc, gCat = "CRESHGAMES", "REWARD"
-    elseif string.match(keyStr, "^BP:") then
-        gSrc, gCat = "CRESHGAMES", "BATTLE_PASS"
-    elseif string.match(keyStr, "^DUNGEONCRATE:") then
-        gSrc, gCat = "CRESHGAMES", "REWARD"
-    elseif string.match(keyStr, "^DUNGEONBOSS:") then
-        gSrc, gCat = "CRESHGAMES", "GAME_RESULT"
-    -- CreshCollect keys
-    elseif string.match(keyStr, "^ACHIEVEMENT:") or string.match(keyStr, "^DD_ACH:") then
-        gSrc, gCat = "CRESHCOLLECT", "ACHIEVEMENT"
-    end
-    if not gSrc then return nil end
-    -- Graceful fallback when the owning addon is not loaded
-    if not Notifications:IsSourceEnabled(gSrc) then
-        return "CRESHCHAT", "GAME"
-    end
-    return gSrc, gCat
-end
-
--- ----------------------------------------------------------------
 -- UI:ShowSlideToast  (presence, battle-pass, game, dungeon rewards)
 -- Parameters: title, message, status, key, playerName, kind, target
+--
+-- CreshGames/CreshCollect no longer route through here at all -- they push
+-- to _G.CreshSuiteNotifications directly with an explicit sourceAddon/
+-- category (see GamesNotifications.lua/CollectNotifications.lua), so the
+-- coalesce-key-prefix sniffing this function used to do (matching "TETRIS:",
+-- "BP:", "ACHIEVEMENT:" etc.) is gone -- every caller reaching this function
+-- is a genuine CreshChat-sourced toast.
 -- ----------------------------------------------------------------
 
 local _origSlide = UI.ShowSlideToast
@@ -127,25 +101,7 @@ function UI:ShowSlideToast(title, message, status, key, playerName, kind, target
     if featureOn() then
         local k        = string.upper(tostring(kind   or "SYSTEM"))
         local ttl      = tostring(title   or "")
-        local keyStr   = tostring(key or "")
         local category = KIND_CAT[k] or k
-
-        -- Re-route game-owned toasts to CRESHGAMES categories
-        local gSrc, gCat = suiteSourceFromKey(keyStr)
-        if gSrc then
-            if Notifications:IsCategoryEnabled(gSrc, gCat) then
-                Notifications:Push({
-                    sourceAddon = gSrc,
-                    category    = gCat,
-                    priority    = "LOW",
-                    status      = status or k,
-                    title       = ttl,
-                    detail      = tostring(message or ""),
-                    coalesceKey = keyStr ~= "" and keyStr or (gCat .. ":" .. ttl),
-                })
-            end
-            return
-        end
 
         if CC.IsNotificationEnabled and CC:IsNotificationEnabled(category) then
             local detail     = tostring(message or "")
