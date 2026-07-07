@@ -13,7 +13,7 @@ local Pass = {
 COL.BattlePass = Pass
 if COL.RegisterModule then COL:RegisterModule("BattlePass", Pass) end
 
-local floor, min, max = math.floor, math.min, math.max
+local floor, min, max, ceil = math.floor, math.min, math.max, math.ceil
 local upper = string.upper
 local format = string.format
 
@@ -466,9 +466,7 @@ function Pass:ClaimRenownReward(rank, silent)
     self:AddCoins(self.renownCoinsPerRank, "RENOWN")
     if not silent then
         self:RefreshDrawer()
-        if CC.UI and CC.UI.ShowBattlePassToast then
-            CC.UI:ShowBattlePassToast("Renown Rank " .. rank, "+" .. self.renownCoinsPerRank .. " Cresh Coins", "BATTLEPASS", "RENOWN:CLAIM:" .. rank)
-        end
+        COL:ShowBattlePassToast("Renown Rank " .. rank, "+" .. self.renownCoinsPerRank .. " Cresh Coins", "BATTLEPASS", "RENOWN:CLAIM:" .. rank)
     end
     return true
 end
@@ -645,15 +643,15 @@ function Pass:AddPassXP(amount, source, silent, isSimulation)
     if CC.UI and CC.UI.RefreshConsoleEconomy then CC.UI:RefreshConsoleEconomy() end
     if not silent then
         self:RefreshDrawer()
-        if newLevel > previousLevel and CC.UI and CC.UI.ShowBattlePassToast then
+        if newLevel > previousLevel then
             local reward = self:GetReward(newLevel)
             local detail = "+" .. amount .. " Pass Points - reward ready"
             if reward.themeName then detail = detail .. " - " .. reward.themeName .. " theme" end
             if reward.deckName then detail = detail .. " - " .. reward.deckName .. " deck" end
             if reward.tetrisThemeName then detail = detail .. " - " .. reward.tetrisThemeName .. " Tetris set" end
-            CC.UI:ShowBattlePassToast("Azeroth Chronicle Level " .. newLevel, detail, "BATTLEPASS", "BP:LEVEL:" .. tostring(newLevel))
-        elseif newRenownRank > previousRenownRank and CC.UI and CC.UI.ShowBattlePassToast then
-            CC.UI:ShowBattlePassToast("Renown Rank " .. newRenownRank, "+" .. self.renownCoinsPerRank .. " Cresh Coins - reward ready", "BATTLEPASS", "RENOWN:" .. tostring(newRenownRank))
+            COL:ShowBattlePassToast("Azeroth Chronicle Level " .. newLevel, detail, "BATTLEPASS", "BP:LEVEL:" .. tostring(newLevel))
+        elseif newRenownRank > previousRenownRank then
+            COL:ShowBattlePassToast("Renown Rank " .. newRenownRank, "+" .. self.renownCoinsPerRank .. " Cresh Coins - reward ready", "BATTLEPASS", "RENOWN:" .. tostring(newRenownRank))
         end
     end
     return amount, previousLevel, newLevel
@@ -690,12 +688,12 @@ function Pass:ClaimReward(level, silent)
     if not silent then
         self:RefreshDrawer()
         if CC.SoloGames and CC.SoloGames.RefreshTetrisPanels then CC.SoloGames:RefreshTetrisPanels(true) end
-        if CC.UI and CC.UI.ShowBattlePassToast then
+        do
             local detail = "+" .. tostring(reward.coins or 0) .. " Cresh Coins"
             if reward.themeName then detail = detail .. " - " .. reward.themeName .. " theme unlocked" end
             if reward.deckName then detail = detail .. " - " .. reward.deckName .. " deck unlocked" end
             if reward.tetrisThemeName then detail = detail .. " - " .. reward.tetrisThemeName .. " Tetris set unlocked" end
-            CC.UI:ShowBattlePassToast("Azeroth Chronicle reward unlocked", "Level " .. level .. " - " .. detail, "BATTLEPASS", "BP:CLAIM:" .. tostring(level))
+            COL:ShowBattlePassToast("Azeroth Chronicle reward unlocked", "Level " .. level .. " - " .. detail, "BATTLEPASS", "BP:CLAIM:" .. tostring(level))
         end
     end
     return true
@@ -719,9 +717,7 @@ function Pass:ClaimAllAvailable()
     self:RefreshDrawer()
     if claimed > 0 then
         if CC.SoloGames and CC.SoloGames.RefreshTetrisPanels then CC.SoloGames:RefreshTetrisPanels(true) end
-        if CC.UI and CC.UI.ShowBattlePassToast then
-            CC.UI:ShowBattlePassToast("Azeroth Chronicle rewards unlocked", tostring(claimed) .. " rewards - +" .. formatNumber(total) .. " Cresh Coins", "BATTLEPASS", "BP:CLAIMALL:" .. tostring(now()))
-        end
+        COL:ShowBattlePassToast("Azeroth Chronicle rewards unlocked", tostring(claimed) .. " rewards - +" .. formatNumber(total) .. " Cresh Coins", "BATTLEPASS", "BP:CLAIMALL:" .. tostring(now()))
     end
     return claimed, total
 end
@@ -785,9 +781,7 @@ function Pass:BuyTheme(theme)
     save.recent = { text = info.name .. " unlocked", coins = -info.price, at = now() }
     if CC.UI and CC.UI.ApplyThemePreset then CC.UI:ApplyThemePreset(theme) end
     if CC.Print then CC:Print(info.name .. " unlocked and equipped for " .. formatNumber(info.price) .. " Cresh Coins.") end
-    if CC.UI and CC.UI.ShowBattlePassToast then
-        CC.UI:ShowBattlePassToast("Theme unlocked", info.name .. " is now equipped", "BATTLEPASS", "BP:THEME:" .. tostring(theme))
-    end
+    COL:ShowCosmeticRewardToast("Theme unlocked", info.name .. " is now equipped", "BP:THEME:" .. tostring(theme))
     self:RefreshDrawer()
     return true
 end
@@ -1460,6 +1454,13 @@ Pass.formatNumber = formatNumber
 -- own constant above) rather than one frame per level, since building 200
 -- static rows would be wasteful and this window is built once, not rebuilt
 -- on every open.
+--
+-- Bug-fix round: navigation switched from mouse-wheel scrolling to
+-- Prev/Next paging (WINDOW_PAGE_SIZE rows per page). The pool/scroll-offset
+-- machinery below is unchanged -- only what *drives* the scroll offset
+-- changed, from live mouse-wheel deltas to discrete page jumps -- so the
+-- ScrollFrame is kept purely for its clipping behaviour, not user scrolling.
+local WINDOW_PAGE_SIZE = 6
 
 local WBACKDROP = {
     bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -1537,7 +1538,10 @@ local function winCreateButton(parent, label, width, height, callback)
     btn.label = winCreateText(btn, 9, colors.text, "CENTER")
     btn.label:SetAllPoints()
     btn.label:SetText(label or "")
-    btn:SetScript("OnClick", function(selfBtn, ...) if callback then callback(selfBtn, ...) end end)
+    btn:SetScript("OnClick", function(selfBtn, ...)
+        if selfBtn.creshDisabled then return end
+        if callback then callback(selfBtn, ...) end
+    end)
     btn:SetScript("OnEnter", function(selfBtn)
         local c = winPalette()
         winApplyBackdrop(selfBtn, winDarken(c.quest or c.blue, 0.22), c.quest or c.blue)
@@ -1605,7 +1609,8 @@ function Pass:BuildWindow()
 
     frame:SetScript("OnMouseDown", function(selfFrame, btn)
         if btn == "LeftButton" then
-            if CC.UI and CC.UI.FocusWindow then CC.UI:FocusWindow(selfFrame) end
+            local uiSvc = _G.CreshSuiteUI or CC.UI
+            if uiSvc and uiSvc.FocusWindow then uiSvc:FocusWindow(selfFrame) end
             selfFrame:StartMoving()
         end
     end)
@@ -1620,7 +1625,11 @@ function Pass:BuildWindow()
     frame:SetScript("OnHide", function()
         if CC.UI and CC.UI.RefreshLauncherButtonStates then CC.UI:RefreshLauncherButtonStates() end
     end)
-    if CC.UI and CC.UI.InstallWindowFocus then CC.UI:InstallWindowFocus(frame) end
+    -- Prefer the shared, addon-agnostic bridge so this window shares one
+    -- z-order with every other suite window even when CreshChat is absent
+    -- (CC.UI itself now just delegates to the same bridge when present).
+    local uiSvc = _G.CreshSuiteUI or CC.UI
+    if uiSvc and uiSvc.InstallWindowFocus then uiSvc:InstallWindowFocus(frame) end
 
     -- Header
     local header = CreateFrame("Frame", nil, frame, winTemplateName())
@@ -1706,6 +1715,7 @@ function Pass:BuildWindow()
         local key, label, width = filterDef[1], filterDef[2], filterDef[3]
         local btn = winCreateButton(filterBar, label, width, 24, function()
             Pass.windowFilter = key
+            Pass.windowCurrentPage = 1
             Pass:RefreshWindow()
         end)
         if previousFilter then btn:SetPoint("LEFT", previousFilter, "RIGHT", 4, 0)
@@ -1717,22 +1727,39 @@ function Pass:BuildWindow()
     claimAll:SetPoint("RIGHT", filterBar, "RIGHT", 0, 0)
     self.windowClaimAll = claimAll
 
+    -- Page bar (Prev/Next) -- same convention as CreshGames' Unlocks
+    -- catalogue and CreshCollect's Achievements window -- replaces manual
+    -- mouse-wheel scrolling.
+    local pageBar = CreateFrame("Frame", nil, frame, winTemplateName())
+    pageBar:SetPoint("TOPLEFT", filterBar, "BOTTOMLEFT", 0, -8)
+    pageBar:SetPoint("TOPRIGHT", filterBar, "BOTTOMRIGHT", 0, -8)
+    pageBar:SetHeight(22)
+    self.windowPrevButton = winCreateButton(pageBar, "<", 40, 22, function()
+        Pass:GoToPage((Pass.windowCurrentPage or 1) - 1)
+    end)
+    self.windowPrevButton:SetPoint("LEFT", pageBar, "LEFT", 0, 0)
+    self.windowNextButton = winCreateButton(pageBar, ">", 40, 22, function()
+        Pass:GoToPage((Pass.windowCurrentPage or 1) + 1)
+    end)
+    self.windowNextButton:SetPoint("RIGHT", pageBar, "RIGHT", 0, 0)
+    self.windowPageText = winCreateText(pageBar, 9, colors.muted, "CENTER")
+    self.windowPageText:SetPoint("LEFT", self.windowPrevButton, "RIGHT", 4, 0)
+    self.windowPageText:SetPoint("RIGHT", self.windowNextButton, "LEFT", -4, 0)
+    self.windowPageText:SetPoint("TOP", pageBar, "TOP", 0, 0)
+    self.windowPageText:SetPoint("BOTTOM", pageBar, "BOTTOM", 0, 0)
+
     -- Scroll + pooled rows (POOL_SIZE / ROW_HEIGHT reused from the drawer's
     -- own virtualization constants above -- same row size, same pool count).
+    -- The ScrollFrame is kept only for its clipping behaviour: Prev/Next
+    -- (GoToPage) now drives the scroll offset directly instead of the user's
+    -- mouse wheel.
     local scroll = CreateFrame("ScrollFrame", nil, frame)
-    scroll:SetPoint("TOPLEFT", filterBar, "BOTTOMLEFT", 0, -8)
+    scroll:SetPoint("TOPLEFT", pageBar, "BOTTOMLEFT", 0, -8)
     scroll:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -8, 8)
-    scroll:EnableMouseWheel(true)
     local content = CreateFrame("Frame", nil, scroll)
     content:SetWidth(430)
     content:SetHeight(600)
     scroll:SetScrollChild(content)
-    scroll:SetScript("OnMouseWheel", function(selfScroll, delta)
-        local current = selfScroll:GetVerticalScroll() or 0
-        local maximum = selfScroll:GetVerticalScrollRange() or 0
-        selfScroll:SetVerticalScroll(max(0, min(maximum, current - delta * 42)))
-    end)
-    scroll:SetScript("OnVerticalScroll", function() Pass:UpdateWindowPool(false) end)
     self.windowScroll = scroll
     self.windowContent = content
 
@@ -1772,7 +1799,16 @@ function Pass:BuildWindow()
     end
 
     self.windowFilter = self.windowFilter or "ALL"
+    self.windowCurrentPage = 1
     return frame
+end
+
+function Pass:GoToPage(pageIndex)
+    local list = self.windowLevelList
+    if not list then return end
+    local totalPages = max(1, ceil(#list / WINDOW_PAGE_SIZE))
+    self.windowCurrentPage = max(1, min(totalPages, floor(tonumber(pageIndex) or 1)))
+    self:UpdateWindowPool(false)
 end
 
 function Pass:UpdateWindowPool(forceRepopulate)
@@ -1782,9 +1818,21 @@ function Pass:UpdateWindowPool(forceRepopulate)
     if not list or not pool or not api then return end
     local save = self:Ensure()
     if not save then return end
-    local scrollY = self.windowScroll and (self.windowScroll:GetVerticalScroll() or 0) or 0
-    local firstIdx = max(0, floor(scrollY / ROW_HEIGHT))
-    firstIdx = min(firstIdx, max(0, #list - POOL_SIZE))
+    local totalPages = max(1, ceil(#list / WINDOW_PAGE_SIZE))
+    self.windowCurrentPage = max(1, min(totalPages, self.windowCurrentPage or 1))
+    local firstIdx = (self.windowCurrentPage - 1) * WINDOW_PAGE_SIZE
+    if self.windowScroll then self.windowScroll:SetVerticalScroll(firstIdx * ROW_HEIGHT) end
+    if self.windowPageText then self.windowPageText:SetText("Page " .. self.windowCurrentPage .. " / " .. totalPages) end
+    if self.windowPrevButton then
+        local enabled = self.windowCurrentPage > 1
+        self.windowPrevButton:SetAlpha(enabled and 1 or 0.4)
+        self.windowPrevButton.creshDisabled = not enabled
+    end
+    if self.windowNextButton then
+        local enabled = self.windowCurrentPage < totalPages
+        self.windowNextButton:SetAlpha(enabled and 1 or 0.4)
+        self.windowNextButton.creshDisabled = not enabled
+    end
     for poolI = 1, POOL_SIZE do
         local listIdx = firstIdx + poolI - 1
         local level = list[listIdx + 1]

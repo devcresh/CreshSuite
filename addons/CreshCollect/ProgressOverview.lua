@@ -356,7 +356,8 @@ function Overview:BuildWindow()
 
     frame:SetScript("OnMouseDown", function(selfFrame, btn)
         if btn == "LeftButton" then
-            if CC.UI and CC.UI.FocusWindow then CC.UI:FocusWindow(selfFrame) end
+            local uiSvc = _G.CreshSuiteUI or CC.UI
+            if uiSvc and uiSvc.FocusWindow then uiSvc:FocusWindow(selfFrame) end
             selfFrame:StartMoving()
         end
     end)
@@ -371,7 +372,10 @@ function Overview:BuildWindow()
     frame:SetScript("OnHide", function()
         if CC.UI and CC.UI.RefreshLauncherButtonStates then CC.UI:RefreshLauncherButtonStates() end
     end)
-    if CC.UI and CC.UI.InstallWindowFocus then CC.UI:InstallWindowFocus(frame) end
+    -- Prefer the shared, addon-agnostic bridge so this window shares one
+    -- z-order with every other suite window even when CreshChat is absent.
+    local uiSvc = _G.CreshSuiteUI or CC.UI
+    if uiSvc and uiSvc.InstallWindowFocus then uiSvc:InstallWindowFocus(frame) end
 
     -- Header
     local header = CreateFrame("Frame", nil, frame, winTemplateName())

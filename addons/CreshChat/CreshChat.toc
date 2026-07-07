@@ -7,6 +7,8 @@
 
 Suite.lua
 Launcher.lua
+CreshUI.lua
+SuiteNotifications.lua
 VersionCompare.lua
 Core.lua
 FeatureManager.lua
@@ -17,7 +19,6 @@ Friends.lua
 Voice.lua
 Themes.lua
 UI.lua
-NotificationCard.lua
 NotificationsAdapter.lua
 Quality.lua
 Developer.lua

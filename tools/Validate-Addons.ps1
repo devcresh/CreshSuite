@@ -112,7 +112,8 @@ $rootLua = @(Get-ChildItem $RepoRoot -Filter "*.lua" -File -ErrorAction Silently
 foreach ($f in $rootLua) { Fail "Stray Lua at repo root: $($f.Name)" }
 if ($rootLua.Count -eq 0) { Pass "No stray Lua files at repo root" }
 
-$wowSensitive = @("WTF","Cache","Logs","Screenshots")
+# Repository-local development logs belong in Logs\; WoW runtime folders remain forbidden.
+$wowSensitive = @("WTF","Cache","Screenshots")
 foreach ($s in $wowSensitive) {
     if (Test-Path (Join-Path $RepoRoot $s)) { Fail "Repo root contains WoW runtime folder: $s" }
 }
@@ -130,7 +131,7 @@ else                                                    { Warn "shared\Suite.lua
 # ---------------------------------------------------------------------------
 $allTocEntries  = @{}    # addonName -> list of declared relative paths
 $knownFileOwner = @{}    # normalized-path -> first owner
-$SharedFiles    = @("Suite.lua", "Launcher.lua")
+$SharedFiles    = @("Suite.lua", "Launcher.lua", "CreshUI.lua", "SuiteNotifications.lua")
 
 # Cross-addon global frame registry: globalName -> "AddonName/File.lua:line"
 $globalFrames = @{}

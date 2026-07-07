@@ -1,0 +1,4 @@
+- [Plan file location](plan_file_location.md) — save plan-mode plans in D:\CreshSuite\Docs\Plans\, using the harness's own filename
+- [CreshSuite UI service Phase 1](creshsuite_ui_service_phase1.md) — CreshSuiteUI shipped & in-game verified; pattern to follow for future migrations
+- [Achievements window row anchors](achievements_window_row_anchors.md) — window/drawer row layouts can drift apart; check both when editing row anchors
+- [Suite notifications Phase 3](suite_notifications_phase3.md) — CreshSuiteNotifications shipped & in-game verified; check for existing registration blocks and pcall card rendering

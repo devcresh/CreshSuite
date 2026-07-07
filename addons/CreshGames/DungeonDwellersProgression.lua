@@ -26,12 +26,7 @@ local function clamp(value, low, high)
 end
 
 local function showDungeonPassToast(title, message, key)
-    if not CC.UI then return end
-    if CC.UI.ShowDungeonPassToast then
-        CC.UI:ShowDungeonPassToast(title, message, key)
-    elseif CC.UI.ShowBattlePassToast then
-        CC.UI:ShowBattlePassToast(title, message, "BATTLEPASS", key)
-    end
+    CG:ShowDungeonPassToast(title, message, key)
 end
 
 local function dungeonSave()

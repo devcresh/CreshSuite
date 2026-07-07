@@ -240,16 +240,9 @@ _eventFrame:SetScript("OnEvent", function(_, event, ...)
         if _G.CreshSuiteLauncherAPI and _G.CreshSuiteLauncherAPI.EnsureBuilt then
             _G.CreshSuiteLauncherAPI:EnsureBuilt()
         end
-
-        local CC = _G.CreshChat
-        if CC and CC.Notifications then
-            CC.Notifications:RegisterSource("CRESHGAMES", "CreshGames")
-            CC.Notifications:RegisterCategory("CRESHGAMES", "GAME_INVITE",       "Game Invitations",   "Incoming multiplayer game invitations.",        { priority = "CRITICAL" })
-            CC.Notifications:RegisterCategory("CRESHGAMES", "CHALLENGE",         "Challenges",         "Player challenges and counter-challenges.",     { priority = "HIGH" })
-            CC.Notifications:RegisterCategory("CRESHGAMES", "MULTIPLAYER_EVENT", "Multiplayer Events", "Multiplayer session and match events.",         { priority = "NORMAL" })
-            CC.Notifications:RegisterCategory("CRESHGAMES", "GAME_RESULT",       "Game Results",       "Multiplayer game completion results.",          { priority = "NORMAL" })
-            CC.Notifications:RegisterCategory("CRESHGAMES", "REWARD",            "Rewards",            "Cresh Coin and game reward notifications.",    { priority = "LOW" })
-            CC.Notifications:RegisterCategory("CRESHGAMES", "BATTLE_PASS",       "Battle Pass",        "Battle Pass level and reward unlock notices.", { priority = "LOW" })
-        end
+        -- Notification source/category registration moved to
+        -- GamesNotifications.lua, which registers unconditionally against
+        -- _G.CreshSuiteNotifications at load time instead of waiting for
+        -- CreshChat here.
     end
 end)

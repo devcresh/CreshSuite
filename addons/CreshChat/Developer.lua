@@ -1205,6 +1205,24 @@ function CC:HandleSlashCommand(input)
     elseif command == "dbstatus" or command == "dbs" then
         Developer:PrintDBStatus()
         return
+    elseif command == "notifprofile" then
+        local arg = string.lower(string.match(tostring(input or ""), "^%S+%s+(%S*)") or "")
+        local notif = _G.CreshSuiteNotifications
+        if not notif then
+            CC:Print("Notification service not loaded.")
+        elseif arg == "on" then
+            notif:SetProfilingEnabled(true)
+            CC:Print("Notification profiling enabled (temporary -- resets on /reload).")
+        elseif arg == "off" then
+            notif:SetProfilingEnabled(false)
+            CC:Print("Notification profiling disabled.")
+        elseif arg == "reset" then
+            notif:ResetProfile()
+            CC:Print("Notification profiling samples cleared.")
+        else
+            CC:Print(notif:GetProfileReport())
+        end
+        return
     end
     return originalHandleSlashCommand(self, input)
 end
@@ -1219,4 +1237,5 @@ function CC:ShowHelp()
     self:Print("/cc combat - print combat tracker stats and achievement counts")
     self:Print("/cc test on/off/run/verbose/status - developer test suite (L1-L20)")
     self:Print("/cc dbstatus - show migration status for all three suite databases")
+    self:Print("/cc notifprofile on/off/reset/[report] - temporary notification cold/warm timing profiler (off by default)")
 end

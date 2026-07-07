@@ -247,6 +247,10 @@ ok(m1 ~= nil and m1.done,                 "v1 migration marked done")
 eq(m1.sourceDB, "none",                   "sourceDB = none (no CreshChatDB)")
 eq(m1.at, 1000000,                        "at timestamp recorded")
 
+-- Phase 4: unified CreshGames hub shell's persisted top-level tab.
+ok(type(CreshGamesDB.gamesHub) == "table", "gamesHub table present")
+eq(CreshGamesDB.gamesHub.activeTab, "SOLO", "gamesHub.activeTab defaults to SOLO")
+
 -- ============================================================
 -- 2. CreshGamesDB - Legacy CreshChatDB (no accountProgression)
 -- ============================================================

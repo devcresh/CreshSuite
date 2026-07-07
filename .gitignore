@@ -29,6 +29,10 @@ desktop.ini
 CLAUDE.local.md
 .claude/settings.local.json
 
+# Local development and agent logs (keep the folder documentation)
+Logs/*
+!Logs/README.md
+
 # Release packages and generated build artifacts
 *.zip
 *.rar

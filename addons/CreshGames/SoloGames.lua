@@ -2,6 +2,9 @@
 if not CG then return end
 -- CC is a nil-safe proxy for optional CreshChat integration when CreshChat is not loaded.
 local CC = setmetatable({}, { __index = function(_, k) local c = _G.CreshChat; return c and c[k] end })
+-- Phase 4: the cross-addon UI service (shared/CreshUI.lua), always present in
+-- this addon regardless of whether CreshChat is loaded.
+local UISvc = _G.CreshSuiteUI
 
 local Solo = {
     version = CG.version,
@@ -449,7 +452,12 @@ function Solo:BuildWindow()
     local colors = palette()
     local frame = CreateFrame("Frame", "CreshGamesSoloArcade", UIParent, templateName())
     frame:SetSize(760, 700)
-    frame:SetPoint("CENTER", UIParent, "CENTER", 55, 10)
+    local defaultPos = { point = "CENTER", relPoint = "CENTER", x = 55, y = 10 }
+    if UISvc then
+        UISvc:RestorePosition(_G.CreshGamesDB, "gamesHub", frame, defaultPos)
+    else
+        frame:SetPoint(defaultPos.point, UIParent, defaultPos.relPoint, defaultPos.x, defaultPos.y)
+    end
     frame:SetFrameStrata("DIALOG")
     frame:SetClampedToScreen(true)
     frame:SetMovable(true)
@@ -459,7 +467,8 @@ function Solo:BuildWindow()
     applyBackdrop(frame, colors.panel, colors.border)
     frame:Hide()
     self.window = frame
-    if CC.UI and CC.UI.ApplySafeFrameScale then CC.UI:ApplySafeFrameScale(frame, (CC.db.ui and CC.db.ui.scale) or 1, 22) end
+    if UISvc then UISvc:InstallWindowFocus(frame) end
+    if UISvc then UISvc:ApplySafeFrameScale(frame, (CC.db and CC.db.ui and CC.db.ui.scale) or 1, 22) end
 
     frame.header = CreateFrame("Frame", nil, frame, templateName())
     frame.header:SetPoint("TOPLEFT", frame, "TOPLEFT", 1, -1)
@@ -468,17 +477,23 @@ function Solo:BuildWindow()
     applyBackdrop(frame.header, colors.panelRaised, colors.border)
     frame.header:EnableMouse(true)
     frame.header:RegisterForDrag("LeftButton")
-    frame.header:SetScript("OnDragStart", function() frame:StartMoving() end)
-    frame.header:SetScript("OnDragStop", function() frame:StopMovingOrSizing() end)
+    frame.header:SetScript("OnDragStart", function()
+        if UISvc then UISvc:FocusWindow(frame) end
+        frame:StartMoving()
+    end)
+    frame.header:SetScript("OnDragStop", function()
+        frame:StopMovingOrSizing()
+        if UISvc then UISvc:SavePosition(_G.CreshGamesDB, "gamesHub", frame) end
+    end)
 
     frame.title = createText(frame.header, 16, colors.text, "LEFT")
     frame.title:SetPoint("TOPLEFT", frame.header, "TOPLEFT", 12, -8)
-    frame.title:SetText("CRESH SOLO ARCADE")
+    frame.title:SetText("CRESH GAMES")
     frame.subtitle = createText(frame.header, 9, colors.muted, "LEFT")
     frame.subtitle:SetPoint("TOPLEFT", frame.title, "BOTTOMLEFT", 0, -3)
     frame.subtitle:SetText("Single-player games · WASD / arrows · mouse controls")
 
-    frame.home = createButton(frame.header, "ARCADE", 62, 26, function() Solo:ShowHub() end)
+    frame.home = createButton(frame.header, "ARCADE", 62, 26, function() Solo:SelectHubTab("SOLO", true) end)
     frame.home:SetPoint("RIGHT", frame.header, "RIGHT", -42, 0)
     setButtonAccent(frame.home, colors.accent)
 
@@ -498,9 +513,39 @@ function Solo:BuildWindow()
     frame.close:SetPoint("RIGHT", frame.header, "RIGHT", -7, 0)
     setButtonAccent(frame.close, colors.red)
 
+    -- Phase 4: top-level SOLO / MULTIPLAYER / UNLOCKS hub tabs.
+    frame.hubTabBar = CreateFrame("Frame", nil, frame, templateName())
+    frame.hubTabBar:SetPoint("TOPLEFT", frame.header, "BOTTOMLEFT", 0, -1)
+    frame.hubTabBar:SetPoint("TOPRIGHT", frame.header, "BOTTOMRIGHT", 0, -1)
+    frame.hubTabBar:SetHeight(24)
+    applyBackdrop(frame.hubTabBar, colors.panelRaised, colors.border)
+
+    frame.hubTabButtons = {}
+    local hubTabDefs = {
+        { key = "SOLO", label = "SOLO" },
+        { key = "MULTIPLAYER", label = "MULTIPLAYER" },
+        { key = "UNLOCKS", label = "UNLOCKS" },
+    }
+    local prevTabButton
+    for _, def in ipairs(hubTabDefs) do
+        local btn
+        if UISvc then
+            btn = UISvc:CreateTab(frame.hubTabBar, def.label, 120, 20, function() Solo:SelectHubTab(def.key) end)
+        else
+            btn = createButton(frame.hubTabBar, def.label, 120, 20, function() Solo:SelectHubTab(def.key) end)
+        end
+        if prevTabButton then
+            btn:SetPoint("LEFT", prevTabButton, "RIGHT", 4, 0)
+        else
+            btn:SetPoint("LEFT", frame.hubTabBar, "LEFT", 6, 0)
+        end
+        frame.hubTabButtons[def.key] = btn
+        prevTabButton = btn
+    end
+
     frame.statusBar = CreateFrame("Frame", nil, frame, templateName())
-    frame.statusBar:SetPoint("TOPLEFT", frame.header, "BOTTOMLEFT", 7, -7)
-    frame.statusBar:SetPoint("TOPRIGHT", frame.header, "BOTTOMRIGHT", -7, -7)
+    frame.statusBar:SetPoint("TOPLEFT", frame.hubTabBar, "BOTTOMLEFT", 7, -7)
+    frame.statusBar:SetPoint("TOPRIGHT", frame.hubTabBar, "BOTTOMRIGHT", -7, -7)
     frame.statusBar:SetHeight(32)
     applyBackdrop(frame.statusBar, colors.panelSoft, colors.border)
     frame.status = createText(frame.statusBar, 10, colors.muted, "LEFT")
@@ -524,6 +569,22 @@ function Solo:BuildWindow()
     frame.content:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -7, 7)
     applyBackdrop(frame.content, colors.panelSoft, colors.panelSoft)
 
+    -- Phase 4: MULTIPLAYER and UNLOCKS occupy the exact same rect as
+    -- frame.content (siblings, not children) so SelectHubTab can swap
+    -- between them with plain SetShown -- frame.content and every
+    -- Build*View child inside it are otherwise completely untouched.
+    frame.multiPanel = CreateFrame("Frame", nil, frame, templateName())
+    frame.multiPanel:SetPoint("TOPLEFT", frame.statusBar, "BOTTOMLEFT", 0, -7)
+    frame.multiPanel:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -7, 7)
+    applyBackdrop(frame.multiPanel, colors.panelSoft, colors.panelSoft)
+    frame.multiPanel:Hide()
+
+    frame.unlocksPanel = CreateFrame("Frame", nil, frame, templateName())
+    frame.unlocksPanel:SetPoint("TOPLEFT", frame.statusBar, "BOTTOMLEFT", 0, -7)
+    frame.unlocksPanel:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -7, 7)
+    applyBackdrop(frame.unlocksPanel, colors.panelSoft, colors.panelSoft)
+    frame.unlocksPanel:Hide()
+
     frame:SetScript("OnShow", function(selfFrame)
         selfFrame:EnableKeyboard(true)
         if selfFrame.SetPropagateKeyboardInput then selfFrame:SetPropagateKeyboardInput(false) end
@@ -537,10 +598,14 @@ function Solo:BuildWindow()
         if key == "ESCAPE" then
             local activeView = Solo.activeGame and Solo.views[Solo.activeGame]
             if activeView and activeView.CloseOverlay and activeView:CloseOverlay() then return end
-            if Solo.activeGame then Solo:ShowHub() else frame:Hide() end
+            if Solo.activeGame then Solo:SelectHubTab("SOLO", true) else frame:Hide() end
             return
         end
-        local view = Solo.activeGame and Solo.views[Solo.activeGame]
+        -- Phase 4: the SOLO tab (frame.content) can be hidden behind
+        -- MULTIPLAYER/UNLOCKS while a solo game is still technically
+        -- "active" -- only route input/updates to it while actually visible,
+        -- so it doesn't keep ticking (or eat keystrokes) in the background.
+        local view = frame.content:IsShown() and Solo.activeGame and Solo.views[Solo.activeGame]
         if view and CG.GameAudio and CG.GameAudio.PlayInteraction then
             local cards = Solo.activeGame == "HOLDEM" or Solo.activeGame == "BLACKJACK" or Solo.activeGame == "HIGHERLOWER"
             CG.GameAudio:PlayInteraction(cards and "CARD" or "MOVE")
@@ -548,11 +613,11 @@ function Solo:BuildWindow()
         if view and view.OnKeyDown then view:OnKeyDown(key) end
     end)
     frame:SetScript("OnKeyUp", function(_, key)
-        local view = Solo.activeGame and Solo.views[Solo.activeGame]
+        local view = frame.content:IsShown() and Solo.activeGame and Solo.views[Solo.activeGame]
         if view and view.OnKeyUp then view:OnKeyUp(upper(tostring(key or ""))) end
     end)
     frame:SetScript("OnUpdate", function(_, elapsed)
-        local view = Solo.activeGame and Solo.views[Solo.activeGame]
+        local view = frame.content:IsShown() and Solo.activeGame and Solo.views[Solo.activeGame]
         if view and view.OnUpdate then view:OnUpdate(elapsed or 0) end
     end)
     return frame
@@ -838,10 +903,12 @@ function Solo:ShowSocialPanel(mode)
 end
 
 function Solo:OpenLeaderboard()
+    self:SelectHubTab("SOLO")
     self:ShowSocialPanel("LEADERBOARD")
 end
 
 function Solo:OpenHistory()
+    self:SelectHubTab("SOLO")
     self:ShowSocialPanel("HISTORY")
 end
 
@@ -891,13 +958,18 @@ function Solo:ShowHub()
     frame:Show()
 end
 
+-- Phase 4: the Suite-facing "OpenSoloGames" entry point. Restores whichever
+-- top-level hub tab was last active (the generic "open the hub" launcher
+-- button target), rather than always forcing the SOLO catalog.
 function Solo:OpenHub()
     if not gamesFeatureEnabled() then return end
-    self:ShowHub()
+    local tab = (CreshGamesDB and CreshGamesDB.gamesHub and CreshGamesDB.gamesHub.activeTab) or "SOLO"
+    self:SelectHubTab(tab, tab == "SOLO")
 end
 
 function Solo:StartGame(game)
     if not gamesFeatureEnabled() then return false end
+    self:SelectHubTab("SOLO")
     game = upper(tostring(game or ""))
     local builder = self["Build" .. game .. "View"]
     if not builder then return false end
@@ -925,6 +997,7 @@ end
 
 function Solo:OpenDungeonDwellers(mode)
     if not gamesFeatureEnabled() then return false end
+    self:SelectHubTab("SOLO")
     local frame = self:BuildWindow()
     if CC.UI and CC.UI.CloseGameDrawer then CC.UI:CloseGameDrawer(true) end
     self:HideViews()
@@ -950,22 +1023,57 @@ function Solo:OpenTetrisMastery()
     return true
 end
 
-function Solo:AttachHub(hub)
-    if not hub or hub.soloGames then return end
-    local colors = palette()
-    hub.soloGames = createButton(hub.banner, "SOLO", 58, 26, function() Solo:OpenHub() end)
-    hub.soloGames:SetPoint("RIGHT", hub.scan, "LEFT", -6, 0)
-    setButtonAccent(hub.soloGames, colors.green)
-end
+-- Phase 4: top-level hub tab switch (SOLO / MULTIPLAYER / UNLOCKS). Purely a
+-- visibility + persistence switch -- it never resets an in-progress solo
+-- game itself (that stays HideViews()/ShowHub()'s job); pass
+-- resetToCatalog=true from callers that explicitly want to abandon the
+-- current game view (the "ARCADE" header button, Esc).
+function Solo:SelectHubTab(tab, resetToCatalog)
+    tab = upper(tostring(tab or "SOLO"))
+    if tab ~= "MULTIPLAYER" and tab ~= "UNLOCKS" then tab = "SOLO" end
+    local frame = self:BuildWindow()
+    self.hubTab = tab
+    if CreshGamesDB then
+        CreshGamesDB.gamesHub = type(CreshGamesDB.gamesHub) == "table" and CreshGamesDB.gamesHub or {}
+        CreshGamesDB.gamesHub.activeTab = tab
+    end
 
-if CG.Games and CG.Games.BuildHub then
-    local originalBuildHub = CG.Games.BuildHub
-    CG.Games.BuildHub = function(games, parent)
-        local hub = originalBuildHub(games, parent)
-        Solo:AttachHub(hub)
-        return hub
+    frame.content:SetShown(tab == "SOLO")
+    frame.statusBar:SetShown(tab == "SOLO")
+    frame.multiPanel:SetShown(tab == "MULTIPLAYER")
+    frame.unlocksPanel:SetShown(tab == "UNLOCKS")
+    if CG.Games and CG.Games.SetHubVisible then CG.Games:SetHubVisible(tab == "MULTIPLAYER") end
+
+    for key, btn in pairs(frame.hubTabButtons or {}) do
+        if UISvc then UISvc:SetTabActive(btn, key == tab) end
+    end
+
+    if tab == "SOLO" then
+        if resetToCatalog or not self.hub then
+            self:ShowHub()
+        else
+            frame:Show()
+        end
+    elseif tab == "MULTIPLAYER" then
+        frame.title:SetText("CRESH GAMES · MULTIPLAYER")
+        frame.subtitle:SetText("Addon-to-addon challenges · private game traffic · WASD and mouse controls")
+        frame:Show()
+    else
+        frame.title:SetText("CRESH GAMES · UNLOCKS")
+        frame.subtitle:SetText("Arcade Pass, Mastery tracks and every obtainable card deck, Tetris theme, dungeon armour set and minion skin")
+        if CG.UnlocksCatalog and CG.UnlocksCatalog.BuildPanel then
+            CG.UnlocksCatalog:BuildPanel(frame.unlocksPanel)
+            CG.UnlocksCatalog:Refresh()
+        end
+        frame:Show()
     end
 end
+
+-- Phase 5: the UNLOCKS tab's content (progress hero + full item catalogue)
+-- is now owned by CG.UnlocksCatalog:BuildPanel/Refresh (see
+-- GamesUnlocksCatalog.lua), the same "host builds the panel frame, a
+-- sibling module owns its content" pattern already used for
+-- Games:BuildHub(frame.multiPanel).
 
 -- FROGGER ---------------------------------------------------------------------
 local FROG_ROWS = 12
@@ -5096,6 +5204,35 @@ local function dungeonTexture(setKey, assetKey)
     return set and set.assets and set.assets[assetKey] or nil
 end
 
+-- Phase 5: minion skins had no catalog at all (only random-recruit save
+-- flags) -- this flattens/dedupes DUNGEON_MINION_VARIANTS (a variant can be
+-- shared by more than one kind, e.g. "Imp_Blue_03") into a stable, ordered
+-- list for the Unlocks catalogue. Kept here rather than moved into
+-- DungeonCrawlerContent.lua since this file already owns the variant data
+-- and the live dungeonMinion()/dungeonMinionVisual() functions that use it.
+function Solo:GetMinionSkinCatalog()
+    local seen, out = {}, {}
+    for kind, variants in pairs(DUNGEON_MINION_VARIANTS) do
+        for _, variant in ipairs(variants) do
+            if not seen[variant] then
+                seen[variant] = true
+                out[#out + 1] = {
+                    key = variant,
+                    kind = kind,
+                    texture = dungeonTexture("03_Minion_Portraits_Core", variant),
+                }
+            end
+        end
+    end
+    sort(out, function(a, b) return a.key < b.key end)
+    return out
+end
+
+function Solo:IsMinionSkinUnlocked(variant)
+    local save = ensureSave()
+    return save and save.dungeon.unlockedMinionSkins and save.dungeon.unlockedMinionSkins[variant] == true or false
+end
+
 local function dungeonCreateOpaqueTexture(parent, duplicateLayers)
     local duplicates = {}
     for _ = 1, max(0, floor(tonumber(duplicateLayers) or 0)) do
@@ -7192,7 +7329,7 @@ function Solo:BuildDUNGEONView()
         }
         while #save.dungeon.crateHistory > 40 do table.remove(save.dungeon.crateHistory, 1) end
         self:AddLog("CHEST CLAIMED: " .. crate.name .. " → " .. rewardText .. ".")
-        if CC.UI and CC.UI.ShowGameToast then CC.UI:ShowGameToast(crate.name, rewardText, "SUCCESS", "DUNGEONCRATE:" .. tostring(crate.key or crate.name)) end
+        CG:ShowGameToast(crate.name, rewardText, "SUCCESS", "DUNGEONCRATE:" .. tostring(crate.key or crate.name))
         if self.pendingCrates and self.pendingCrates[1] == self.activeCrate then table.remove(self.pendingCrates, 1) end
         self.activeCrate, self.crateChoices, self.crateRevealed = nil, nil, false
         self.crateBlocker:Hide()
@@ -7321,7 +7458,7 @@ function Solo:BuildDUNGEONView()
         end
         self:ApplyFirstBossReward(enemy, rewardParts)
         self:AddLog("BOSS REWARDS: " .. concat(rewardParts, " · ") .. ".")
-        if CC.UI and CC.UI.ShowGameToast then CC.UI:ShowGameToast("Milestone Boss Defeated", concat(rewardParts, " · "), "SUCCESS", "DUNGEONBOSS:" .. tostring(self.room or time())) end
+        CG:ShowGameResultToast("Milestone Boss Defeated", concat(rewardParts, " · "), "DUNGEONBOSS:" .. tostring(self.room or time()))
         self:ShowNextCrate()
     end
 
@@ -7791,6 +7928,14 @@ function Solo:ApplyTheme()
         applyBackdrop(self.window.statusBar, colors.panelSoft, colors.border)
         setButtonAccent(self.window.home, colors.accent)
         setButtonAccent(self.window.close, colors.red)
+        if self.window.hubTabBar then
+            applyBackdrop(self.window.hubTabBar, colors.panelRaised, colors.border)
+            for key, btn in pairs(self.window.hubTabButtons or {}) do
+                if UISvc then UISvc:SetTabActive(btn, key == self.hubTab) end
+            end
+        end
+        if self.window.multiPanel then applyBackdrop(self.window.multiPanel, colors.panelSoft, colors.panelSoft) end
+        if CG.UnlocksCatalog and CG.UnlocksCatalog.ApplyTheme then CG.UnlocksCatalog:ApplyTheme() end
     end
     if self.hub then
         applyBackdrop(self.hub, colors.panelSoft, colors.panelSoft)

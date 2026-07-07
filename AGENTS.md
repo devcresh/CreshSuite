@@ -27,13 +27,28 @@ Do NOT edit files inside the live AddOns directories directly.
     tools\          — build, deploy, validate and package scripts
     ArtSource\      — design source files (NOT deployed)
     Docs\           — architecture and reference documentation (NOT deployed)
+      Plans\        — implementation plans and planning notes
+      Memory\        — persistent assistant memory (user/feedback/project/reference notes)
+    Logs\           — local development and agent logs (contents gitignored; NOT deployed)
     quarantine\     — accidentally-created files holding area (NOT deployed)
     release\        — built ZIP packages (gitignored)
 
 Development files that are NEVER deployed:
 
-    ArtSource\  Docs\  tools\  quarantine\  release\  shared\  tests\
+    ArtSource\  Docs\  Logs\  tools\  quarantine\  release\  shared\  tests\
     AGENTS.md  CLAUDE.md  .gitignore  .gitattributes  *.code-workspace
+
+## Work artifact locations
+
+- Use `D:\CreshSuite` as the working root for every project task.
+- Store implementation plans and planning Markdown in `D:\CreshSuite\Docs\Plans\`.
+- Store persistent assistant memory (user/feedback/project/reference notes) in
+  `D:\CreshSuite\Docs\Memory\`, indexed by `D:\CreshSuite\Docs\Memory\MEMORY.md`.
+  Do not write or read memory under a user-profile Claude Code memory path
+  for this project.
+- Store generated development, validation, and agent logs in `D:\CreshSuite\Logs\`.
+- Do not create project files under a user-profile directory or record links to one.
+- Use repository-relative paths in tracked files whenever an absolute path is not required.
 
 Each addon is an incomplete split of the original monolithic CreshChat.
 CreshGames and CreshCollect are stubs only; the Lua code extraction is

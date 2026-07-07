@@ -222,6 +222,14 @@ end
 local Settings = { version = CC.version }
 local SETTINGS_FRAME_LEVEL = 7000
 
+-- Phase 6: standardised row heights shared by every Create*/Builder method
+-- below (previously a different hardcoded literal per method).
+local ROW_HEIGHT = 33
+local DROPDOWN_ROW_HEIGHT = 37
+local SLIDER_ROW_HEIGHT = 54
+local BUTTON_ROW_HEIGHT = 34
+local SECTION_ROW_HEIGHT = 27
+
 -- ============================================================
 -- Phase 5 - Product tab shell
 -- ============================================================
@@ -262,6 +270,30 @@ UI.FullSettings = Settings
 if CC.RegisterModule then CC:RegisterModule("Settings", Settings) end
 UI.fullSettings = Settings
 
+-- Phase 6: one native two-step confirmation dialog (WoW's own StaticPopup
+-- idiom) reused for every destructive reset button across all three
+-- addons' settings pages -- CreshGames'/CreshCollect's build(builder)
+-- callbacks reach it via Builder:ConfirmAction, which just delegates here.
+_G.StaticPopupDialogs = _G.StaticPopupDialogs or {}
+_G.StaticPopupDialogs["CRESHSUITE_SETTINGS_CONFIRM"] = {
+    text = "%s",
+    button1 = _G.YES or "Yes",
+    button2 = _G.NO or "No",
+    OnAccept = function(_, data) if data and data.onConfirm then data.onConfirm() end end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+}
+
+function Settings:ConfirmAction(message, onConfirm)
+    if _G.StaticPopup_Show then
+        _G.StaticPopup_Show("CRESHSUITE_SETTINGS_CONFIRM", message, nil, { onConfirm = onConfirm })
+    elseif onConfirm then
+        onConfirm()
+    end
+end
+
 function Settings:RegisterLayout(control, kind, column)
     control.creshLayoutKind   = kind or "full"
     control.creshLayoutColumn = column or 1
@@ -298,6 +330,26 @@ function Settings:CreateToggle(parent, label, getter, setter, x, y, width, kind,
     return row
 end
 
+-- Small unlabelled ON/OFF square used by the Notifications table's
+-- per-category rows -- unlike CreateToggle, it isn't a top-level layout
+-- control (no RegisterLayout call): its parent row manages its position and
+-- size directly, the same way Builder:Buttons manages its button group.
+function Settings:CreateCompactToggle(parent, getter, setter, size)
+    local box = CreateFrame("Button", nil, parent, templateName())
+    box:SetSize(size or 22, size or 22)
+    box.Refresh = function(self)
+        local on = getter() and true or false
+        local c = CC.db and CC.db.colors and CC.db.colors.accent or { 0.11, 0.43, 0.95, 1 }
+        if on then backdrop(self, c[1] * 0.55, c[2] * 0.55, c[3] * 0.55, 1, c[1], c[2], c[3], 1)
+        else backdrop(self, 0.075, 0.086, 0.112, 0.97, 0.13, 0.15, 0.20, 1) end
+    end
+    box:SetScript("OnClick", function()
+        setter(not getter()); apply(); Settings:Refresh()
+    end)
+    self.refreshables[#self.refreshables + 1] = box
+    return box
+end
+
 function Settings:CloseDropdown(except)
     local open = self.openDropdown
     if open and open ~= except and open.menu then open.menu:Hide() end
@@ -310,12 +362,18 @@ function Settings:CreateDropdown(parent, label, getter, setter, values, display,
     local row = CreateFrame("Frame", nil, parent)
     row:SetSize(width, 31)
     row:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
-    row.label = font(row, 10, "LEFT")
-    row.label:SetPoint("LEFT", row, "LEFT", 0, 0)
-    row.label:SetPoint("RIGHT", row, "RIGHT", -228, 0)
-    row.label:SetText(label)
+    -- Compact mode (used by the Notifications table's per-category rows):
+    -- no reserved label -- the row's own name label already identifies the
+    -- category once -- and the button stretches to fill the whole slot
+    -- instead of the usual 44%-of-row-width split.
+    if not options.compact then
+        row.label = font(row, 10, "LEFT")
+        row.label:SetPoint("LEFT", row, "LEFT", 0, 0)
+        row.label:SetPoint("RIGHT", row, "RIGHT", -228, 0)
+        row.label:SetText(label)
+    end
 
-    row.button = button(row, "", 218, 27, function()
+    row.button = button(row, "", options.compact and width or 218, 27, function()
         if row.menu:IsShown() then
             row.menu:Hide(); Settings.openDropdown = nil
         else
@@ -326,7 +384,12 @@ function Settings:CreateDropdown(parent, label, getter, setter, values, display,
             row.menu:Show()
         end
     end)
-    row.button:SetPoint("RIGHT", row, "RIGHT", 0, 0)
+    if options.compact then
+        row.button:SetPoint("LEFT", row, "LEFT", 0, 0)
+        row.button:SetPoint("RIGHT", row, "RIGHT", 0, 0)
+    else
+        row.button:SetPoint("RIGHT", row, "RIGHT", 0, 0)
+    end
     row.button.text:ClearAllPoints()
     row.button.text:SetPoint("LEFT", row.button, "LEFT", 9, 0)
     row.button.text:SetPoint("RIGHT", row.button, "RIGHT", -26, 0)
@@ -520,6 +583,12 @@ function Settings:CreateDropdown(parent, label, getter, setter, values, display,
         if Settings.openDropdown == row then Settings.openDropdown = nil end
     end)
     row.Relayout = function(self)
+        if options.compact then
+            -- Button already stretches to fill the row via its own LEFT+RIGHT
+            -- anchors; only the open menu (if any) needs repositioning.
+            if self.menu:IsShown() then self:LayoutMenu(false) end
+            return
+        end
         local buttonWidth = min(218, max(145, floor((self:GetWidth() or width) * 0.44)))
         self.button:SetWidth(buttonWidth)
         self.label:ClearAllPoints()
@@ -538,7 +607,7 @@ function Settings:CreateDropdown(parent, label, getter, setter, values, display,
         end
     end
     self.refreshables[#self.refreshables + 1] = row
-    self:RegisterLayout(row, "full", 1)
+    if not options.skipLayout then self:RegisterLayout(row, "full", 1) end
     return row
 end
 
@@ -682,7 +751,7 @@ end
 function Builder:Flush()
     if self.nextColumn == 2 then
         self.nextColumn = 1
-        self.y = self.y - 33
+        self.y = self.y - ROW_HEIGHT
     end
 end
 
@@ -697,14 +766,14 @@ function Builder:Section(title)
     text:SetPoint("TOPLEFT", self.parent, "TOPLEFT", 12, self.y)
     text:SetTextColor(0.48, 0.72, 1.00, 1)
     text:SetText(string.upper(title))
-    self.y = self.y - 27
+    self.y = self.y - SECTION_ROW_HEIGHT
 end
 
 function Builder:HalfToggle(label, getter, setter)
     local col = self.nextColumn
     local row = self.settings:CreateToggle(self.parent, label, getter, setter, 12, self.y, 250, "half", col)
     self.nextColumn = col == 1 and 2 or 1
-    if self.nextColumn == 1 then self.y = self.y - 33 end
+    if self.nextColumn == 1 then self.y = self.y - ROW_HEIGHT end
     return row
 end
 
@@ -712,14 +781,14 @@ function Builder:HalfColor(label, getter, customKind)
     local col = self.nextColumn
     local row = self.settings:CreateColorRow(self.parent, label, getter, 12, self.y, 250, "half", col, customKind)
     self.nextColumn = col == 1 and 2 or 1
-    if self.nextColumn == 1 then self.y = self.y - 33 end
+    if self.nextColumn == 1 then self.y = self.y - ROW_HEIGHT end
     return row
 end
 
 function Builder:Dropdown(label, getter, setter, values, display, options)
     self:Flush()
     local row = self.settings:CreateDropdown(self.parent, label, getter, setter, values, display, 12, self.y, 520, options)
-    self.y = self.y - 37
+    self.y = self.y - DROPDOWN_ROW_HEIGHT
     return row
 end
 
@@ -730,7 +799,7 @@ end
 function Builder:Slider(label, minValue, maxValue, step, getter, setter, format)
     self:Flush()
     local row = self.settings:CreateSlider(self.parent, label, minValue, maxValue, step, getter, setter, 12, self.y, 520, format)
-    self.y = self.y - 54
+    self.y = self.y - SLIDER_ROW_HEIGHT
     return row
 end
 
@@ -791,8 +860,172 @@ function Builder:Buttons(items)
     end
     self.settings:RegisterLayout(group, "full", 1)
     group:Relayout()
-    self.y = self.y - 34
+    self.y = self.y - BUTTON_ROW_HEIGHT
     return group
+end
+
+local NOTIFICATION_TABLE_ROW_HEIGHT = 28
+local NOTIFICATION_TABLE_ROW_GAP    = 4
+local NOTIFICATION_TABLE_TOGGLE_W   = 26
+
+-- Compact "show / name / sound / priority" table for the Notifications
+-- page's per-category rows -- replaces a tall Section+HalfToggle+Dropdown+
+-- Dropdown+Slider+Note stack repeated once per category with one scannable
+-- row per category. rows is an array of
+-- { title, getEnabled, setEnabled, soundGetter, soundSetter, soundValues,
+--   priorityGetter, prioritySetter }.
+function Builder:NotificationTable(rows)
+    self:Flush()
+    local S = self.settings
+
+    local header = CreateFrame("Frame", nil, self.parent)
+    header:SetPoint("TOPLEFT", self.parent, "TOPLEFT", 12, self.y)
+    header:SetSize(520, 16)
+    local headerShow = font(header, 8, "LEFT")
+    headerShow:SetText("SHOW")
+    headerShow:SetTextColor(0.56, 0.61, 0.69, 1)
+    local headerName = font(header, 8, "LEFT")
+    headerName:SetText("NOTIFICATION")
+    headerName:SetTextColor(0.56, 0.61, 0.69, 1)
+    local headerSound = font(header, 8, "LEFT")
+    headerSound:SetText("SOUND")
+    headerSound:SetTextColor(0.56, 0.61, 0.69, 1)
+    local headerPriority = font(header, 8, "LEFT")
+    headerPriority:SetText("PRIORITY")
+    headerPriority:SetTextColor(0.56, 0.61, 0.69, 1)
+    self.y = self.y - 16 - 4
+
+    local rowCount = #rows
+    local group = CreateFrame("Frame", nil, self.parent)
+    group:SetPoint("TOPLEFT", self.parent, "TOPLEFT", 12, self.y)
+    group:SetSize(520, rowCount * NOTIFICATION_TABLE_ROW_HEIGHT + max(0, rowCount - 1) * NOTIFICATION_TABLE_ROW_GAP)
+    group.rows = {}
+
+    for _, entry in ipairs(rows) do
+        local row = CreateFrame("Frame", nil, group)
+        row:SetHeight(NOTIFICATION_TABLE_ROW_HEIGHT)
+        backdrop(row, 0.070, 0.081, 0.105, 0.9, 0.13, 0.15, 0.20, 1)
+
+        row.toggle = S:CreateCompactToggle(row, entry.getEnabled, entry.setEnabled, 20)
+        row.toggle:SetPoint("LEFT", row, "LEFT", 4, 0)
+
+        row.name = font(row, 10, "LEFT")
+        row.name:SetText(entry.title)
+
+        row.sound = S:CreateDropdown(row, "", entry.soundGetter, entry.soundSetter, entry.soundValues, SOUND_DISPLAY,
+            0, 0, 120, { compact = true, skipLayout = true })
+        row.priority = S:CreateDropdown(row, "", entry.priorityGetter, entry.prioritySetter,
+            NOTIFICATION_PRIORITY_VALUES, NOTIFICATION_PRIORITY_DISPLAY, 0, 0, 110, { compact = true, skipLayout = true })
+
+        row.Relayout = function(selfRow)
+            local width = max(360, selfRow:GetWidth() or 520)
+            local gap = 6
+            local remaining = width - NOTIFICATION_TABLE_TOGGLE_W - gap * 3
+            local soundW = max(90, floor(remaining * 0.34))
+            local priorityW = max(90, floor(remaining * 0.32))
+            local nameW = max(70, remaining - soundW - priorityW)
+
+            selfRow.name:ClearAllPoints()
+            selfRow.name:SetPoint("LEFT", selfRow, "LEFT", NOTIFICATION_TABLE_TOGGLE_W + gap, 0)
+            selfRow.name:SetWidth(nameW)
+
+            selfRow.sound:ClearAllPoints()
+            selfRow.sound:SetPoint("LEFT", selfRow.name, "RIGHT", gap, 0)
+            selfRow.sound:SetSize(soundW, 24)
+            selfRow.sound:Relayout()
+
+            selfRow.priority:ClearAllPoints()
+            selfRow.priority:SetPoint("LEFT", selfRow.sound, "RIGHT", gap, 0)
+            selfRow.priority:SetSize(priorityW, 24)
+            selfRow.priority:Relayout()
+        end
+
+        group.rows[#group.rows + 1] = row
+    end
+
+    header.Relayout = function(selfHeader)
+        local width = max(360, selfHeader:GetWidth() or 520)
+        local gap = 6
+        local remaining = width - NOTIFICATION_TABLE_TOGGLE_W - gap * 3
+        local soundW = max(90, floor(remaining * 0.34))
+        local priorityW = max(90, floor(remaining * 0.32))
+        local nameW = max(70, remaining - soundW - priorityW)
+
+        headerShow:ClearAllPoints()
+        headerShow:SetPoint("LEFT", selfHeader, "LEFT", 4, 0)
+        headerName:ClearAllPoints()
+        headerName:SetPoint("LEFT", selfHeader, "LEFT", NOTIFICATION_TABLE_TOGGLE_W + gap, 0)
+        headerSound:ClearAllPoints()
+        headerSound:SetPoint("LEFT", headerName, "LEFT", nameW + gap, 0)
+        headerPriority:ClearAllPoints()
+        headerPriority:SetPoint("LEFT", headerSound, "LEFT", soundW + gap, 0)
+    end
+
+    group.Relayout = function(selfGroup)
+        local previous
+        for _, row in ipairs(selfGroup.rows) do
+            row:ClearAllPoints()
+            row:SetWidth(selfGroup:GetWidth() or 520)
+            if previous then row:SetPoint("TOPLEFT", previous, "BOTTOMLEFT", 0, -NOTIFICATION_TABLE_ROW_GAP)
+            else row:SetPoint("TOPLEFT", selfGroup, "TOPLEFT", 0, 0) end
+            if row.Relayout then row:Relayout() end
+            previous = row
+        end
+    end
+
+    S:RegisterLayout(header, "full", 1)
+    S:RegisterLayout(group, "full", 1)
+    header:Relayout()
+    group:Relayout()
+    self.y = self.y - group:GetHeight() - 8
+    return group
+end
+
+-- Phase 6: a clickable header that shows/hides a body of uncommon controls.
+-- Starts collapsed. The body is built immediately (not lazily) so its full
+-- expanded height can be reserved in the page's layout up front -- toggling
+-- is then a pure show/hide with no reflow of controls placed after it.
+-- Intended for a small number of rarely-used controls (e.g. diagnostic
+-- buttons), not as a general pagination mechanism.
+function Builder:CollapsibleSection(title, buildFn)
+    self:Flush()
+    local header = CreateFrame("Button", nil, self.parent, templateName())
+    header:SetPoint("TOPLEFT", self.parent, "TOPLEFT", 12, self.y)
+    header:SetPoint("TOPRIGHT", self.parent, "TOPRIGHT", -12, self.y)
+    header:SetHeight(SECTION_ROW_HEIGHT)
+    local label = font(header, 10, "LEFT")
+    label:SetAllPoints()
+    header.expanded = false
+    local function updateHeaderText()
+        label:SetTextColor(0.48, 0.72, 1.00, 1)
+        label:SetText((header.expanded and "[-] " or "[+] ") .. string.upper(title))
+    end
+    updateHeaderText()
+    self.y = self.y - SECTION_ROW_HEIGHT
+
+    local body = CreateFrame("Frame", nil, self.parent)
+    body:SetPoint("TOPLEFT", self.parent, "TOPLEFT", 0, self.y)
+    body:SetPoint("TOPRIGHT", self.parent, "TOPRIGHT", 0, self.y)
+    local bodyBuilder = setmetatable({ settings = self.settings, page = self.page, parent = body, y = -4, nextColumn = 1 }, Builder)
+    buildFn(bodyBuilder)
+    bodyBuilder:Flush()
+    local bodyHeight = max(1, -bodyBuilder.y)
+    body:SetHeight(bodyHeight)
+    body:Hide()
+    header:SetScript("OnClick", function()
+        header.expanded = not header.expanded
+        updateHeaderText()
+        body:SetShown(header.expanded)
+    end)
+    self.y = self.y - bodyHeight - 4
+    return header
+end
+
+-- Delegates to Settings:ConfirmAction so page-content build(builder)
+-- callbacks (CreshChat's own and every product provider's) never need to
+-- reach past the Builder for a confirmation dialog.
+function Builder:ConfirmAction(message, onConfirm)
+    return self.settings:ConfirmAction(message, onConfirm)
 end
 
 function Builder:Finish()
@@ -805,7 +1038,7 @@ local function px(value) return floor(value + 0.5) .. " px" end
 local function sec(value) return string.format("%.1f sec", value) end
 
 function Settings:BuildGeneral(page)
-    local b = self:NewBuilder(page, "General", "Core behaviour, launcher controls, portraits and overall message density.")
+    local b = self:NewBuilder(page, "General", "Core behaviour, launcher controls, portraits, message density and character profiles.")
     b:Section("Quick setup profile")
     b:Dropdown("Profile", function() return CC.db.ui.qualityProfile or "BALANCED" end,
         function(v) if CC.Quality then CC.Quality:ApplyProfile(v) else CC.db.ui.qualityProfile = v end end,
@@ -835,11 +1068,16 @@ function Settings:BuildGeneral(page)
     b:HalfToggle("Combat quick button", function() return CC.db.ui.showCombatButton == true end, function(v) CC.db.ui.showCombatButton = v end)
     b:HalfToggle("Group consecutive messages", function() return CC.db.ui.groupedMessages ~= false end, function(v) CC.db.ui.groupedMessages = v end)
 
-    if CC.ProgressHub then
+    -- Phase 6 bug fix: this used to gate on `CC.ProgressHub`, a field that is
+    -- never assigned anywhere in CreshChat -- the button silently never
+    -- rendered. CreshCollect's Progress Hub is reached through the Suite
+    -- service every other entry point already uses (Core.lua/Launcher.lua).
+    local progressHubService = _G.CreshSuite and _G.CreshSuite:GetService("OpenProgressHub")
+    if progressHubService then
         b:Section("Progress Hub")
-        b:Note("Open /cc progress (or the Prg quick button) to see exploration, quest and combat stats collected by CreshCollect.")
+        b:Note("Exploration, quest and combat stats collected by CreshCollect live in their own window, not here.")
         b:Buttons({
-            { "OPEN PROGRESS HUB", function() CC.ProgressHub:Toggle() end, 160 },
+            { "OPEN PROGRESS HUB", function() progressHubService() end, 160 },
         })
     end
 
@@ -852,12 +1090,51 @@ function Settings:BuildGeneral(page)
     b:Slider("Message text scale", 0.80, 1.35, 0.05, function() return CC.db.ui.messageScale or 1 end, function(v) CC.db.ui.messageScale = v end, pct)
     b:Slider("Player icon size", 22, 44, 2, function() return CC.db.ui.iconSize or 26 end, function(v) CC.db.ui.iconSize = v end, px)
 
+    -- Merged in from the old standalone "Profiles" page: which character's
+    -- interface configuration is active, and copying it to/from an alt.
+    local currentKey = CC.GetCurrentCharacterProfileKey and CC:GetCurrentCharacterProfileKey() or "Current character"
+    local currentName = CC.GetCharacterProfileDisplay and CC:GetCharacterProfileDisplay(currentKey) or currentKey
+    local values, display = {}, {}
+    if CC.GetCharacterProfileOptions then values, display = CC:GetCharacterProfileOptions(true) end
+
+    b:Section("Character profiles")
+    b:Note("Active profile: " .. tostring(currentName) .. ". Game XP, Battle Pass progress, Cresh Coins, unlocks and achievements are account-wide -- only interface appearance and placement is per-character.")
+    if #values > 0 then
+        if not self.profileCopySelection or not display[self.profileCopySelection] then self.profileCopySelection = values[1] end
+        b:Dropdown("Source character", function() return Settings.profileCopySelection or values[1] end,
+            function(v) Settings.profileCopySelection = v end, values, display)
+        b:Buttons({
+            { "COPY UI + LAYOUT", function()
+                local source = Settings.profileCopySelection
+                local sourceLabel = tostring(display[source] or source)
+                b:ConfirmAction(
+                    "Replace this character's theme, colours, scale, console, launcher, window sizes/positions, cards, sounds and channel colours with " .. sourceLabel .. "'s?\n\nThis cannot be undone (account-wide progression is never affected).",
+                    function()
+                        if source and CC.CopyUIFromCharacterProfile and CC:CopyUIFromCharacterProfile(source) then
+                            local saved = CC.db.sizes and CC.db.sizes.settings
+                            if Settings.frame and saved then
+                                Settings.frame:SetSize(tonumber(saved.width) or Settings.frame:GetWidth(), tonumber(saved.height) or Settings.frame:GetHeight())
+                            end
+                            Settings:Relayout()
+                            Settings:Refresh()
+                            if CC.Print then CC:Print("Copied interface and window placement from " .. sourceLabel .. ".") end
+                        elseif CC.Print then
+                            CC:Print("That character profile could not be copied.")
+                        end
+                    end)
+            end, 180 },
+        })
+    else
+        b:Note("No other character profiles are available yet. Log into an alt once to create its profile, then return here to copy an interface setup.")
+    end
+    b:Note("Direct whispers and Battle.net conversations are shared across your characters. Guild, General, Combat and quest conversations remain session-only and clear on login or reload.")
+
     b:Finish()
 end
 
-function Settings:BuildDock(page)
-    local b = self:NewBuilder(page, "C Dock and Composer", "The saved dock width always means the complete visible C button plus Blizzard-native command field.")
-    b:Section("Dimensions")
+function Settings:BuildWindows(page)
+    local b = self:NewBuilder(page, "Windows", "C Dock and Composer geometry/motion, other window/pop-out behaviour, and console roster visibility.")
+    b:Section("Dock and composer dimensions")
     b:Slider("Total C + command width", 320, 720, 10, function() return CC.db.ui.sharedDockWidth or 470 end,
         function(v) if UI.SetSharedDockWidth then UI:SetSharedDockWidth(v) else CC.db.ui.sharedDockWidth = v end end, px)
     b:Slider("C button width", 38, 64, 2, function() return CC.db.ui.dockButtonWidth or 46 end,
@@ -868,7 +1145,7 @@ function Settings:BuildDock(page)
         { "GENERAL", "GUILD", "PARTY", "RAID", "INSTANCE", "SAY" },
         { GENERAL = "General", GUILD = "Guild", PARTY = "Party", RAID = "Raid", INSTANCE = "Instance", SAY = "Say" })
 
-    b:Section("Behaviour")
+    b:Section("Dock and composer behaviour")
     b:HalfToggle("Typing opens main history", function() return CC.db.ui.openMainOnType ~= false end, function(v) CC.db.ui.openMainOnType = v end)
     b:HalfToggle("C opens composer + main", function() return CC.db.ui.launcherOpensComposer ~= false end, function(v) CC.db.ui.launcherOpensComposer = v end)
     b:HalfToggle("Composer attached to C", function() return CC.db.ui.composerAttached ~= false end, function(v) CC.db.ui.composerAttached = v end)
@@ -880,7 +1157,15 @@ function Settings:BuildDock(page)
     b:Section("Motion")
     b:Dropdown("Composer reveal", function() return CC.db.ui.composerAnimation or "SLIDE_DOCK" end, function(v) CC.db.ui.composerAnimation = v end, ANIM_VALUES, ANIM_DISPLAY)
     b:Dropdown("Main history reveal", function() return CC.db.ui.dockAnimation or "SLIDE_DOCK" end, function(v) CC.db.ui.dockAnimation = v end, ANIM_VALUES, ANIM_DISPLAY)
-    b:Slider("Animation duration", 0.10, 0.45, 0.05, function() return CC.db.ui.animationDuration or 0.20 end, function(v) CC.db.ui.animationDuration = v end, sec)
+    b:Dropdown("Other window animation", function() return CC.db.ui.windowAnimation or "SLIDE_LEFT" end, function(v) CC.db.ui.windowAnimation = v end, ANIM_VALUES, ANIM_DISPLAY)
+    -- Phase 6: this single slider used to exist twice (here and again on the
+    -- old Notifications/Alerts page) writing the exact same SavedVariables
+    -- key under two different labels. One control now; Notifications carries
+    -- a cross-reference note instead, mirroring how Guild already documents
+    -- its Notifications-page overlap.
+    b:Slider("Animation duration (dock, composer and notification cards)", 0.08, 0.55, 0.01,
+        function() return CC.db.ui.animationDuration or 0.20 end, function(v) CC.db.ui.animationDuration = v end, sec)
+    b:Note("Detached pop-outs are independent: they never snap to the C dock, steal Enter, or move again after you place them.")
     b:Buttons({
         { "RESET DOCK", function()
             CC.db.positions.composer = { point = "BOTTOMLEFT", relativePoint = "BOTTOMLEFT", x = 72, y = 92 }
@@ -888,14 +1173,6 @@ function Settings:BuildDock(page)
         end, 128 },
         { "TEST DOCK", function() if UI.CloseDockChat then UI:CloseDockChat() end; if UI.OpenDockChat then UI:OpenDockChat() end end, 120 },
     })
-    b:Finish()
-end
-
-function Settings:BuildWindows(page)
-    local b = self:NewBuilder(page, "Windows and Pop-outs", "Choose full messenger bubbles or a lightweight wrapped table, then control fading, rows and placement.")
-    b:Section("Main and detached windows")
-    b:Dropdown("Other window animation", function() return CC.db.ui.windowAnimation or "SLIDE_LEFT" end, function(v) CC.db.ui.windowAnimation = v end, ANIM_VALUES, ANIM_DISPLAY)
-    b:Note("Detached pop-outs are independent: they never snap to the C dock, steal Enter, or move again after you place them.")
 
     b:Section("Pop-out style")
     b:Dropdown("Message style", function() return CC.db.ui.popoutStyle or "NORMAL" end,
@@ -956,7 +1233,7 @@ function Settings:BuildAlerts(page)
     b:Section("Animation and placement")
     b:Dropdown("Overall card animation", function() return CC.db.ui.toastAnimation or "FAN_UP" end,
         function(v) CC.db.ui.toastAnimation = v end, NOTIFICATION_ANIMATION_VALUES, ANIM_DISPLAY)
-    b:Slider("Animation speed", 0.08, 0.55, 0.01, function() return CC.db.ui.animationDuration or 0.20 end, function(v) CC.db.ui.animationDuration = v end, sec)
+    b:Note("Animation speed is shared with the C dock and composer -- adjust it from Windows.")
     b:Dropdown("Card anchor", function() return CC.db.ui.cardLocation or "DOCK" end, function(v) CC.db.ui.cardLocation = v; if UI.RepositionToasts then UI:RepositionToasts() end end,
         { "DOCK", "MAIN", "SCREEN", "CUSTOM" }, { DOCK = "Attached to C", MAIN = "Above main chat", SCREEN = "Screen grid", CUSTOM = "Custom right-drag" })
     b:Dropdown("Horizontal position", function() return CC.db.ui.cardHorizontal or "LEFT" end, function(v) CC.db.ui.cardHorizontal = v; CC.db.ui.cardLocation = "SCREEN"; if UI.RepositionToasts then UI:RepositionToasts() end end,
@@ -992,24 +1269,31 @@ function Settings:BuildAlerts(page)
     b:HalfToggle("Whisper preview chip from C", function() return CC.db.ui.showDockWhisperAlert ~= false end, function(v) CC.db.ui.showDockWhisperAlert = v; if not v and UI.DismissWhisperDockAlert then UI:DismissWhisperDockAlert(true) end end)
 
     local sections = {
-        { "Whispers", "whisper", "WHISPER", "Direct messages and Battle.net whispers.", "CRESH_CRYSTAL_01", 0.65 },
-        { "Guild", "guild", "GUILD", "Guild and Officer messages matching the trigger below.", "CRESH_SOFT_BELL_02", 0.55 },
-        { "Party invitations", "partyInvite", "PARTY_INVITE", "Actionable incoming party invitations.", "CRESH_ARCANE_02", 0.65 },
-        { "Party messages", "partyMessage", "PARTY_MESSAGE", "Party, raid and instance-group messages.", "CRESH_WOOD_TICK_02", 0.50 },
-        { "Public mentions", "mentions", "GENERAL", "Public-channel messages that mention your character.", "CRESH_WOOD_TICK_02", 0.50 },
-        { "Friends", "friends", "FRIEND", "Battle.net and character-friend online/offline notices.", "CRESH_SOFT_BELL_01", 0.45 },
-        { "Quest dialogue", "quest", "QUEST", "Quest dialogue captured by CreshChat.", "CRESH_SOFT_BELL_04", 0.55 },
-        { "System", "system", "SYSTEM", "CreshChat status, group-state and system cards.", "OFF", 0.45 },
-        { "Games and rewards", "game", "GAME", "Battle Pass, unlock, game invite and reward cards.", "COIN", 0.55 },
+        { "Whispers", "whisper", "WHISPER", "CRESH_CRYSTAL_01" },
+        { "Guild", "guild", "GUILD", "CRESH_SOFT_BELL_02" },
+        { "Party invitations", "partyInvite", "PARTY_INVITE", "CRESH_ARCANE_02" },
+        { "Party messages", "partyMessage", "PARTY_MESSAGE", "CRESH_WOOD_TICK_02" },
+        { "Public mentions", "mentions", "GENERAL", "CRESH_WOOD_TICK_02" },
+        { "Friends", "friends", "FRIEND", "CRESH_SOFT_BELL_01" },
+        { "Quest dialogue", "quest", "QUEST", "CRESH_SOFT_BELL_04" },
+        { "System", "system", "SYSTEM", "OFF" },
+        { "Games and rewards", "game", "GAME", "COIN" },
     }
     CC.db.notificationPriorities = CC.db.notificationPriorities or {}
     CC.db.soundChoices = CC.db.soundChoices or {}
     CC.db.soundVolumes = CC.db.soundVolumes or {}
+
+    -- Bug-fix round: replaces the old tall Section+HalfToggle+Dropdown+
+    -- Dropdown+Slider+Note stack repeated once per category with one
+    -- compact show/name/sound/priority row per category.
+    b:Section("Notification categories")
+    local tableRows = {}
     for _, item in ipairs(sections) do
-        local title, key, kind, description, fallbackSound, fallbackVolume = item[1], item[2], item[3], item[4], item[5], item[6]
-        b:Section(title)
-        b:HalfToggle("Show card popup", function() return CC.db.notifications[key] ~= false end,
-            function(v)
+        local title, key, kind, fallbackSound = item[1], item[2], item[3], item[4]
+        tableRows[#tableRows + 1] = {
+            title = title,
+            getEnabled = function() return CC.db.notifications[key] ~= false end,
+            setEnabled = function(v)
                 CC.db.notifications[key] = v and true or false
                 if key == "system" then CC.db.ui.showSystemCards = v and true or false end
                 if not v and UI.DismissToast and CC.GetNotificationKey then
@@ -1021,26 +1305,27 @@ function Settings:BuildAlerts(page)
                     end
                 end
                 if UI.RefreshLauncherNotification then UI:RefreshLauncherNotification() end
-            end)
-        b:Dropdown("Priority", function() return CC.GetNotificationPriority and CC:GetNotificationPriority(kind) or (CC.db.notificationPriorities[key] or "NORMAL") end,
-            function(v)
+            end,
+            soundGetter = function() return CC.db.soundChoices[key] or fallbackSound end,
+            soundSetter = function(v) chooseSound(key, kind, v) end,
+            soundValues = SOUND_VALUES[key] or ALL_SOUND_VALUES,
+            priorityGetter = function() return CC.GetNotificationPriority and CC:GetNotificationPriority(kind) or (CC.db.notificationPriorities[key] or "NORMAL") end,
+            prioritySetter = function(v)
                 if CC.SetNotificationPriority then CC:SetNotificationPriority(kind, v) else CC.db.notificationPriorities[key] = v end
                 if UI.RepositionToasts then UI:RepositionToasts() end
-            end, NOTIFICATION_PRIORITY_VALUES, NOTIFICATION_PRIORITY_DISPLAY)
-        b:Dropdown("Sound", function() return CC.db.soundChoices[key] or fallbackSound end,
-            function(v) chooseSound(key, kind, v) end, SOUND_VALUES[key] or ALL_SOUND_VALUES, SOUND_DISPLAY)
-        b:Slider("Sound volume", 0, 1, 0.05, function() return tonumber(CC.db.soundVolumes[key]) or fallbackVolume end,
-            function(v) CC.db.soundVolumes[key] = v end, pct)
-        if key == "guild" then
-            b:Dropdown("Guild card trigger", function() return CC.db.guildAlerts or "all" end, function(v) CC.db.guildAlerts = v end,
-                { "all", "mentions", "off" }, { all = "All Guild messages", mentions = "Mentions only", off = "Never" })
-        elseif key == "system" then
-            b:HalfToggle("Hide unavailable-player whisper line", function() return CC.db.ui.suppressOfflineWhisperErrors ~= false end,
-                function(v) CC.db.ui.suppressOfflineWhisperErrors = v and true or false; if CC.RegisterChatFilters then CC:RegisterChatFilters() end end)
-            b:Note("Hides only Blizzard's ‘No player named … is currently online/playing’ line. The attempted CreshChat whisper remains visible and is marked failed instead.")
-        end
-        b:Note(description)
+            end,
+        }
     end
+    b:NotificationTable(tableRows)
+    b:Note("Per-category sound volume was simplified out of this table -- set a category's Sound to OFF to mute it entirely. Existing per-category volumes are unchanged and still apply to whichever sound plays.")
+
+    b:Section("Category-specific options")
+    b:Dropdown("Guild card trigger", function() return CC.db.guildAlerts or "all" end, function(v) CC.db.guildAlerts = v end,
+        { "all", "mentions", "off" }, { all = "All Guild messages", mentions = "Mentions only", off = "Never" })
+    b:Note("Controls which Guild/Officer messages raise a Guild notification card.")
+    b:HalfToggle("Hide unavailable-player whisper line", function() return CC.db.ui.suppressOfflineWhisperErrors ~= false end,
+        function(v) CC.db.ui.suppressOfflineWhisperErrors = v and true or false; if CC.RegisterChatFilters then CC:RegisterChatFilters() end end)
+    b:Note("Hides only Blizzard's \226\128\152No player named \226\128\166 is currently online/playing\226\128\153 line (System notifications). The attempted CreshChat whisper remains visible and is marked failed instead.")
 
     b:Section("C launcher visibility")
     b:HalfToggle("Fade C button when idle", function() return CC.db.ui.launcherIdleFade == true end,
@@ -1085,8 +1370,22 @@ local function setConsoleTab(key, value)
     if UI.RefreshConsoleTabs then UI:RefreshConsoleTabs() end
 end
 
-function Settings:BuildConsole(page)
-    local b = self:NewBuilder(page, "Console Tabs", "Choose exactly which chat tabs appear in the CreshChat console. Card popups, priorities, animations and sounds are now controlled only from Notifications.")
+local function guildColor(key)
+    CC.db.colors.guild = CC.db.colors.guild or {}
+    CC.db.colors.guild[key] = CC.db.colors.guild[key] or { 0.18, 0.78, 0.36, 1 }
+    return CC.db.colors.guild[key]
+end
+
+local CHANNELS = {
+    { "GENERAL", "General" }, { "TRADE", "Trade" }, { "LOCALDEFENSE", "LocalDefense" },
+    { "LFG", "LookingForGroup" }, { "SAY", "Say" }, { "YELL", "Yell" },
+    { "PARTY", "Party" }, { "RAID", "Raid" }, { "INSTANCE", "Instance" },
+    { "GUILD", "Guild accent" }, { "OFFICER", "Officer" }, { "EMOTE", "Emote" },
+    { "WHISPER", "Whisper" }, { "CHANNEL", "Custom channels" },
+}
+
+function Settings:BuildChat(page)
+    local b = self:NewBuilder(page, "Chat", "Which chat tabs appear in the console, plus Guild and General-feed colour theming. Card popups, priorities, animations and sounds are controlled from Notifications.")
     b:Section("Core console tabs")
     local core = { "FRIENDS", "WHISPER", "GUILD", "GENERAL", "QUEST", "COMBAT" }
     for _, key in ipairs(core) do
@@ -1114,11 +1413,55 @@ function Settings:BuildConsole(page)
             if UI.RefreshConsoleTabs then UI:RefreshConsoleTabs() end
         end, 112 },
     })
+
+    b:Section("Guild identity")
+    b:HalfToggle("Use dedicated Guild theme", function() return CC.db.ui.guildTheme ~= false end, function(v) CC.db.ui.guildTheme = v end)
+    b:Dropdown("Guild theme", function() return CC.db.ui.guildThemePreset or "AUTO" end,
+        function() end,
+        GUILD_THEME_VALUES, GUILD_THEME_DISPLAY, {
+            isLocked = function(theme)
+                return UI.IsGuildThemeUnlocked and not UI:IsGuildThemeUnlocked(theme) or false
+            end,
+            onSelect = function(theme, locked)
+                if locked then
+                    local unlockKey = UI.GetGuildThemeUnlockKey and UI:GetGuildThemeUnlockKey(theme) or nil
+                    Settings:CloseDropdown()
+                    if Settings.frame then Settings.frame:Hide() end
+                    if unlockKey and CC.BattlePass and CC.BattlePass.OpenThemeUnlock then
+                        CC.BattlePass:OpenThemeUnlock(unlockKey)
+                    elseif UI.OpenGameDrawer then
+                        UI:OpenGameDrawer("THEMES")
+                    end
+                    return
+                end
+                if UI.ApplyGuildThemePreset then UI:ApplyGuildThemePreset(theme)
+                else CC.db.ui.guildThemePreset = theme end
+            end,
+        })
+    b:Note("The Guild header and pop-outs use your tabard crest when the client exposes it. Guild card triggers, priority, sound and volume are controlled from Notifications. Premium matching Guild palettes are darkened and marked [LOCKED] until their Global Theme is unlocked.")
+
+    b:Section("Custom Guild colours")
+    b:HalfColor("Guild accent", function() return guildColor("accent") end, "GUILD")
+    b:HalfColor("Guild border", function() return guildColor("border") end, "GUILD")
+    b:HalfColor("Guild background", function() return guildColor("panel") end, "GUILD")
+    b:HalfColor("Raised Guild boxes", function() return guildColor("panelRaised") end, "GUILD")
+    b:HalfColor("Incoming Guild rows", function() return guildColor("incoming") end, "GUILD")
+    b:HalfColor("Your Guild rows", function() return guildColor("outgoing") end, "GUILD")
+    b:HalfColor("Officer accent", function() return guildColor("officer") end, "GUILD")
+    b:HalfColor("Muted Guild text", function() return guildColor("muted") end, "GUILD")
+
+    b:Section("General feed channel colours")
+    for _, item in ipairs(CHANNELS) do
+        b:HalfColor(item[2], function()
+            CC.db.colors.channels[item[1]] = CC.db.colors.channels[item[1]] or { 0.5, 0.6, 0.8, 1 }
+            return CC.db.colors.channels[item[1]]
+        end)
+    end
     b:Finish()
 end
 
 function Settings:BuildThemes(page)
-    local b = self:NewBuilder(page, "Global Theme", "Choose an unlocked theme to apply it immediately. Locked Battle Pass and Cresh Coin themes remain visible so you can jump directly to their unlock requirement.")
+    local b = self:NewBuilder(page, "Appearance", "Choose an unlocked theme to apply it immediately. Locked Battle Pass and Cresh Coin themes remain visible so you can jump directly to their unlock requirement.")
     b:Section("Theme selection")
     b:Dropdown("Active theme", function()
             return CC.db.ui.themePreset or "CRESH_MINIMAL"
@@ -1163,116 +1506,10 @@ function Settings:BuildThemes(page)
     b:Finish()
 end
 
-local function guildColor(key)
-    CC.db.colors.guild = CC.db.colors.guild or {}
-    CC.db.colors.guild[key] = CC.db.colors.guild[key] or { 0.18, 0.78, 0.36, 1 }
-    return CC.db.colors.guild[key]
-end
+function Settings:BuildAdvanced(page)
+    local b = self:NewBuilder(page, "Advanced", "Feature modules, native slash-command routing, diagnostic tools and safe UI resets.")
 
-function Settings:BuildGuild(page)
-    local b = self:NewBuilder(page, "Guild Chat", "Guild styling is independent from the global theme. Choose verdant, emerald, jade, moss, parchment, fel, Alliance or Horde palettes with separate backgrounds and chat-bubble colours.")
-    b:Section("Guild identity")
-    b:HalfToggle("Use dedicated Guild theme", function() return CC.db.ui.guildTheme ~= false end, function(v) CC.db.ui.guildTheme = v end)
-    b:Dropdown("Guild theme", function() return CC.db.ui.guildThemePreset or "AUTO" end,
-        function() end,
-        GUILD_THEME_VALUES, GUILD_THEME_DISPLAY, {
-            isLocked = function(theme)
-                return UI.IsGuildThemeUnlocked and not UI:IsGuildThemeUnlocked(theme) or false
-            end,
-            onSelect = function(theme, locked)
-                if locked then
-                    local unlockKey = UI.GetGuildThemeUnlockKey and UI:GetGuildThemeUnlockKey(theme) or nil
-                    Settings:CloseDropdown()
-                    if Settings.frame then Settings.frame:Hide() end
-                    if unlockKey and CC.BattlePass and CC.BattlePass.OpenThemeUnlock then
-                        CC.BattlePass:OpenThemeUnlock(unlockKey)
-                    elseif UI.OpenGameDrawer then
-                        UI:OpenGameDrawer("THEMES")
-                    end
-                    return
-                end
-                if UI.ApplyGuildThemePreset then UI:ApplyGuildThemePreset(theme)
-                else CC.db.ui.guildThemePreset = theme end
-            end,
-        })
-    b:Note("The Guild header and pop-outs use your tabard crest when the client exposes it. Guild card triggers, priority, sound and volume are controlled from Notifications. Premium matching Guild palettes are darkened and marked [LOCKED] until their Global Theme is unlocked.")
-
-    b:Section("Custom Guild colours")
-    b:HalfColor("Guild accent", function() return guildColor("accent") end, "GUILD")
-    b:HalfColor("Guild border", function() return guildColor("border") end, "GUILD")
-    b:HalfColor("Guild background", function() return guildColor("panel") end, "GUILD")
-    b:HalfColor("Raised Guild boxes", function() return guildColor("panelRaised") end, "GUILD")
-    b:HalfColor("Incoming Guild rows", function() return guildColor("incoming") end, "GUILD")
-    b:HalfColor("Your Guild rows", function() return guildColor("outgoing") end, "GUILD")
-    b:HalfColor("Officer accent", function() return guildColor("officer") end, "GUILD")
-    b:HalfColor("Muted Guild text", function() return guildColor("muted") end, "GUILD")
-    b:Finish()
-end
-
-local CHANNELS = {
-    { "GENERAL", "General" }, { "TRADE", "Trade" }, { "LOCALDEFENSE", "LocalDefense" },
-    { "LFG", "LookingForGroup" }, { "SAY", "Say" }, { "YELL", "Yell" },
-    { "PARTY", "Party" }, { "RAID", "Raid" }, { "INSTANCE", "Instance" },
-    { "GUILD", "Guild accent" }, { "OFFICER", "Officer" }, { "EMOTE", "Emote" },
-    { "WHISPER", "Whisper" }, { "CHANNEL", "Custom channels" },
-}
-
-function Settings:BuildChannels(page)
-    local b = self:NewBuilder(page, "Channel Colours", "Each General-feed message uses a small coloured rail so channels can be recognised instantly.")
-    b:Section("General feed rails")
-    for _, item in ipairs(CHANNELS) do
-        b:HalfColor(item[2], function()
-            CC.db.colors.channels[item[1]] = CC.db.colors.channels[item[1]] or { 0.5, 0.6, 0.8, 1 }
-            return CC.db.colors.channels[item[1]]
-        end)
-    end
-    b:Finish()
-end
-
-function Settings:BuildProfiles(page)
-    local currentKey = CC.GetCurrentCharacterProfileKey and CC:GetCurrentCharacterProfileKey() or "Current character"
-    local currentName = CC.GetCharacterProfileDisplay and CC:GetCharacterProfileDisplay(currentKey) or currentKey
-    local values, display = {}, {}
-    if CC.GetCharacterProfileOptions then values, display = CC:GetCharacterProfileOptions(true) end
-
-    local b = self:NewBuilder(page, "Character Profiles", "Game XP, Battle Pass progress, Cresh Coins, unlocks and achievements are account-wide. This page copies only interface appearance and placement between characters.")
-    b:Section("Current character")
-    b:Note("Active profile: " .. tostring(currentName))
-    b:Note("Direct whispers and Battle.net conversations are shared across your characters and kept between logins. Guild, General, Combat and quest conversations remain session-only and clear on login or reload.")
-
-    b:Section("Copy interface from another character")
-    if #values > 0 then
-        if not self.profileCopySelection or not display[self.profileCopySelection] then self.profileCopySelection = values[1] end
-        b:Dropdown("Source character", function() return Settings.profileCopySelection or values[1] end,
-            function(v) Settings.profileCopySelection = v end, values, display)
-        b:Buttons({
-            { "COPY UI + LAYOUT", function()
-                local source = Settings.profileCopySelection
-                if source and CC.CopyUIFromCharacterProfile and CC:CopyUIFromCharacterProfile(source) then
-                    local saved = CC.db.sizes and CC.db.sizes.settings
-                    if Settings.frame and saved then
-                        Settings.frame:SetSize(tonumber(saved.width) or Settings.frame:GetWidth(), tonumber(saved.height) or Settings.frame:GetHeight())
-                    end
-                    Settings:Relayout()
-                    Settings:Refresh()
-                    if CC.Print then CC:Print("Copied interface and window placement from " .. tostring(display[source] or source) .. ".") end
-                elseif CC.Print then
-                    CC:Print("That character profile could not be copied.")
-                end
-            end, 180 },
-        })
-    else
-        b:Note("No other character profiles are available yet. Log into an alt once to create its profile, then return here to copy an interface setup.")
-    end
-    b:Note("Copied: theme and colours, UI scale, console and launcher settings, window sizes and positions, cards, sound choices and channel settings. Account-wide progression is shared automatically and is never overwritten by copying an interface profile.")
-    b:Finish()
-end
-
-function Settings:BuildModules(page)
-    local b = self:NewBuilder(page, "Feature Modules",
-        "Enable or disable major CreshChat subsystems. Disabled modules become genuinely dormant — event handlers return early, hooks no-op, background processing stops. Changes require /reload to fully activate.")
-
-    b:Section("Presets")
+    b:Section("Feature module presets")
     b:Buttons({
         { "Full CreshChat", function() CC:ApplyFeaturePreset("full");    Settings:Refresh() end, 120 },
         { "Chat Only",      function() CC:ApplyFeaturePreset("chat");    Settings:Refresh() end, 120 },
@@ -1291,18 +1528,13 @@ function Settings:BuildModules(page)
     end
     b:Note("Dependency cascades apply automatically: disabling Chat also disables Voice. Type /reload after any individual change.")
 
-    b:Finish()
-end
-
-function Settings:BuildAdvanced(page)
-    local b = self:NewBuilder(page, "Advanced and Maintenance", "Native slash-command routing, diagnostic tools and safe UI resets.")
     b:Section("Blizzard command compatibility")
     b:HalfToggle("Native WoW slash commands", function() return CC.db.ui.nativeSlashCommands ~= false end, function(v) CC.db.ui.nativeSlashCommands = v end)
     b:HalfToggle("Remember command history", function() return CC.db.ui.commandHistory ~= false end, function(v) CC.db.ui.commandHistory = v end)
     b:HalfToggle("Single shared composer", function() return CC.db.ui.singleComposer ~= false end, function(v) CC.db.ui.singleComposer = v end)
     b:Note("Slash-prefixed text is passed to Blizzard's native parser, supporting /reload, /sit, emotes, targeting, macros, channels and commands registered by other addons.")
 
-    b:Section("History and diagnostics")
+    b:Section("History limits")
     b:Slider("Chat history per feed", 40, 500, 10, function() return CC.db.historyLimit or 120 end,
         function(v) CC.db.historyLimit = v; if CC.Quality and CC.Quality.SanitizeDatabase then CC.Quality:SanitizeDatabase() end end,
         function(v) return floor(v + 0.5) .. " messages" end)
@@ -1312,35 +1544,43 @@ function Settings:BuildAdvanced(page)
     b:HalfToggle("Show build badge in console", function() return CC.db.ui.showBuildBadge == true end,
         function(v) CC.db.ui.showBuildBadge = v and true or false; if UI.LayoutMainHeader then UI:LayoutMainHeader() end end)
     b:Note("The build badge automatically hides when the console is too narrow to display it without covering chat controls.")
-    b:Buttons({
-        { "REFRESH SOCIAL", function()
-            if _G.C_FriendList and type(_G.C_FriendList.ShowFriends) == "function" then pcall(_G.C_FriendList.ShowFriends) end
-            if type(_G.ShowFriends) == "function" then pcall(_G.ShowFriends) end
-            if type(_G.GuildRoster) == "function" then pcall(_G.GuildRoster) end
-            if CC.Friends and CC.Friends.Refresh then pcall(CC.Friends.Refresh, CC.Friends, true) end
-            if UI.RefreshConversationList then UI:RefreshConversationList() end
-        end, 138 },
-        { "HEALTH", function() CC:HandleSlashCommand("health") end, 100 },
-    })
-    b:Section("Diagnostics")
-    b:Buttons({
-        { "OPTIMISE", function() CC:HandleSlashCommand("optimise") end, 108 },
-        { "STATUS", function() CC:HandleSlashCommand("status") end, 96 },
-    })
-    b:Buttons({
-        { "TEST ALL", function() CC:HandleSlashCommand("test") end, 100 },
-        { "VERSION", function() CC:HandleSlashCommand("version") end, 100 },
-        { "DEV REPORT", function() CC:HandleSlashCommand("devreport") end, 118 },
-    })
-    b:Buttons({
-        { "MODULES", function() CC:HandleSlashCommand("modules") end, 100 },
-        { "ASSETS", function() CC:HandleSlashCommand("assets") end, 100 },
-    })
-    b:Note("Health reports live event sources and refresh activity. Dev Report verifies module loading, SavedVariables structure and registered asset libraries. Optimise validates saved values and enforces safe history/cache limits.")
+
+    -- Phase 6: rarely-used dev/diagnostic tools tucked behind one collapsible
+    -- section instead of four separate button rows always on screen. Every
+    -- one of these remains reachable, just not visible by default.
+    b:CollapsibleSection("Diagnostics", function(db)
+        db:Buttons({
+            { "REFRESH SOCIAL", function()
+                if _G.C_FriendList and type(_G.C_FriendList.ShowFriends) == "function" then pcall(_G.C_FriendList.ShowFriends) end
+                if type(_G.ShowFriends) == "function" then pcall(_G.ShowFriends) end
+                if type(_G.GuildRoster) == "function" then pcall(_G.GuildRoster) end
+                if CC.Friends and CC.Friends.Refresh then pcall(CC.Friends.Refresh, CC.Friends, true) end
+                if UI.RefreshConversationList then UI:RefreshConversationList() end
+            end, 138 },
+            { "HEALTH", function() CC:HandleSlashCommand("health") end, 100 },
+        })
+        db:Buttons({
+            { "OPTIMISE", function() CC:HandleSlashCommand("optimise") end, 108 },
+            { "STATUS", function() CC:HandleSlashCommand("status") end, 96 },
+        })
+        db:Buttons({
+            { "TEST ALL", function() CC:HandleSlashCommand("test") end, 100 },
+            { "VERSION", function() CC:HandleSlashCommand("version") end, 100 },
+            { "DEV REPORT", function() CC:HandleSlashCommand("devreport") end, 118 },
+        })
+        db:Buttons({
+            { "ASSETS", function() CC:HandleSlashCommand("assets") end, 100 },
+        })
+        db:Note("Health reports live event sources and refresh activity. Dev Report verifies module loading, SavedVariables structure and registered asset libraries. Optimise validates saved values and enforces safe history/cache limits. Test All injects sample messages/cards into your live history to preview notification styling.")
+    end)
+
     b:Section("Reset")
     b:Buttons({
-        { "RESET UI", function() if CC.ResetUISettings then CC:ResetUISettings() end end, 120 },
-        { "RESTORE BLIZZARD CHAT", function() CC.db.hideBlizzard = false; CC:ApplyBlizzardChatVisibility(); Settings:Refresh() end, 180 },
+        { "RESET UI", function()
+            b:ConfirmAction(
+                "Reset CreshChat's appearance, colours, scale and saved window positions to defaults?\n\nMessage history is kept. This cannot be undone.",
+                function() if CC.ResetUISettings then CC:ResetUISettings(); Settings:Refresh() end end)
+        end, 120 },
     })
     b:Note("Reset UI restores CreshChat layout and appearance defaults but keeps message history. Completely deleting SavedVariables is the only full database reset.")
     b:Finish()
@@ -1373,8 +1613,30 @@ function Settings:CreatePage(name)
     return scroll
 end
 
+-- Phase 6: build a CreshChat page's actual controls the first time it's
+-- shown, not eagerly for all pages at Settings:Build() time.
+function Settings:EnsurePageBuilt(name)
+    if self.pagesBuilt[name] then return end
+    local builder = self.pageBuilders and self.pageBuilders[name]
+    local page = self.pages[name]
+    if not builder or not page then return end
+    self.pagesBuilt[name] = true
+    builder(page)
+    -- Newly-built controls need one Relayout (splits half-width pairs into
+    -- their two columns -- otherwise they sit stacked on top of each other
+    -- at the same position) and one Refresh (populates dropdown menu item
+    -- text, toggle ON/OFF labels, slider values and colour swatches, all of
+    -- which are set by each control's own .Refresh(), not at construction
+    -- time). The old eager Build() only needed to do this once, at the end,
+    -- for everything; now it must happen once per page, right after it's
+    -- actually built.
+    self:Relayout()
+    self:Refresh()
+end
+
 function Settings:SetPage(name)
     self:CloseDropdown()
+    self:EnsurePageBuilt(name)
     self.activePage = name
     for pageName, page in pairs(self.pages) do
         page:SetShown(pageName == name)
@@ -1401,7 +1663,8 @@ function Settings:Relayout()
     local frameWidth, frameHeight = self.frame:GetWidth(), self.frame:GetHeight()
     local contentWidth = max(360, frameWidth - sidebarWidth - 30)
     local productBarOffset = self.productBar and (self.productBar:GetHeight() + 4) or 0
-    local contentHeight = max(300, frameHeight - 88 - productBarOffset)
+    local searchBarOffset = self.searchBar and (self.searchBar:GetHeight() + 4) or 0
+    local contentHeight = max(300, frameHeight - 88 - productBarOffset - searchBarOffset)
     if self.compactLabel then self.compactLabel:SetShown(frameWidth >= 650) end
     self.sidebar:SetSize(sidebarWidth, contentHeight)
     self.content:SetSize(contentWidth, contentHeight)
@@ -1633,10 +1896,11 @@ function Settings:Build()
     close:SetPoint("RIGHT", header, "RIGHT", -7, 0)
 
     self:BuildProductBar()
+    self:BuildSearchBar()
 
     local sidebar = CreateFrame("Frame", nil, frame, templateName())
     raiseFrame(sidebar, frame, 2)
-    sidebar:SetPoint("TOPLEFT", self.productBar, "BOTTOMLEFT", 0, -4)
+    sidebar:SetPoint("TOPLEFT", self.searchBar, "BOTTOMLEFT", 0, -4)
     sidebar:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 8, 27)
     backdrop(sidebar, 0.045, 0.055, 0.075, 0.98, 0.13, 0.16, 0.21, 1)
     self.sidebar = sidebar
@@ -1649,11 +1913,26 @@ function Settings:Build()
     self.content = content
     self.pageWidth = max(340, frameWidth - self.sidebarWidth - 54)
 
+    -- Phase 6: 11 pages consolidated to 6. `keywords` feeds Settings:Search
+    -- so it can find a page even before it has ever been built.
     local categories = {
-        { "GENERAL", "General" }, { "MODULES", "Modules" }, { "CONSOLE", "Console" }, { "DOCK", "C Dock" }, { "WINDOWS", "Windows" },
-        { "ALERTS", "Notifications" }, { "THEMES", "Themes" },
-        { "GUILD", "Guild" }, { "CHANNELS", "Channels" }, { "PROFILES", "Profiles" }, { "ADVANCED", "Advanced" },
+        { "GENERAL", "General", "profile launcher portrait scale voice combat log arrange resize progress hub character copy" },
+        { "CHAT", "Chat", "guild channel console tabs colours rails theme" },
+        { "WINDOWS", "Windows", "dock composer popout window animation roster friends" },
+        { "ALERTS", "Notifications", "notifications cards sound priority toast alert popup" },
+        { "THEMES", "Appearance", "appearance theme colour accent panel border" },
+        { "ADVANCED", "Advanced", "modules feature diagnostics health reset optimise version test" },
     }
+    self.categoryOrder = categories
+    self.pageBuilders = {
+        GENERAL  = function(p) self:BuildGeneral(p) end,
+        CHAT     = function(p) self:BuildChat(p) end,
+        WINDOWS  = function(p) self:BuildWindows(p) end,
+        ALERTS   = function(p) self:BuildAlerts(p) end,
+        THEMES   = function(p) self:BuildThemes(p) end,
+        ADVANCED = function(p) self:BuildAdvanced(p) end,
+    }
+    self.pagesBuilt = {}
     local previous
     local categoryHeight = #categories > 9 and 27 or 29
     local categoryGap = #categories > 9 and 3 or 5
@@ -1666,17 +1945,6 @@ function Settings:Build()
         self:CreatePage(item[1])
     end
 
-    self:BuildGeneral(self.pages.GENERAL)
-    self:BuildModules(self.pages.MODULES)
-    self:BuildConsole(self.pages.CONSOLE)
-    self:BuildDock(self.pages.DOCK)
-    self:BuildWindows(self.pages.WINDOWS)
-    self:BuildAlerts(self.pages.ALERTS)
-    self:BuildThemes(self.pages.THEMES)
-    self:BuildGuild(self.pages.GUILD)
-    self:BuildChannels(self.pages.CHANNELS)
-    self:BuildProfiles(self.pages.PROFILES)
-    self:BuildAdvanced(self.pages.ADVANCED)
     self:BuildProductPane()
 
     self:DiscoverProviders()
@@ -1741,10 +2009,129 @@ function Settings:BuildProductBar()
     end
 end
 
+-- Phase 6: one search box, shared across every product tab. It always
+-- searches whichever product is currently active (CC's own 6 pages, or the
+-- active provider's own page list) -- see Settings:Search.
+function Settings:BuildSearchBar()
+    local frame = self.frame
+    local bar = CreateFrame("Frame", nil, frame, templateName())
+    bar:SetPoint("TOPLEFT", self.productBar, "BOTTOMLEFT", 0, -4)
+    bar:SetPoint("TOPRIGHT", self.productBar, "BOTTOMRIGHT", 0, -4)
+    bar:SetHeight(26)
+    backdrop(bar, 0.045, 0.052, 0.070, 0.95, 0.13, 0.15, 0.20, 1)
+    raiseFrame(bar, frame, 3)
+    self.searchBar = bar
+
+    local box = CreateFrame("EditBox", nil, bar, templateName())
+    box:SetPoint("TOPLEFT", bar, "TOPLEFT", 8, -3)
+    box:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", -8, 3)
+    box:SetAutoFocus(false)
+    box:SetFontObject(_G.GameFontHighlightSmall or _G.GameFontNormalSmall)
+    box:SetTextInsets(4, 4, 0, 0)
+    box:SetMaxLetters(40)
+    box:SetScript("OnEscapePressed", function(selfBox) selfBox:SetText(""); selfBox:ClearFocus() end)
+    box:SetScript("OnEnterPressed", function(selfBox) selfBox:ClearFocus() end)
+    box:SetScript("OnTextChanged", function(selfBox) Settings:UpdateSearchResults(selfBox:GetText() or "") end)
+    self.searchBox = box
+
+    local hint = font(bar, 9, "LEFT")
+    hint:SetPoint("LEFT", box, "LEFT", 2, 0)
+    hint:SetTextColor(0.52, 0.58, 0.68, 1)
+    hint:SetText("Search settings...")
+    box:SetScript("OnEditFocusGained", function() hint:Hide() end)
+    box:SetScript("OnEditFocusLost", function(selfBox) hint:SetShown((selfBox:GetText() or "") == "") end)
+    self.searchHint = hint
+
+    local results = CreateFrame("Frame", nil, frame, templateName())
+    results:SetPoint("TOPLEFT", bar, "BOTTOMLEFT", 0, -2)
+    results:SetPoint("TOPRIGHT", bar, "BOTTOMRIGHT", 0, -2)
+    backdrop(results, 0.03, 0.035, 0.048, 0.99, 0.16, 0.20, 0.27, 1)
+    raiseFrame(results, frame, 30)
+    results:Hide()
+    self.searchResults = results
+    self.searchResultButtons = {}
+end
+
+-- Matches the ACTIVE product's page list only (label + desc + keywords, and
+-- any already-built controls' labels via self.refreshables for CC's own
+-- pages) -- practical granularity is "jump to the page containing that
+-- control," since a control on an unbuilt page has nothing to scroll to or
+-- highlight yet anyway.
+function Settings:Search(query)
+    query = string.lower(tostring(query or ""))
+    if query == "" then return {} end
+    local results = {}
+    if self.activeProductKey == "CC" or not self.activeProductKey then
+        for _, item in ipairs(self.categoryOrder or {}) do
+            local key, label, keywords = item[1], item[2], item[3] or ""
+            local haystack = string.lower(label .. " " .. keywords)
+            if string.find(haystack, query, 1, true) then
+                results[#results + 1] = { key = key, label = label }
+            end
+        end
+    else
+        local ps = self.productPanels and self.productPanels[self.activeProductKey]
+        if ps then
+            for _, pKey in ipairs(ps.pageOrder or {}) do
+                local spec = ps.pageSpecs[pKey]
+                if spec then
+                    local haystack = string.lower((spec.label or "") .. " " .. (spec.desc or "") .. " " .. (spec.keywords or ""))
+                    if string.find(haystack, query, 1, true) then
+                        results[#results + 1] = { key = pKey, label = spec.label }
+                    end
+                end
+            end
+        end
+    end
+    return results
+end
+
+function Settings:UpdateSearchResults(query)
+    query = tostring(query or "")
+    local results = self.searchResults
+    if not results then return end
+    if query == "" then results:Hide(); return end
+    local matches = self:Search(query)
+    for _, btn in ipairs(self.searchResultButtons) do btn:Hide() end
+    if #matches == 0 then results:Hide(); return end
+    local barWidth = (self.searchBar and self.searchBar:GetWidth() or 200) - 4
+    local previous
+    for index, match in ipairs(matches) do
+        if index > 8 then break end
+        local btn = self.searchResultButtons[index]
+        if not btn then
+            btn = button(results, "", barWidth, 22, nil)
+            btn.text:ClearAllPoints()
+            btn.text:SetJustifyH("LEFT")
+            btn.text:SetPoint("LEFT", btn, "LEFT", 8, 0)
+            btn.text:SetPoint("RIGHT", btn, "RIGHT", -8, 0)
+            self.searchResultButtons[index] = btn
+        end
+        btn:SetWidth(barWidth)
+        btn.text:SetText(match.label)
+        btn:SetScript("OnClick", function()
+            if Settings.activeProductKey == "CC" or not Settings.activeProductKey then
+                Settings:SetPage(match.key)
+            else
+                Settings:SetProductPage(Settings.activeProductKey, match.key)
+            end
+            Settings.searchBox:SetText("")
+            Settings.searchBox:ClearFocus()
+            Settings:UpdateSearchResults("")
+        end)
+        if previous then btn:SetPoint("TOPLEFT", previous, "BOTTOMLEFT", 0, -2)
+        else btn:SetPoint("TOPLEFT", results, "TOPLEFT", 2, -2) end
+        btn:Show()
+        previous = btn
+    end
+    results:SetHeight(min(#matches, 8) * 24 + 4)
+    results:Show()
+end
+
 function Settings:BuildProductPane()
     local frame = self.frame
     local pane = CreateFrame("Frame", nil, frame, templateName())
-    pane:SetPoint("TOPLEFT", self.productBar, "BOTTOMLEFT", 0, -4)
+    pane:SetPoint("TOPLEFT", self.searchBar, "BOTTOMLEFT", 0, -4)
     pane:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -8, 27)
     backdrop(pane, 0.055, 0.067, 0.090, 0.99, 0.13, 0.16, 0.21, 1)
     raiseFrame(pane, frame, 2)
@@ -1868,10 +2255,40 @@ function Settings:ShowProductStatus(key)
     end
 end
 
+-- Phase 6: build one product page's actual controls the first time it's
+-- shown, not eagerly for every registered page when the provider is first
+-- discovered.
+function Settings:EnsureProductPageBuilt(productKey, pageKey)
+    local ps = self.productPanels and self.productPanels[productKey]
+    if not ps or ps.builtPages[pageKey] then return end
+    local scroll = ps.pages[pageKey]
+    local pageSpec = ps.pageSpecs[pageKey]
+    if not scroll or not pageSpec then return end
+    ps.builtPages[pageKey] = true
+    if type(pageSpec.build) ~= "function" then return end
+    self.currentProductKey = productKey
+    local b = self:NewBuilder(scroll, pageSpec.label, pageSpec.desc or "")
+    local ok, err = pcall(pageSpec.build, b)
+    b:Finish()
+    self.currentProductKey = nil
+    if not ok then
+        local errNote = font(scroll.canvas, 9, "LEFT")
+        errNote:SetPoint("TOPLEFT", scroll.canvas, "TOPLEFT", 12, -12)
+        errNote:SetTextColor(0.85, 0.35, 0.35, 1)
+        errNote:SetText("Settings error: " .. tostring(err))
+    end
+    -- Same reason as EnsurePageBuilt: half-width pairs need one Relayout to
+    -- split into columns, and dropdown/toggle/slider controls need one
+    -- Refresh to populate their initial displayed text/state.
+    self:Relayout()
+    self:Refresh()
+end
+
 -- Switch the visible page within a product panel.
 function Settings:SetProductPage(productKey, pageKey)
     local ps = self.productPanels and self.productPanels[productKey]
     if not ps then return end
+    self:EnsureProductPageBuilt(productKey, pageKey)
     ps.activePage = pageKey
     local accent = CC.db and CC.db.colors and CC.db.colors.accent or { 0.11, 0.43, 0.95, 1 }
     for pKey, page in pairs(ps.pages) do
@@ -1899,8 +2316,8 @@ function Settings:BuildProductSettingsPanel(productKey, spec)
     local pSidebarWidth = 130
 
     local panel = CreateFrame("Frame", nil, frame, templateName())
-    panel:SetPoint("TOPLEFT",     self.productBar, "BOTTOMLEFT", 0,  -4)
-    panel:SetPoint("BOTTOMRIGHT", frame,           "BOTTOMRIGHT", -8, 27)
+    panel:SetPoint("TOPLEFT",     self.searchBar, "BOTTOMLEFT", 0,  -4)
+    panel:SetPoint("BOTTOMRIGHT", frame,          "BOTTOMRIGHT", -8, 27)
     backdrop(panel, 0.055, 0.067, 0.090, 0.99, 0.13, 0.16, 0.21, 1)
     raiseFrame(panel, frame, 2)
     panel:Hide()
@@ -1919,13 +2336,14 @@ function Settings:BuildProductSettingsPanel(productKey, spec)
     raiseFrame(pContent, panel, 2)
 
     local ps = {
-        panel     = panel,
-        sidebar   = pSidebar,
-        content   = pContent,
-        pages     = {},
-        pageSpecs = {},
-        tabs      = {},
-        pageOrder = {},
+        panel      = panel,
+        sidebar    = pSidebar,
+        content    = pContent,
+        pages      = {},
+        pageSpecs  = {},
+        tabs       = {},
+        pageOrder  = {},
+        builtPages = {},
         activePage = nil,
     }
 
@@ -1968,20 +2386,8 @@ function Settings:BuildProductSettingsPanel(productKey, spec)
         scroll:Hide()
         ps.pages[pKey] = scroll
         ps.pageSpecs[pKey] = pageSpec
-
-        if type(pageSpec.build) == "function" then
-            self.currentProductKey = productKey
-            local b = self:NewBuilder(scroll, pageSpec.label, pageSpec.desc or "")
-            local ok, err = pcall(pageSpec.build, b)
-            b:Finish()
-            self.currentProductKey = nil
-            if not ok then
-                local errNote = font(canvas, 9, "LEFT")
-                errNote:SetPoint("TOPLEFT", canvas, "TOPLEFT", 12, -12)
-                errNote:SetTextColor(0.85, 0.35, 0.35, 1)
-                errNote:SetText("Settings error: " .. tostring(err))
-            end
-        end
+        -- Phase 6: content is built lazily, on first Settings:SetProductPage
+        -- for this key (see EnsureProductPageBuilt) -- not here.
     end
 
     self.productPanels[productKey] = ps
@@ -1997,6 +2403,7 @@ function Settings:RefreshProductPage(productKey, pageKey)
     local scroll = ps.pages and ps.pages[pageKey]
     local pageSpec = ps.pageSpecs and ps.pageSpecs[pageKey]
     if not scroll or not pageSpec or type(pageSpec.build) ~= "function" then return end
+    if ps.builtPages then ps.builtPages[pageKey] = true end
 
     local canvas = CreateFrame("Frame", nil, scroll)
     raiseFrame(canvas, scroll, 1)
@@ -2015,6 +2422,8 @@ function Settings:RefreshProductPage(productKey, pageKey)
         errNote:SetTextColor(0.85, 0.35, 0.35, 1)
         errNote:SetText("Settings error: " .. tostring(err))
     end
+    self:Relayout()
+    self:Refresh()
 end
 
 function Settings:SelectProduct(key)

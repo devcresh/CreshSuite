@@ -18,15 +18,23 @@ local function gaDB()
     return s
 end
 
+-- Phase 6: opens the relevant hub tab instead of duplicating its numbers
+-- here. CG.SoloGames loads before this file (see CreshGames.toc), so it's
+-- always available by the time a button is actually clicked.
+local function openHubTab(tab)
+    if CG.SoloGames and CG.SoloGames.SelectHubTab then CG.SoloGames:SelectHubTab(tab) end
+end
+
 local Suite = _G.CreshSuite
 if not Suite then return end
 
 Suite:RegisterSettingsProvider("CreshGames", {
     pages = {
         {
-            key   = "GENERAL",
-            label = "General",
-            desc  = "Launcher and general CreshGames preferences.",
+            key      = "GENERAL",
+            label    = "General",
+            desc     = "Launcher and general CreshGames preferences.",
+            keywords = "launcher quick button",
             build = function(b)
                 b:Section("Launcher")
                 b:HalfToggle("Games quick button",
@@ -41,9 +49,10 @@ Suite:RegisterSettingsProvider("CreshGames", {
             end,
         },
         {
-            key   = "AUDIO",
-            label = "Game Audio",
-            desc  = "Background music and sound effects for mini-games.",
+            key      = "GAMEPLAY",
+            label    = "Gameplay",
+            desc     = "Music, sound effects, Tetris defaults and shortcuts to the Solo, Multiplayer and Unlocks hubs.",
+            keywords = "audio music sound effects volume tetris cpu difficulty solo multiplayer unlocks dungeon controls",
             build = function(b)
                 b:Section("Background music")
                 b:HalfToggle("Enable background music",
@@ -70,73 +79,25 @@ Suite:RegisterSettingsProvider("CreshGames", {
                     end,
                     pct)
                 b:Note("Controls mini-game music loops and gameplay sounds. CreshChat notification-card sounds are configured separately in CreshChat Settings \226\134\146 Notifications.")
-            end,
-        },
-        {
-            key   = "SOLO",
-            label = "Solo Games",
-            desc  = "Solo game statistics and records.",
-            build = function(b)
-                local db = cgDB()
-                local sg = db and db.soloGames
-                b:Section("Solo game records")
-                if sg then
-                    if sg.frogger then
-                        b:Note("Frogger \xc2\xb7 Best level: " .. tostring(sg.frogger.bestLevel or 0) .. "  \xc2\xb7  High score: " .. tostring(sg.frogger.highScore or 0) .. "  \xc2\xb7  Games played: " .. tostring(sg.frogger.games or 0))
-                    end
-                    if sg.holdem then
-                        b:Note("Hold\xe2\x80\x99em \xc2\xb7 Wins: " .. tostring(sg.holdem.wins or 0) .. "  \xc2\xb7  Losses: " .. tostring(sg.holdem.losses or 0) .. "  \xc2\xb7  Best chip count: " .. tostring(sg.holdem.bestChips or 100))
-                    end
-                    if sg.blackjack then
-                        b:Note("Blackjack \xc2\xb7 Wins: " .. tostring(sg.blackjack.wins or 0) .. "  \xc2\xb7  Losses: " .. tostring(sg.blackjack.losses or 0) .. "  \xc2\xb7  Best bank: " .. tostring(sg.blackjack.bestBank or 100))
-                    end
-                    if sg.chess then
-                        b:Note("Chess \xc2\xb7 Wins: " .. tostring(sg.chess.wins or 0) .. "  \xc2\xb7  Losses: " .. tostring(sg.chess.losses or 0) .. "  \xc2\xb7  AI level: " .. tostring(sg.chess.level or 3))
-                    end
-                    if sg.higherlower then
-                        b:Note("Higher-Lower \xc2\xb7 Best streak: " .. tostring(sg.higherlower.bestStreak or 0) .. "  \xc2\xb7  Best bank: " .. tostring(sg.higherlower.bestBank or 100))
-                    end
-                else
-                    b:Note("No solo game data yet. Play a game from the C launcher to see records here.")
-                end
-                b:Note("All solo game records are stored in CreshGamesDB. Records update as you play; reopen settings to see the latest values.")
-            end,
-        },
-        {
-            key   = "MULTIPLAYER",
-            label = "Multiplayer",
-            desc  = "Multiplayer game statistics and session settings.",
-            build = function(b)
-                local db  = cgDB()
-                local mp  = db and db.multiplayerStats
-                b:Section("Multiplayer stats")
-                if type(mp) == "table" and next(mp) then
-                    b:Note("Multiplayer statistics are recorded here as games complete.")
-                else
-                    b:Note("No multiplayer data yet. Challenge another player from the Games drawer to begin tracking stats.")
-                end
-                b:Section("Notifications")
-                b:Note("Game invitations, challenges and multiplayer session events generate CreshChat notification cards. Configure which categories appear in the Notifications page.")
-            end,
-        },
-        {
-            key   = "TETRIS",
-            label = "Tetris",
-            desc  = "Tetris game preferences and statistics.",
-            build = function(b)
-                local VERSUS_VALUES  = { "ENDLESS", "TIMED", "CLASSIC" }
-                local VERSUS_DISPLAY = { ENDLESS = "Endless", TIMED = "Timed", CLASSIC = "Classic" }
+
+                -- Phase 6 bug fix: the value list here used to be
+                -- ENDLESS/TIMED/CLASSIC, but the game itself only ever
+                -- reads/writes ENDLESS or ATTACK (SoloGames.lua) -- TIMED
+                -- and CLASSIC were dead selections that didn't match
+                -- anything the game checked.
+                local VERSUS_VALUES  = { "ENDLESS", "ATTACK" }
+                local VERSUS_DISPLAY = { ENDLESS = "Endless", ATTACK = "Endless Attack" }
                 local LEVEL_VALUES   = { "1","2","3","4","5","6","7","8","9","10" }
                 local LEVEL_DISPLAY  = {
-                    ["1"]="1 \xe2\x80\x94 Beginner",  ["2"]="2", ["3"]="3 \xe2\x80\x94 Normal",
-                    ["4"]="4", ["5"]="5 \xe2\x80\x94 Hard", ["6"]="6",
-                    ["7"]="7", ["8"]="8", ["9"]="9", ["10"]="10 \xe2\x80\x94 Expert",
+                    ["1"]="1 \226\128\148 Beginner",  ["2"]="2", ["3"]="3 \226\128\148 Normal",
+                    ["4"]="4", ["5"]="5 \226\128\148 Hard", ["6"]="6",
+                    ["7"]="7", ["8"]="8", ["9"]="9", ["10"]="10 \226\128\148 Expert",
                 }
                 local function tet()
                     local db = cgDB()
                     return db and db.soloGames and db.soloGames.tetris
                 end
-                b:Section("Defaults")
+                b:Section("Tetris defaults")
                 b:Dropdown("CPU AI difficulty",
                     function() local t = tet() or {}; return tostring(t.cpuLevel or 3) end,
                     function(v)
@@ -147,67 +108,21 @@ Suite:RegisterSettingsProvider("CreshGames", {
                     function() local t = tet() or {}; return t.cpuVersusMode or "ENDLESS" end,
                     function(v) local t = tet(); if t then t.cpuVersusMode = v end end,
                     VERSUS_VALUES, VERSUS_DISPLAY)
-                b:Section("Tetris records")
-                local t = tet()
-                if t then
-                    b:Note("High score: " .. tostring(t.highScore or 0) .. "  \xc2\xb7  Best lines: " .. tostring(t.bestLines or 0) .. "  \xc2\xb7  Games: " .. tostring(t.games or 0))
-                    b:Note("VS wins: " .. tostring(t.vsWins or 0) .. "  \xc2\xb7  VS losses: " .. tostring(t.vsLosses or 0) .. "  \xc2\xb7  Endless runs: " .. tostring(t.endlessRuns or 0))
-                    if t.selectedTheme and t.selectedTheme ~= "" then
-                        b:Note("Active theme: " .. tostring(t.selectedTheme))
-                    end
-                else
-                    b:Note("No Tetris data yet. Play a game to initialise records.")
-                end
+
+                b:Section("Solo, Multiplayer and Unlocks")
+                b:Note("Game records, leaderboards, dungeon progress and cosmetic unlocks live in the CreshGames hub itself, not here.")
+                b:Buttons({
+                    { "OPEN SOLO GAMES", function() openHubTab("SOLO") end, 150 },
+                    { "OPEN MULTIPLAYER", function() openHubTab("MULTIPLAYER") end, 150 },
+                    { "OPEN UNLOCKS", function() openHubTab("UNLOCKS") end, 130 },
+                })
             end,
         },
         {
-            key   = "DUNGEON",
-            label = "Dungeon",
-            desc  = "Dungeon Dwellers statistics and pass rewards.",
-            build = function(b)
-                local function dd()
-                    local db = cgDB(); return db and db.soloGames and db.soloGames.dungeon
-                end
-                b:Section("Dungeon Dwellers stats")
-                local d = dd()
-                if d then
-                    b:Note("Runs: " .. tostring(d.runs or 0) .. "  \xc2\xb7  Best level: " .. tostring(d.bestLevel or 0) .. "  \xc2\xb7  High score: " .. tostring(d.highScore or 0))
-                    b:Note("Kills: " .. tostring(d.kills or 0) .. "  \xc2\xb7  Boss kills: " .. tostring(d.bosses or 0) .. "  \xc2\xb7  Minion kills: " .. tostring(d.minions or 0))
-                    local shards = d.armourShards or 0
-                    local tokens = d.portraitTokens or 0
-                    if shards > 0 or tokens > 0 then
-                        b:Note("Armour shards: " .. tostring(shards) .. "  \xc2\xb7  Portrait tokens: " .. tostring(tokens))
-                    end
-                else
-                    b:Note("No dungeon data yet. Start a run from the Games drawer to initialise records.")
-                end
-                b:Section("Battle Pass progress")
-                local bp = d and d.battlePass
-                if bp then
-                    b:Note("Pass XP: " .. tostring(bp.xp or 0))
-                else
-                    b:Note("No Battle Pass data attached to dungeon runs yet.")
-                end
-            end,
-        },
-        {
-            key   = "CONTROLS",
-            label = "Controls",
-            desc  = "Game interface and control reference.",
-            build = function(b)
-                b:Section("Game controls")
-                b:Note("CreshGames uses point-and-click and keyboard controls displayed on each game\xe2\x80\x99s own interface. No custom keybindings are configured here.")
-                b:Section("Keyboard shortcuts")
-                b:Note("Tetris: Arrow keys or WASD to move, Space to hard-drop, Escape to pause.")
-                b:Note("Chess: Click to select, click to move. Escape cancels selection.")
-                b:Note("Card games: Click cards and action buttons. Escape closes the game.")
-                b:Note("Dungeon Dwellers: Mouse clicks for all actions. Keyboard not required.")
-            end,
-        },
-        {
-            key   = "NOTIFICATIONS",
-            label = "Notifications",
-            desc  = "CreshGames notification card categories. Requires CreshChat.",
+            key      = "NOTIFICATIONS",
+            label    = "Notifications",
+            desc     = "CreshGames notification card categories. Requires CreshChat.",
+            keywords = "notifications cards sound alerts",
             build = function(b)
                 local CC = _G.CreshChat
                 b:Section("CreshGames notification cards")
@@ -241,27 +156,32 @@ Suite:RegisterSettingsProvider("CreshGames", {
             end,
         },
         {
-            key   = "RESET",
-            label = "Reset",
-            desc  = "Permanently reset CreshGames data. Cannot be undone.",
+            key      = "ADVANCED",
+            label    = "Advanced",
+            desc     = "Permanently reset CreshGames data. Cannot be undone.",
+            keywords = "reset advanced delete stats",
             build = function(b)
                 b:Section("Reset game data")
-                b:Note("WARNING: The buttons below permanently delete CreshGames data. CreshChat settings, chat history and CreshCollect data are not affected.")
+                b:Note("WARNING: The button below permanently deletes CreshGames data. CreshChat settings, chat history and CreshCollect data are not affected.")
                 b:Buttons({
                     { "RESET GAME STATS", function()
-                        local db = _G.CreshGamesDB
-                        if db then
-                            db.soloGames        = nil
-                            db.arcadeRewards    = nil
-                            db.gameHistory      = nil
-                            db.gameLeaderboards = nil
-                            db.multiplayerStats = nil
-                            db.gameProgression  = nil
-                            if _G.ReloadUI then _G.ReloadUI() end
-                        end
+                        b:ConfirmAction(
+                            "Permanently delete all CreshGames solo/multiplayer stats, leaderboards and game progression, then reload the UI?\n\nThis cannot be undone. Cresh Coins and Battle Pass XP live in CreshCollect and are not affected.",
+                            function()
+                                local db = _G.CreshGamesDB
+                                if db then
+                                    db.soloGames        = nil
+                                    db.arcadeRewards    = nil
+                                    db.gameHistory      = nil
+                                    db.gameLeaderboards = nil
+                                    db.multiplayerStats = nil
+                                    db.gameProgression  = nil
+                                    if _G.ReloadUI then _G.ReloadUI() end
+                                end
+                            end)
                     end, 160 },
                 })
-                b:Note("Resets all solo game stats, leaderboards, multiplayer records and game progression. A UI reload follows to reinitialise the database. Cresh Coins and Battle Pass XP are stored in CreshCollect and are not affected here.")
+                b:Note("Resets all solo game stats, leaderboards, multiplayer records and game progression. A UI reload follows to reinitialise the database.")
                 b:Buttons({
                     { "RESET LAUNCHER PREFS", function()
                         local db = _G.CreshGamesDB

@@ -498,8 +498,8 @@ function Tetris:UnlockTheme(key, source, showToast, suppressRefresh)
     if Suite and Suite.Publish then
         Suite:Publish("CRESHGAMES_COLLECTION_UNLOCK", { source = "CRESHGAMES", type = "TETRIS_THEME", key = key })
     end
-    if showToast and CC.UI and CC.UI.ShowGameToast then
-        CC.UI:ShowGameToast("Tetris Block Theme Unlocked", theme.name .. " · open Tetris > Block Themes to equip", "SUCCESS", "TETRIS:THEME:" .. tostring(key))
+    if showToast then
+        CG:ShowGameToast("Tetris Block Theme Unlocked", theme.name .. " · open Tetris > Block Themes to equip", "SUCCESS", "TETRIS:THEME:" .. tostring(key))
     end
     if not suppressRefresh and CG.SoloGames and CG.SoloGames.RefreshTetrisPanels then CG.SoloGames:RefreshTetrisPanels() end
     return true
@@ -577,8 +577,8 @@ function Tetris:UnlockBackground(key, source, showToast, suppressRefresh)
         Suite:Publish("CRESHGAMES_COLLECTION_UNLOCK", { source = "CRESHGAMES", type = "TETRIS_BACKGROUND", key = key })
     end
     if save.selectedBackground == "" then save.selectedBackground = key end
-    if showToast and CC.UI and CC.UI.ShowGameToast then
-        CC.UI:ShowGameToast("Tetris Image Unlocked", background.name .. " · open Tetris > Backgrounds to preview", "SUCCESS", "TETRIS:IMAGE:" .. tostring(key))
+    if showToast then
+        CG:ShowGameToast("Tetris Image Unlocked", background.name .. " · open Tetris > Backgrounds to preview", "SUCCESS", "TETRIS:IMAGE:" .. tostring(key))
     end
     if not suppressRefresh and CG.SoloGames and CG.SoloGames.RefreshTetrisPanels then CG.SoloGames:RefreshTetrisPanels(true) end
     return true
@@ -734,9 +734,7 @@ function Tetris:AddPassXP(amount, source)
         -- Pass level-up toast above already covers user feedback for this
         -- moment.
         if CG.BattlePass and CG.BattlePass.AwardMasteryLevelUp then CG.BattlePass:AwardMasteryLevelUp(true) end
-        if CC.UI and CC.UI.ShowGameToast then
-            CC.UI:ShowGameToast("Tetris Mastery Level " .. tostring(newLevel), "+" .. tostring(amount) .. " Tetris XP · reward ready", "SUCCESS", "TETRIS:PASSLEVEL:" .. tostring(newLevel))
-        end
+        CG:ShowBattlePassToast("Tetris Mastery Level " .. tostring(newLevel), "+" .. tostring(amount) .. " Tetris XP · reward ready", "SUCCESS", "TETRIS:PASSLEVEL:" .. tostring(newLevel))
     end
     if CG.SoloGames and CG.SoloGames.RefreshTetrisPanels then CG.SoloGames:RefreshTetrisPanels() end
     return amount, oldLevel, newLevel
@@ -752,9 +750,9 @@ function Tetris:ClaimPassReward(level, silent)
     -- into CG.BattlePass, never CreshCollect's pass (ownership boundary fix).
     if CG.BattlePass and CG.BattlePass.AddCoins then CG.BattlePass:AddCoins(reward.coins, "GAME") end
     if reward.themeKey then self:UnlockTheme(reward.themeKey, "TETRIS_PASS:" .. tostring(level), not silent, true) end
-    if not silent and CC.UI and CC.UI.ShowGameToast then
+    if not silent then
         local extra = reward.themeName and (" · " .. reward.themeName) or ""
-        CC.UI:ShowGameToast("Tetris Mastery Reward", "Level " .. level .. " · +" .. reward.coins .. " Cresh Coins" .. extra, "SUCCESS", "TETRIS:PASSREWARD:" .. tostring(level))
+        CG:ShowBattlePassToast("Tetris Mastery Reward", "Level " .. level .. " · +" .. reward.coins .. " Cresh Coins" .. extra, "SUCCESS", "TETRIS:PASSREWARD:" .. tostring(level))
     end
     if not silent and CG.SoloGames and CG.SoloGames.RefreshTetrisPanels then CG.SoloGames:RefreshTetrisPanels(true) end
     return true
@@ -768,8 +766,8 @@ function Tetris:ClaimAllPassRewards()
             if self:ClaimPassReward(level, true) then claimed = claimed + 1; coins = coins + reward.coins end
         end
     end
-    if claimed > 0 and CC.UI and CC.UI.ShowGameToast then
-        CC.UI:ShowGameToast("Tetris Mastery", tostring(claimed) .. " rewards · +" .. tostring(coins) .. " Cresh Coins", "SUCCESS", "TETRIS:CLAIMALL:" .. tostring(time()))
+    if claimed > 0 then
+        CG:ShowBattlePassToast("Tetris Mastery", tostring(claimed) .. " rewards · +" .. tostring(coins) .. " Cresh Coins", "SUCCESS", "TETRIS:CLAIMALL:" .. tostring(time()))
     elseif claimed == 0 and CC.Print then
         CC:Print("No Tetris Mastery rewards are ready to claim.")
     end

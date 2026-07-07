@@ -42,6 +42,8 @@ local function mockFrame()
             fn = function(self) return self._text end
         elseif k == "GetPoint" then
             fn = function() return "CENTER", nil, "CENTER", 0, 0 end
+        elseif k == "SetWidth" then
+            fn = function(self, width) self._setWidth = width end
         elseif k == "SetScript" then
             fn = function(self, hook, handler) self._scripts[hook] = handler end
         elseif k == "GetScript" then
@@ -158,6 +160,25 @@ eq(Pass.windowHero.level._text, "LEVEL 1 / " .. Pass.maxLevel, "hero shows LEVEL
 ok(Pass.windowHero.wallet._text:find("0 CRESH COINS") ~= nil, "wallet shows 0 coins for a fresh save")
 ok(#Pass.windowLevelList > 0, "windowLevelList is populated (BuildPassLevelList was called)")
 
+section("BattlePass window: Prev/Next pagination")
+ok(#Pass.windowLevelList > 6, "sanity: the full pass spans more than one page at the fixed 6-row page size")
+eq(Pass.windowCurrentPage, 1, "window opens on page 1")
+ok(Pass.windowPrevButton.creshDisabled == true, "Prev is disabled on page 1")
+ok(Pass.windowNextButton.creshDisabled == false, "Next is enabled when more pages exist")
+
+Pass:GoToPage(2)
+eq(Pass.windowCurrentPage, 2, "GoToPage(2) advances to page 2")
+eq(Pass.windowPool[1].assignedLevel, Pass.windowLevelList[7], "page 2's first row is the 7th level in the filtered list (6-row pages)")
+ok(Pass.windowPrevButton.creshDisabled == false, "Prev is enabled once past page 1")
+
+Pass:GoToPage(9999)
+local passExpectedLastPage = math.ceil(#Pass.windowLevelList / 6)
+eq(Pass.windowCurrentPage, passExpectedLastPage, "GoToPage clamps forward requests to the last real page")
+ok(Pass.windowNextButton.creshDisabled == true, "Next is disabled on the last page")
+
+Pass:GoToPage(-5)
+eq(Pass.windowCurrentPage, 1, "GoToPage clamps backward requests to page 1")
+
 section("BattlePass window: claiming updates the same data GetProgress/IsRewardClaimed report")
 CreshCollectDB.arcadeRewards.passXP = Pass:GetCumulativeXP(5)
 ok(Pass:IsLevelReached(5) == true, "level 5 requirement now met (sanity check on the fixture)")
@@ -180,7 +201,12 @@ local okABuild, errABuild = pcall(function() Achievements:BuildWindow() end)
 ok(okABuild, "BuildWindow() does not error with no CC.UI at all (err: " .. tostring(errABuild) .. ")")
 ok(Achievements.window ~= nil, "window frame was created")
 ok(#Achievements.catalog > 0, "catalog was populated by BuildWindow's own BuildCatalog() call")
-eq(#Achievements.windowRows, #Achievements.catalog, "one row was built per catalog entry")
+-- Bug-fix round: the window used to build one frame per catalog entry
+-- (dozens/hundreds of frames). It's now a fixed, paginated pool recycled
+-- across pages via Prev/Next -- the pool must stay small and constant
+-- regardless of how large the catalog is.
+eq(#Achievements.windowPool, 6, "pool holds exactly one page's worth of rows")
+ok(#Achievements.windowPool < #Achievements.catalog, "pool is far smaller than the full catalog (rows are recycled, not one per entry)")
 
 local okAOpen, errAOpen = pcall(function() Achievements:OpenWindow() end)
 ok(okAOpen, "OpenWindow() does not error (err: " .. tostring(errAOpen) .. ")")
@@ -190,12 +216,16 @@ ok(Achievements:IsWindowOpen() == true, "window is open after OpenWindow()")
 -- catalog entry anywhere in CreshCollect's Achievements.lua has
 -- category == "GAMES" any more -- regardless of CreshGames presence.
 section("Achievements window: GAMES category no longer exists in CreshCollect")
+-- windowFilteredList (built fresh by every RefreshWindow) holds the *entire*
+-- filtered set independent of pagination, unlike windowPool which only ever
+-- holds the current page's 6 rows -- it's the correct place to check
+-- "no matching entry anywhere," regardless of how many pages that spans.
 _G.CreshSuite = nil
 Achievements.windowCategory = "GAMES"
 Achievements:RefreshWindow()
 local gamesRows = 0
-for _, row in ipairs(Achievements.windowRows) do
-    if row.achievement.category == "GAMES" then gamesRows = gamesRows + 1 end
+for _, achievement in ipairs(Achievements.windowFilteredList) do
+    if achievement.category == "GAMES" then gamesRows = gamesRows + 1 end
 end
 eq(gamesRows, 0, "no catalog entry has category GAMES when CreshGames is absent")
 
@@ -205,10 +235,54 @@ _G.CreshSuite = {
 }
 Achievements:RefreshWindow()
 gamesRows = 0
-for _, row in ipairs(Achievements.windowRows) do
-    if row.achievement.category == "GAMES" then gamesRows = gamesRows + 1 end
+for _, achievement in ipairs(Achievements.windowFilteredList) do
+    if achievement.category == "GAMES" then gamesRows = gamesRows + 1 end
 end
 eq(gamesRows, 0, "no catalog entry has category GAMES even once CreshGames is loaded")
+
+-- Phase 2: the old per-category filter button wall (one button per
+-- category, chained left-to-right with no wrapping) overhung this 480px
+-- window once there were more than ~5 categories. It was replaced with a
+-- small, fixed set of cycle controls; this section proves the control
+-- count stays constant (doesn't scale with categoryOrder) and that row/
+-- content width is derived from the window's own declared width rather
+-- than an unrelated hard-coded number.
+section("Achievements window: fixed-size filter controls (no per-category button wall)")
+
+ok(Achievements.windowCategoryButton ~= nil, "a single category cycle button exists")
+ok(Achievements.windowClassButton ~= nil, "a single class cycle button exists")
+ok(Achievements.windowStatusButton ~= nil, "a single status cycle button exists")
+ok(Achievements.windowEnabledToggle ~= nil, "the enabled-modules toggle still exists")
+ok(Achievements.windowFilterButtons == nil, "the old one-button-per-category dict is gone")
+
+-- categoryOrder here only has the 4 base categories (this test doesn't load
+-- AchievementExpansion.lua/ClassAchievements.lua/MetaAchievements.lua), but
+-- the control count must be independent of it regardless of size --
+-- tests/ClassMasteryFilterTests.lua separately proves this holds even with
+-- the real 11-category, 135-class-achievement catalog.
+ok(#Achievements.categoryOrder > 0, "sanity: categoryOrder is non-empty in this test's environment")
+
+section("Achievements window: Prev/Next pagination")
+
+Achievements.windowCategory = "ALL"
+Achievements:RefreshWindow()
+ok(#Achievements.windowFilteredList > 6, "sanity: this catalog spans more than one page at the fixed 6-row page size")
+eq(Achievements.windowCurrentPage, 1, "RefreshWindow resets to page 1")
+ok(Achievements.windowPrevButton.creshDisabled == true, "Prev is disabled on page 1")
+ok(Achievements.windowNextButton.creshDisabled == false, "Next is enabled when more pages exist")
+
+Achievements:GoToPage(2)
+eq(Achievements.windowCurrentPage, 2, "GoToPage(2) advances to page 2")
+ok(Achievements.windowPrevButton.creshDisabled == false, "Prev is enabled once past page 1")
+eq(Achievements.windowPool[1].achievement, Achievements.windowFilteredList[7], "page 2's first row is the 7th filtered entry (6-row pages)")
+
+Achievements:GoToPage(9999)
+local expectedLastPage = math.ceil(#Achievements.windowFilteredList / 6)
+eq(Achievements.windowCurrentPage, expectedLastPage, "GoToPage clamps forward requests to the last real page")
+ok(Achievements.windowNextButton.creshDisabled == true, "Next is disabled on the last page")
+
+Achievements:GoToPage(-5)
+eq(Achievements.windowCurrentPage, 1, "GoToPage clamps backward requests to page 1")
 
 section("Achievements window: close")
 Achievements:CloseWindow()

@@ -104,6 +104,10 @@ local DEFAULTS = {
     gameLeaderboards = {},
     multiplayerStats = {},
     launcher         = { showButton = false },
+    -- Phase 4: which top-level tab (SOLO/MULTIPLAYER/UNLOCKS) the unified
+    -- CreshGames hub shell was last showing; uiPositions (window position)
+    -- is added lazily by CreshSuiteUI:SavePosition, not defaulted here.
+    gamesHub         = { activeTab = "SOLO" },
     _migration       = {},
 }
 

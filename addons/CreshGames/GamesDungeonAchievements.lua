@@ -369,11 +369,7 @@ function A:Unlock(achievement, silent)
         local toastTitle = "Dungeon Achievement: " .. achievement.title
         local toastBody = "+" .. tostring(achievement.coins) .. " Cresh Coins  ·  +" .. tostring(achievement.xp) .. " Delver XP"
         local toastKey = "DD_ACH:" .. achievement.key
-        if CC.UI and CC.UI.ShowDungeonPassToast then
-            CC.UI:ShowDungeonPassToast(toastTitle, toastBody, toastKey)
-        elseif CC.UI and CC.UI.ShowBattlePassToast then
-            CC.UI:ShowBattlePassToast(toastTitle, toastBody, "DUNGEONPASS", toastKey)
-        end
+        CG:ShowAchievementToast(toastTitle, toastBody, toastKey)
         if CC.GameAudio and CC.GameAudio.PlayEffect then CC.GameAudio:PlayEffect("LEVEL") end
     end
     return true

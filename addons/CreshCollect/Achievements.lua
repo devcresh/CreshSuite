@@ -29,7 +29,7 @@ local Achievements = {
 COL.Achievements = Achievements
 if COL.RegisterModule then COL:RegisterModule("Achievements", Achievements) end
 
-local floor, max, min = math.floor, math.max, math.min
+local floor, max, min, ceil = math.floor, math.max, math.min, math.ceil
 local upper, lower = string.upper, string.lower
 local format = string.format
 
@@ -70,6 +70,165 @@ function Achievements:IsAvailable(achievementOrKey)
     if not achievement then return false, nil end
     local missingAddon = achievementMissingAddon(achievement)
     return missingAddon == nil and isCategoryEnabled(achievement.category), missingAddon
+end
+
+-- ============================================================
+-- Phase 2: shared filter contract used by BOTH the standalone window
+-- (RefreshWindow) and the drawer panel (RefreshDrawerPanel), plus the
+-- pre-refresh height estimate (GetPanelHeight), so all three can never
+-- drift apart from one another.
+-- ============================================================
+
+-- Same UnitClass("player") resolution ClassAchievements.lua already uses
+-- internally (its own private currentClass()) -- kept as an independent
+-- copy here since Achievements.lua has no load-order dependency on
+-- ClassAchievements.lua and shouldn't gain one just for this.
+function Achievements:GetPlayerClassToken()
+    if type(_G.UnitClass) == "function" then
+        local _, token = _G.UnitClass("player")
+        return upper(tostring(token or ""))
+    end
+    return ""
+end
+
+-- Sorted, de-duplicated list of class tokens actually present in the
+-- CLASSES category of the catalog. Returns {} before ClassAchievements.lua
+-- has run BuildCatalog (or if it's absent entirely) -- never hardcodes a
+-- class roster here.
+function Achievements:GetClassTokens()
+    local seen, tokens = {}, {}
+    for _, achievement in ipairs(self.catalog) do
+        if achievement.category == "CLASSES" and achievement.classToken and not seen[achievement.classToken] then
+            seen[achievement.classToken] = true
+            tokens[#tokens + 1] = achievement.classToken
+        end
+    end
+    table.sort(tokens)
+    return tokens
+end
+
+-- Pure rule: entering CLASSES from any other category resets the class
+-- filter to "MY_CLASS"; staying within CLASSES (or changing to any other
+-- category) preserves whatever was already selected.
+function Achievements:ResolveClassFilterOnCategoryChange(previousCategory, newCategory, currentClassFilter)
+    if newCategory == "CLASSES" and previousCategory ~= "CLASSES" then return "MY_CLASS" end
+    return currentClassFilter or "MY_CLASS"
+end
+
+-- The single combined-filter predicate. `state` is a plain table:
+--   { search = "", category = "ALL", classFilter = "MY_CLASS", status = "ALL", enabledOnly = false }
+-- `save` is the achievements SavedVariables root (self:Ensure()'s result),
+-- computed once by the caller and passed in rather than re-fetched per
+-- achievement. `playerClassToken` is the caller's already-resolved
+-- GetPlayerClassToken() value.
+function Achievements:MatchesFilter(achievement, save, state, playerClassToken)
+    if not achievement then return false end
+    state = state or {}
+    local category = state.category or "ALL"
+
+    local categoryMatch = category == "ALL" or achievement.category == category
+    if categoryMatch and category == "CLASSES" then
+        local classFilter = state.classFilter or "MY_CLASS"
+        if classFilter == "MY_CLASS" then
+            categoryMatch = achievement.classToken == (playerClassToken or "")
+        elseif classFilter ~= "ALL_CLASSES" then
+            categoryMatch = achievement.classToken == classFilter
+        end
+    end
+    if not categoryMatch then return false end
+
+    local missingAddon = achievementMissingAddon(achievement)
+    if state.enabledOnly and not (isCategoryEnabled(achievement.category) and not missingAddon) then
+        return false
+    end
+
+    local complete = save and save.unlocked and save.unlocked[achievement.key] ~= nil
+    local status = state.status or "ALL"
+    if status == "UNLOCKED" and not complete then return false end
+    if status == "LOCKED" and complete then return false end
+
+    local filterText = lower(tostring(state.search or ""))
+    if filterText ~= "" then
+        local haystack = lower(table.concat({ achievement.title, achievement.description, self.categoryNames[achievement.category] or achievement.category }, " "))
+        if not string.find(haystack, filterText, 1, true) then return false end
+    end
+    return true
+end
+
+-- Generic forward(+1)/backward(-1) cycle through a value list; shared by
+-- the category/class/status controls in both BuildWindow and
+-- BuildDrawerPanel so their click behaviour can't drift apart either.
+local function cycleValue(list, current, direction)
+    if #list == 0 then return current end
+    local index = 1
+    for i, value in ipairs(list) do
+        if value == current then index = i; break end
+    end
+    index = ((index - 1 + direction) % #list) + 1
+    return list[index]
+end
+
+local function categoryCycleOrder()
+    local order = { "ALL" }
+    for _, cat in ipairs(Achievements.categoryOrder) do order[#order + 1] = cat end
+    return order
+end
+
+local function classCycleOrder()
+    local order = { "MY_CLASS", "ALL_CLASSES" }
+    for _, token in ipairs(Achievements:GetClassTokens()) do order[#order + 1] = token end
+    return order
+end
+
+local function categoryLabel(key)
+    if key == "ALL" then return "CATEGORY: ALL" end
+    return "CATEGORY: " .. upper(Achievements.categoryNames[key] or key)
+end
+
+local function classDisplayName(token)
+    token = tostring(token or "")
+    if token == "" then return "?" end
+    return token:sub(1, 1) .. token:sub(2):lower()
+end
+
+local function classLabel(playerClassToken, classFilter)
+    if classFilter == "ALL_CLASSES" then return "CLASS: ALL CLASSES" end
+    if classFilter == "MY_CLASS" or classFilter == nil then
+        if playerClassToken and playerClassToken ~= "" then
+            return "CLASS: MY CLASS (" .. classDisplayName(playerClassToken) .. ")"
+        end
+        return "CLASS: MY CLASS"
+    end
+    return "CLASS: " .. classDisplayName(classFilter)
+end
+
+local function statusLabel(status)
+    if status == "UNLOCKED" then return "STATUS: UNLOCKED" end
+    if status == "LOCKED" then return "STATUS: LOCKED" end
+    return "STATUS: ALL"
+end
+
+-- Drawer-panel row height/step: title/detail/progress/reward each get their
+-- own full-width line (bug fix -- the old design overlaid progress/reward in
+-- a reserved top/bottom-right corner shared with title/detail, which could
+-- run past the row's edge for longer strings). Shared by the row-creation
+-- loop (BuildDrawerPanel), the row-positioning loop (RefreshDrawerPanel) and
+-- the pre-refresh height estimate (GetPanelHeight) so they can't drift apart.
+local DRAWER_ROW_HEIGHT = 64
+local DRAWER_ROW_STEP   = 70
+
+-- Pixel-exact height of the drawer panel's chrome (hero + search + the
+-- three filter rows, one of which -- the class row -- only exists when
+-- browsing Class Mastery) above where the achievement rows begin. Shared by
+-- GetPanelHeight (pre-refresh estimate) and RefreshDrawerPanel (authoritative
+-- final height) so they can't disagree about how tall the chrome is.
+local function drawerBaseOffset(classShown)
+    local offset = 72 + 7 + 30 + 6 + 24 -- hero + gap + search + gap + category row
+    if classShown then offset = offset + 4 + 24 end -- class row
+    offset = offset + 4 + 24 -- status row
+    offset = offset + 4 + 24 -- enabled-modules toggle row
+    offset = offset + 8 -- gap before the first achievement row
+    return offset
 end
 
 local function now()
@@ -434,11 +593,10 @@ function Achievements:Unlock(achievement, silent)
         if COL.BattlePass.AddCoins then COL.BattlePass:AddCoins(achievement.coins, "ACHIEVEMENT") end
         if COL.BattlePass.AddPassXP then COL.BattlePass:AddPassXP(achievement.xp, "ACHIEVEMENT", true) end
     end
-    if not silent and CC.UI and CC.UI.ShowBattlePassToast then
-        CC.UI:ShowBattlePassToast(
+    if not silent then
+        COL:ShowAchievementToast(
             "Achievement unlocked: " .. achievement.title,
             "+" .. tostring(achievement.coins) .. " Cresh Coins · +" .. tostring(achievement.xp) .. " Chronicle XP",
-            "BATTLEPASS",
             "ACHIEVEMENT:" .. achievement.key
         )
     end
@@ -654,15 +812,15 @@ function Achievements:ProcessInstanceState(initial)
     self.wasInDungeon = inDungeon and true or false
 end
 
-function Achievements:GetPanelHeight(filter, category)
+function Achievements:GetPanelHeight(filter, category, status, classFilter)
+    local state = { search = filter, category = category, status = status, classFilter = classFilter, enabledOnly = false }
+    local save = self:Ensure()
+    local playerClassToken = self:GetPlayerClassToken()
     local count = 0
-    filter = lower(tostring(filter or ""))
     for _, achievement in ipairs(self.catalog) do
-        local categoryMatch = not category or category == "ALL" or achievement.category == category
-        local haystack = lower(table.concat({ achievement.title, achievement.description, self.categoryNames[achievement.category] or achievement.category }, " "))
-        if categoryMatch and (filter == "" or string.find(haystack, filter, 1, true)) then count = count + 1 end
+        if self:MatchesFilter(achievement, save, state, playerClassToken) then count = count + 1 end
     end
-    return 208 + (count * 62)
+    return drawerBaseOffset(category == "CLASSES") + (count * DRAWER_ROW_STEP)
 end
 
 function Achievements:BuildDrawerPanel(drawer, helpers)
@@ -675,6 +833,8 @@ function Achievements:BuildDrawerPanel(drawer, helpers)
     panel:SetHeight(self:GetPanelHeight())
     panel.searchText = ""
     panel.category = "ALL"
+    panel.classFilter = "MY_CLASS"
+    panel.status = "ALL"
     drawer.achievementPanel = panel
 
     panel.hero = CreateFrame("Frame", nil, panel, templateName())
@@ -713,32 +873,70 @@ function Achievements:BuildDrawerPanel(drawer, helpers)
     panel.search:SetScript("OnEditFocusGained", function() panel.searchHint:Hide() end)
     panel.search:SetScript("OnEditFocusLost", function(box) panel.searchHint:SetShown((box:GetText() or "") == "") end)
 
-    panel.filters = CreateFrame("Frame", nil, panel)
-    panel.filters:SetPoint("TOPLEFT", panel.searchFrame, "BOTTOMLEFT", 0, -6)
-    panel.filters:SetPoint("TOPRIGHT", panel.searchFrame, "BOTTOMRIGHT", 0, -6)
-    panel.filters:SetHeight(28)
-    panel.filterButtons = {}
+    -- Phase 2: three fixed, always-full-width cycle controls replace the
+    -- old per-category button wall (which overhung once there were more
+    -- than 5 categories) -- left-click cycles forward, right-click cycles
+    -- back, same convention as ProgressHub.lua's settings button.
     panel.enabledOnly = false
-    local filters = {
-        { "ALL", "ALL", 42 }, { "EXPLORATION", "EXPLORE", 58 }, { "COMBAT", "COMBAT", 52 },
-        { "DUNGEONS", "DUNGEON", 58 }, { "PROFESSIONS", "PROF", 46 },
-    }
-    local previous
-    for _, item in ipairs(filters) do
-        local key, label, width = item[1], item[2], item[3]
-        local button = createButton(panel.filters, label, width, 24, function()
-            panel.category = key
-            Achievements:RefreshDrawerPanel(drawer, helpers, true)
-        end)
-        if previous then button:SetPoint("LEFT", previous, "RIGHT", 3, 0) else button:SetPoint("LEFT", panel.filters, "LEFT", 0, 0) end
-        panel.filterButtons[key] = button
-        previous = button
-    end
+
+    panel.categoryRow = CreateFrame("Frame", nil, panel)
+    panel.categoryRow:SetPoint("TOPLEFT", panel.searchFrame, "BOTTOMLEFT", 0, -6)
+    panel.categoryRow:SetPoint("TOPRIGHT", panel.searchFrame, "BOTTOMRIGHT", 0, -6)
+    panel.categoryRow:SetHeight(24)
+
+    panel.classRow = CreateFrame("Frame", nil, panel)
+    panel.classRow:SetPoint("TOPLEFT", panel.categoryRow, "BOTTOMLEFT", 0, -4)
+    panel.classRow:SetPoint("TOPRIGHT", panel.categoryRow, "BOTTOMRIGHT", 0, -4)
+    panel.classRow:SetHeight(24)
+
+    panel.statusRow = CreateFrame("Frame", nil, panel)
+    panel.statusRow:SetHeight(24)
 
     panel.toggleRow = CreateFrame("Frame", nil, panel)
-    panel.toggleRow:SetPoint("TOPLEFT", panel.filters, "BOTTOMLEFT", 0, -4)
-    panel.toggleRow:SetPoint("TOPRIGHT", panel.filters, "BOTTOMRIGHT", 0, -4)
     panel.toggleRow:SetHeight(24)
+
+    -- Re-anchors statusRow/toggleRow around whichever of categoryRow/
+    -- classRow is currently the last visible row, and shows/hides classRow
+    -- itself -- called at build time and whenever the category changes.
+    local function layoutFilterRows()
+        local classShown = panel.category == "CLASSES"
+        panel.classRow:SetShown(classShown)
+        local statusAnchor = classShown and panel.classRow or panel.categoryRow
+        panel.statusRow:ClearAllPoints()
+        panel.statusRow:SetPoint("TOPLEFT", statusAnchor, "BOTTOMLEFT", 0, -4)
+        panel.statusRow:SetPoint("TOPRIGHT", statusAnchor, "BOTTOMRIGHT", 0, -4)
+        panel.toggleRow:ClearAllPoints()
+        panel.toggleRow:SetPoint("TOPLEFT", panel.statusRow, "BOTTOMLEFT", 0, -4)
+        panel.toggleRow:SetPoint("TOPRIGHT", panel.statusRow, "BOTTOMRIGHT", 0, -4)
+    end
+
+    panel.categoryButton = createButton(panel.categoryRow, categoryLabel(panel.category), 200, 24, function(_, mouseButton)
+        local previousCategory = panel.category
+        panel.category = cycleValue(categoryCycleOrder(), previousCategory, mouseButton == "RightButton" and -1 or 1)
+        panel.classFilter = Achievements:ResolveClassFilterOnCategoryChange(previousCategory, panel.category, panel.classFilter)
+        layoutFilterRows()
+        Achievements:RefreshDrawerPanel(drawer, helpers, true)
+    end)
+    panel.categoryButton:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    panel.categoryButton:SetPoint("TOPLEFT", panel.categoryRow, "TOPLEFT", 0, 0)
+    panel.categoryButton:SetPoint("BOTTOMRIGHT", panel.categoryRow, "BOTTOMRIGHT", 0, 0)
+
+    panel.classButton = createButton(panel.classRow, classLabel(Achievements:GetPlayerClassToken(), panel.classFilter), 200, 24, function(_, mouseButton)
+        panel.classFilter = cycleValue(classCycleOrder(), panel.classFilter, mouseButton == "RightButton" and -1 or 1)
+        Achievements:RefreshDrawerPanel(drawer, helpers, true)
+    end)
+    panel.classButton:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    panel.classButton:SetPoint("TOPLEFT", panel.classRow, "TOPLEFT", 0, 0)
+    panel.classButton:SetPoint("BOTTOMRIGHT", panel.classRow, "BOTTOMRIGHT", 0, 0)
+
+    panel.statusButton = createButton(panel.statusRow, statusLabel(panel.status), 200, 24, function(_, mouseButton)
+        panel.status = cycleValue({ "ALL", "UNLOCKED", "LOCKED" }, panel.status, mouseButton == "RightButton" and -1 or 1)
+        Achievements:RefreshDrawerPanel(drawer, helpers, true)
+    end)
+    panel.statusButton:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    panel.statusButton:SetPoint("TOPLEFT", panel.statusRow, "TOPLEFT", 0, 0)
+    panel.statusButton:SetPoint("BOTTOMRIGHT", panel.statusRow, "BOTTOMRIGHT", 0, 0)
+
     panel.enabledToggle = createButton(panel.toggleRow, "ENABLED MODULES ONLY", 150, 22, function()
         panel.enabledOnly = not panel.enabledOnly
         Achievements:RefreshDrawerPanel(drawer, helpers, true)
@@ -752,6 +950,8 @@ function Achievements:BuildDrawerPanel(drawer, helpers)
     end)
     panel.enabledToggle:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
+    layoutFilterRows()
+
     panel.empty = createFont(panel, 9, colors.muted, "CENTER")
     panel.empty:SetPoint("TOPLEFT", panel.toggleRow, "BOTTOMLEFT", 0, -24)
     panel.empty:SetPoint("TOPRIGHT", panel.toggleRow, "BOTTOMRIGHT", 0, -24)
@@ -763,16 +963,16 @@ function Achievements:BuildDrawerPanel(drawer, helpers)
         local row = CreateFrame("Frame", nil, panel, templateName())
         row:SetPoint("TOPLEFT", panel.toggleRow, "BOTTOMLEFT", 0, -8)
         row:SetPoint("TOPRIGHT", panel.toggleRow, "BOTTOMRIGHT", 0, -8)
-        row:SetHeight(56)
+        row:SetHeight(DRAWER_ROW_HEIGHT)
         applyBackdrop(row, colors.panelSoft, colors.border)
         row.title = createFont(row, 10, colors.text, "LEFT")
         row.title:SetPoint("TOPLEFT", row, "TOPLEFT", 9, -7)
-        row.title:SetPoint("RIGHT", row, "RIGHT", -78, 0)
+        row.title:SetPoint("RIGHT", row, "RIGHT", -8, 0)
         row.detail = createFont(row, 8, colors.muted, "LEFT")
         row.detail:SetPoint("TOPLEFT", row.title, "BOTTOMLEFT", 0, -4)
-        row.detail:SetPoint("RIGHT", row, "RIGHT", -78, 0)
-        row.progress = createFont(row, 8, colors.muted, "RIGHT")
-        row.progress:SetPoint("TOPRIGHT", row, "TOPRIGHT", -8, -7)
+        row.detail:SetPoint("RIGHT", row, "RIGHT", -8, 0)
+        row.progress = createFont(row, 8, colors.muted, "LEFT")
+        row.progress:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 9, 7)
         row.reward = createFont(row, 8, colors.quest, "RIGHT")
         row.reward:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -8, 7)
         row.achievement = achievement
@@ -786,19 +986,19 @@ end
 function Achievements:RefreshDrawerPanel(drawer, helpers, resetScroll)
     local panel = drawer and drawer.achievementPanel
     if not panel then return end
-    local applyBackdrop, darken, colors = helpers.applyBackdrop, helpers.darken, helpers.colors
+    local applyBackdrop, colors = helpers.applyBackdrop, helpers.colors
     self:EvaluateAll(true)
     local save = self:Ensure()
+    if not save then return end
     local unlocked, total = self:GetCounts()
     local points = self:GetPoints()
     panel.summary:SetText(format("%d / %d unlocked · %s achievement points · rewards are account-wide", unlocked, total, formatNumber(points)))
     if panel.searchHint then panel.searchHint:SetShown((panel.search:GetText() or "") == "" and not panel.search:HasFocus()) end
 
-    for key, button in pairs(panel.filterButtons or {}) do
-        local active = panel.category == key
-        if helpers.setAccent then helpers.setAccent(button, active and helpers.colors.quest or helpers.colors.border, active) end
-        if button.label then button.label:SetTextColor(active and 1 or 0.72, active and 0.82 or 0.74, active and 0.28 or 0.80, 1) end
-    end
+    local playerClassToken = self:GetPlayerClassToken()
+    if panel.categoryButton and panel.categoryButton.label then panel.categoryButton.label:SetText(categoryLabel(panel.category)) end
+    if panel.classButton and panel.classButton.label then panel.classButton.label:SetText(classLabel(playerClassToken, panel.classFilter)) end
+    if panel.statusButton and panel.statusButton.label then panel.statusButton.label:SetText(statusLabel(panel.status)) end
     if panel.enabledToggle then
         if helpers.setAccent then helpers.setAccent(panel.enabledToggle, panel.enabledOnly and helpers.colors.green or helpers.colors.border, panel.enabledOnly) end
         if panel.enabledToggle.label then
@@ -806,22 +1006,21 @@ function Achievements:RefreshDrawerPanel(drawer, helpers, resetScroll)
         end
     end
 
-    local filter = lower(tostring(panel.searchText or ""))
+    local state = {
+        search = panel.searchText, category = panel.category, classFilter = panel.classFilter,
+        status = panel.status, enabledOnly = panel.enabledOnly,
+    }
     local y = 0
     for _, row in ipairs(panel.rows or {}) do
         local achievement = row.achievement
-        local missingAddon = achievementMissingAddon(achievement)
-        local categoryMatch = panel.category == "ALL" or panel.category == achievement.category
-        local enabledMatch = not panel.enabledOnly or (isCategoryEnabled(achievement.category) and not missingAddon)
-        local haystack = lower(table.concat({ achievement.title, achievement.description, self.categoryNames[achievement.category] or achievement.category }, " "))
-        local searchMatch = filter == "" or string.find(haystack, filter, 1, true)
-        if categoryMatch and enabledMatch and searchMatch then
+        if self:MatchesFilter(achievement, save, state, playerClassToken) then
             row:ClearAllPoints()
             row:SetPoint("TOPLEFT", panel.toggleRow, "BOTTOMLEFT", 0, -8 - y)
             row:SetPoint("TOPRIGHT", panel.toggleRow, "BOTTOMRIGHT", 0, -8 - y)
-            y = y + 62
+            y = y + DRAWER_ROW_STEP
             local value = self:GetStat(achievement.stat)
             local complete = save.unlocked[achievement.key] ~= nil
+            local missingAddon = achievementMissingAddon(achievement)
             local disabled = missingAddon ~= nil or not isCategoryEnabled(achievement.category)
             local label = (complete and "✓ " or "") .. achievement.title .. "  ·  TIER " .. tostring(achievement.tier) .. "  ·  " .. (self.categoryNames[achievement.category] or achievement.category)
             if missingAddon then
@@ -833,22 +1032,25 @@ function Achievements:RefreshDrawerPanel(drawer, helpers, resetScroll)
             row.detail:SetText(achievement.description)
             row.progress:SetText(complete and "UNLOCKED" or (formatNumber(min(value, achievement.goal)) .. "/" .. formatNumber(achievement.goal)))
             row.reward:SetText("+" .. achievement.coins .. " coins · +" .. achievement.xp .. " XP")
-            applyBackdrop(row, complete and darken(colors.green, 0.58) or colors.panelSoft, complete and colors.green or colors.border)
-            if disabled and not complete then
-                row.title:SetTextColor(colors.muted[1], colors.muted[2], colors.muted[3], 1)
+            local rowState = complete and "UNLOCKED" or (disabled and "LOCKED" or "AVAILABLE")
+            local sc = _G.CreshSuiteUI and _G.CreshSuiteUI:GetStateColor(rowState, colors)
+            if sc then
+                applyBackdrop(row, sc.bg, sc.border)
+                row.title:SetTextColor(sc.text[1], sc.text[2], sc.text[3], 1)
+                row:SetAlpha(sc.alpha or 1)
             else
-                row.title:SetTextColor(complete and colors.green[1] or colors.text[1], complete and colors.green[2] or colors.text[2], complete and colors.green[3] or colors.text[3], 1)
+                applyBackdrop(row, colors.panelSoft, colors.border) -- cheap insurance, not an expected path
             end
-            row:SetAlpha(disabled and not complete and 0.55 or 1)
             row:Show()
         else
             row:Hide()
         end
     end
     if panel.empty then panel.empty:SetShown(y == 0) end
-    panel:SetHeight(208 + y)
+    local base = drawerBaseOffset(panel.category == "CLASSES")
+    panel:SetHeight(base + y)
     if drawer.mode == "ACHIEVEMENTS" then
-        drawer.content:SetHeight(max(240, 208 + y))
+        drawer.content:SetHeight(max(240, base + y))
         if resetScroll and CC.UI and CC.UI.SetGameDrawerScroll then CC.UI:SetGameDrawerScroll(0) end
     end
     if drawer.achievementMode and drawer.achievementMode.label then
@@ -910,8 +1112,18 @@ end)
 -- functions already defined above (GetCounts, GetPoints, IsUnlocked,
 -- GetStat, categoryMissingAddon, isCategoryEnabled) -- nothing here
 -- recomputes an achievement's progress or unlock state independently.
--- One row per catalog entry, built once (matching the existing drawer
--- panel's own approach above) -- not rebuilt on every open.
+-- Pooled rows: a fixed page's worth of frames recycled across pages via
+-- Prev/Next (see UpdateWindowPage/GoToPage below), not one frame per
+-- catalog entry.
+
+-- WINDOW_W is the window's actual declared width; CONTENT_WIDTH derives the
+-- scroll child / row width from it (matching the scroll frame's own -8
+-- right inset below) instead of an unrelated hard-coded magic number.
+local WINDOW_W, WINDOW_H = 480, 620
+local CONTENT_WIDTH = WINDOW_W - 8
+local WINDOW_ROW_HEIGHT = 58
+local WINDOW_ROW_GAP    = 6
+local WINDOW_PAGE_SIZE  = 6
 
 local WBACKDROP = {
     bgFile = "Interface\\Buttons\\WHITE8X8",
@@ -987,7 +1199,10 @@ local function winCreateButton(parent, label, width, height, callback)
     btn.label = winCreateText(btn, 9, colors.text, "CENTER")
     btn.label:SetAllPoints()
     btn.label:SetText(label or "")
-    btn:SetScript("OnClick", function(selfBtn, ...) if callback then callback(selfBtn, ...) end end)
+    btn:SetScript("OnClick", function(selfBtn, ...)
+        if selfBtn.creshDisabled then return end
+        if callback then callback(selfBtn, ...) end
+    end)
     btn:SetScript("OnEnter", function(selfBtn)
         local c = winPalette()
         winApplyBackdrop(selfBtn, winDarken(c.quest or c.blue, 0.22), c.quest or c.blue)
@@ -1041,8 +1256,14 @@ function Achievements:BuildWindow()
     self:BuildCatalog()
     local colors = winPalette()
 
+    self.windowCategory = self.windowCategory or "ALL"
+    self.windowClassFilter = self.windowClassFilter or "MY_CLASS"
+    self.windowStatus = self.windowStatus or "ALL"
+    self.windowEnabledOnly = self.windowEnabledOnly or false
+    self.windowSearchText = self.windowSearchText or ""
+
     local frame = CreateFrame("Frame", "CreshCollectAchievementsFrame", UIParent, winTemplateName())
-    frame:SetSize(480, 620)
+    frame:SetSize(WINDOW_W, WINDOW_H)
     local savedPos = CC.db and CC.db.positions and CC.db.positions.achievementsWindow
     if savedPos then
         frame:SetPoint(savedPos.point or "CENTER", UIParent, savedPos.relPoint or "CENTER",
@@ -1060,7 +1281,8 @@ function Achievements:BuildWindow()
 
     frame:SetScript("OnMouseDown", function(selfFrame, btn)
         if btn == "LeftButton" then
-            if CC.UI and CC.UI.FocusWindow then CC.UI:FocusWindow(selfFrame) end
+            local uiSvc = _G.CreshSuiteUI or CC.UI
+            if uiSvc and uiSvc.FocusWindow then uiSvc:FocusWindow(selfFrame) end
             selfFrame:StartMoving()
         end
     end)
@@ -1075,7 +1297,10 @@ function Achievements:BuildWindow()
     frame:SetScript("OnHide", function()
         if CC.UI and CC.UI.RefreshLauncherButtonStates then CC.UI:RefreshLauncherButtonStates() end
     end)
-    if CC.UI and CC.UI.InstallWindowFocus then CC.UI:InstallWindowFocus(frame) end
+    -- Prefer the shared, addon-agnostic bridge so this window shares one
+    -- z-order with every other suite window even when CreshChat is absent.
+    local uiSvc = _G.CreshSuiteUI or CC.UI
+    if uiSvc and uiSvc.InstallWindowFocus then uiSvc:InstallWindowFocus(frame) end
 
     -- Header
     local header = CreateFrame("Frame", nil, frame, winTemplateName())
@@ -1119,80 +1344,135 @@ function Achievements:BuildWindow()
     end)
     self.windowSearch = search
 
-    -- Category filter row (ALL + each category)
-    local filterBar = CreateFrame("Frame", nil, frame, winTemplateName())
-    filterBar:SetPoint("TOPLEFT", searchFrame, "BOTTOMLEFT", 8, -6)
-    filterBar:SetPoint("TOPRIGHT", searchFrame, "BOTTOMRIGHT", -8, -6)
-    filterBar:SetHeight(24)
-    self.windowFilterButtons = {}
-    local previousFilter
-    local filterDefs = { { "ALL", "ALL", 42 } }
-    for _, cat in ipairs(self.categoryOrder) do
-        filterDefs[#filterDefs + 1] = { cat, (self.categoryNames[cat] or cat):upper():sub(1, 8), 64 }
-    end
-    for _, filterDef in ipairs(filterDefs) do
-        local key, label, width = filterDef[1], filterDef[2], filterDef[3]
-        local btn = winCreateButton(filterBar, label, width, 22, function()
-            Achievements.windowCategory = key
-            Achievements:RefreshWindow()
-        end)
-        if previousFilter then btn:SetPoint("LEFT", previousFilter, "RIGHT", 3, 0)
-        else btn:SetPoint("LEFT", filterBar, "LEFT", 0, 0) end
-        self.windowFilterButtons[key] = btn
-        previousFilter = btn
+    -- Phase 2: three fixed, always-full-width cycle controls replace the
+    -- old one-button-per-category wall (which overhung this 480px window
+    -- once there were more than ~5 categories) -- left-click cycles
+    -- forward, right-click cycles back, same convention used in the drawer
+    -- panel above and ProgressHub.lua's settings button.
+    local categoryRow = CreateFrame("Frame", nil, frame, winTemplateName())
+    categoryRow:SetPoint("TOPLEFT", searchFrame, "BOTTOMLEFT", 8, -6)
+    categoryRow:SetPoint("TOPRIGHT", searchFrame, "BOTTOMRIGHT", -8, -6)
+    categoryRow:SetHeight(24)
+
+    local classRow = CreateFrame("Frame", nil, frame, winTemplateName())
+    classRow:SetPoint("TOPLEFT", categoryRow, "BOTTOMLEFT", 0, -4)
+    classRow:SetPoint("TOPRIGHT", categoryRow, "BOTTOMRIGHT", 0, -4)
+    classRow:SetHeight(24)
+
+    local statusRow = CreateFrame("Frame", nil, frame, winTemplateName())
+    statusRow:SetHeight(24)
+
+    local toggleRow = CreateFrame("Frame", nil, frame, winTemplateName())
+    toggleRow:SetHeight(22)
+
+    -- Re-anchors statusRow/toggleRow around whichever of categoryRow/
+    -- classRow is currently the last visible row, and shows/hides classRow
+    -- itself -- called at build time and whenever the category changes.
+    local function layoutFilterRows()
+        local classShown = Achievements.windowCategory == "CLASSES"
+        classRow:SetShown(classShown)
+        local statusAnchor = classShown and classRow or categoryRow
+        statusRow:ClearAllPoints()
+        statusRow:SetPoint("TOPLEFT", statusAnchor, "BOTTOMLEFT", 0, -4)
+        statusRow:SetPoint("TOPRIGHT", statusAnchor, "BOTTOMRIGHT", 0, -4)
+        toggleRow:ClearAllPoints()
+        toggleRow:SetPoint("TOPLEFT", statusRow, "BOTTOMLEFT", 0, -4)
+        toggleRow:SetPoint("TOPRIGHT", statusRow, "BOTTOMRIGHT", 0, -4)
     end
 
+    self.windowCategoryButton = winCreateButton(categoryRow, categoryLabel(self.windowCategory or "ALL"), 200, 24, function(_, mouseButton)
+        local previousCategory = Achievements.windowCategory
+        Achievements.windowCategory = cycleValue(categoryCycleOrder(), previousCategory, mouseButton == "RightButton" and -1 or 1)
+        Achievements.windowClassFilter = Achievements:ResolveClassFilterOnCategoryChange(previousCategory, Achievements.windowCategory, Achievements.windowClassFilter)
+        layoutFilterRows()
+        Achievements:RefreshWindow()
+    end)
+    self.windowCategoryButton:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    self.windowCategoryButton:SetPoint("TOPLEFT", categoryRow, "TOPLEFT", 0, 0)
+    self.windowCategoryButton:SetPoint("BOTTOMRIGHT", categoryRow, "BOTTOMRIGHT", 0, 0)
+
+    self.windowClassButton = winCreateButton(classRow, classLabel(self:GetPlayerClassToken(), self.windowClassFilter), 200, 24, function(_, mouseButton)
+        Achievements.windowClassFilter = cycleValue(classCycleOrder(), Achievements.windowClassFilter, mouseButton == "RightButton" and -1 or 1)
+        Achievements:RefreshWindow()
+    end)
+    self.windowClassButton:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    self.windowClassButton:SetPoint("TOPLEFT", classRow, "TOPLEFT", 0, 0)
+    self.windowClassButton:SetPoint("BOTTOMRIGHT", classRow, "BOTTOMRIGHT", 0, 0)
+
+    self.windowStatusButton = winCreateButton(statusRow, statusLabel(self.windowStatus or "ALL"), 200, 24, function(_, mouseButton)
+        Achievements.windowStatus = cycleValue({ "ALL", "UNLOCKED", "LOCKED" }, Achievements.windowStatus, mouseButton == "RightButton" and -1 or 1)
+        Achievements:RefreshWindow()
+    end)
+    self.windowStatusButton:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    self.windowStatusButton:SetPoint("TOPLEFT", statusRow, "TOPLEFT", 0, 0)
+    self.windowStatusButton:SetPoint("BOTTOMRIGHT", statusRow, "BOTTOMRIGHT", 0, 0)
+
     -- Enabled-modules-only toggle
-    local toggleRow = CreateFrame("Frame", nil, frame, winTemplateName())
-    toggleRow:SetPoint("TOPLEFT", filterBar, "BOTTOMLEFT", 0, -4)
-    toggleRow:SetPoint("TOPRIGHT", filterBar, "BOTTOMRIGHT", 0, -4)
-    toggleRow:SetHeight(22)
     self.windowEnabledToggle = winCreateButton(toggleRow, "ENABLED MODULES ONLY", 160, 20, function()
         Achievements.windowEnabledOnly = not Achievements.windowEnabledOnly
         Achievements:RefreshWindow()
     end)
     self.windowEnabledToggle:SetPoint("RIGHT", toggleRow, "RIGHT", 0, 0)
 
-    -- Scroll + one row per catalog entry (matches the existing drawer
-    -- panel's own approach -- built once here, never rebuilt on open).
-    local scroll = CreateFrame("ScrollFrame", nil, frame)
-    scroll:SetPoint("TOPLEFT", toggleRow, "BOTTOMLEFT", 0, -8)
-    scroll:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -8, 8)
-    scroll:EnableMouseWheel(true)
-    local content = CreateFrame("Frame", nil, scroll)
-    content:SetWidth(450)
-    content:SetHeight(620)
-    scroll:SetScrollChild(content)
-    scroll:SetScript("OnMouseWheel", function(selfScroll, delta)
-        local current = selfScroll:GetVerticalScroll() or 0
-        local maximum = selfScroll:GetVerticalScrollRange() or 0
-        selfScroll:SetVerticalScroll(max(0, min(maximum, current - delta * 42)))
+    layoutFilterRows()
+
+    -- Page bar (Prev/Next) -- same convention as CreshGames' Unlocks
+    -- catalogue -- replaces the old one-frame-per-catalog-entry scrolling
+    -- list, which also let long reward/progress text run past the row's
+    -- reserved right-hand corner.
+    local pageBar = CreateFrame("Frame", nil, frame, winTemplateName())
+    pageBar:SetPoint("TOPLEFT", toggleRow, "BOTTOMLEFT", 0, -8)
+    pageBar:SetPoint("TOPRIGHT", toggleRow, "BOTTOMRIGHT", 0, -8)
+    pageBar:SetHeight(22)
+    self.windowPrevButton = winCreateButton(pageBar, "<", 40, 22, function()
+        Achievements:GoToPage((Achievements.windowCurrentPage or 1) - 1)
     end)
+    self.windowPrevButton:SetPoint("LEFT", pageBar, "LEFT", 0, 0)
+    self.windowNextButton = winCreateButton(pageBar, ">", 40, 22, function()
+        Achievements:GoToPage((Achievements.windowCurrentPage or 1) + 1)
+    end)
+    self.windowNextButton:SetPoint("RIGHT", pageBar, "RIGHT", 0, 0)
+    self.windowPageText = winCreateText(pageBar, 9, colors.muted, "CENTER")
+    self.windowPageText:SetPoint("LEFT", self.windowPrevButton, "RIGHT", 4, 0)
+    self.windowPageText:SetPoint("RIGHT", self.windowNextButton, "LEFT", -4, 0)
+    self.windowPageText:SetPoint("TOP", pageBar, "TOP", 0, 0)
+    self.windowPageText:SetPoint("BOTTOM", pageBar, "BOTTOM", 0, 0)
+
+    -- Pooled rows: a fixed page's worth of frames, recycled across pages.
+    -- Title/detail/progress/reward each get their own full-width line so
+    -- long text can never run past the row's edge (the old design overlaid
+    -- progress/reward in a reserved top/bottom-right corner shared with
+    -- title/detail, which could overflow for longer strings).
+    local content = CreateFrame("Frame", nil, frame)
+    content:SetPoint("TOPLEFT", pageBar, "BOTTOMLEFT", 0, -8)
+    content:SetPoint("TOPRIGHT", pageBar, "BOTTOMRIGHT", 0, -8)
+    content:SetHeight(WINDOW_PAGE_SIZE * (WINDOW_ROW_HEIGHT + WINDOW_ROW_GAP))
     self.windowContent = content
 
-    self.windowRows = {}
-    for index, achievement in ipairs(self.catalog) do
+    self.windowPool = {}
+    for i = 1, WINDOW_PAGE_SIZE do
         local row = CreateFrame("Frame", nil, content, winTemplateName())
-        row:SetWidth(450)
-        row:SetHeight(52)
+        local rowY = -(i - 1) * (WINDOW_ROW_HEIGHT + WINDOW_ROW_GAP)
+        row:SetPoint("TOPLEFT", content, "TOPLEFT", 0, rowY)
+        row:SetPoint("TOPRIGHT", content, "TOPRIGHT", 0, rowY)
+        row:SetHeight(WINDOW_ROW_HEIGHT)
         winApplyBackdrop(row, colors.panelSoft, colors.border)
         row.title = winCreateText(row, 10, colors.text, "LEFT")
         row.title:SetPoint("TOPLEFT", row, "TOPLEFT", 8, -6)
         row.title:SetPoint("RIGHT", row, "RIGHT", -8, 0)
         row.detail = winCreateText(row, 8, colors.muted, "LEFT")
         row.detail:SetPoint("TOPLEFT", row.title, "BOTTOMLEFT", 0, -3)
-        row.detail:SetPoint("RIGHT", row, "RIGHT", -78, 0)
-        row.progress = winCreateText(row, 8, colors.muted, "RIGHT")
-        row.progress:SetPoint("TOPRIGHT", row, "TOPRIGHT", -7, -6)
+        row.detail:SetPoint("RIGHT", row, "RIGHT", -8, 0)
+        row.progress = winCreateText(row, 8, colors.muted, "LEFT")
+        row.progress:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 8, 6)
         row.reward = winCreateText(row, 8, colors.quest, "RIGHT")
-        row.reward:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -7, 6)
-        row.achievement = achievement
-        self.windowRows[index] = row
+        row.reward:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -8, 6)
+        row.achievement = nil
+        row:Hide()
+        self.windowPool[i] = row
     end
 
-    self.windowCategory = self.windowCategory or "ALL"
-    self.windowEnabledOnly = self.windowEnabledOnly or false
-    self.windowSearchText = self.windowSearchText or ""
+    self.windowCurrentPage = 1
     return frame
 end
 
@@ -1205,27 +1485,51 @@ function Achievements:RefreshWindow()
     local unlockedCount, total = self:GetCounts()
     self.windowSummary:SetText(unlockedCount .. " / " .. total .. " unlocked · " .. formatNumber(self:GetPoints()) .. " points")
 
-    for key, btn in pairs(self.windowFilterButtons or {}) do
-        winSetAccent(btn, self.windowCategory == key, colors)
-    end
+    local playerClassToken = self:GetPlayerClassToken()
+    if self.windowCategoryButton and self.windowCategoryButton.label then self.windowCategoryButton.label:SetText(categoryLabel(self.windowCategory)) end
+    if self.windowClassButton and self.windowClassButton.label then self.windowClassButton.label:SetText(classLabel(playerClassToken, self.windowClassFilter)) end
+    if self.windowStatusButton and self.windowStatusButton.label then self.windowStatusButton.label:SetText(statusLabel(self.windowStatus)) end
     winSetAccent(self.windowEnabledToggle, self.windowEnabledOnly, colors)
 
-    local filter = lower(tostring(self.windowSearchText or ""))
-    local y = 0
-    for _, row in ipairs(self.windowRows or {}) do
-        local achievement = row.achievement
-        local missingAddon = achievementMissingAddon(achievement)
-        local categoryMatch = self.windowCategory == "ALL" or self.windowCategory == achievement.category
-        local enabledMatch = not self.windowEnabledOnly or (isCategoryEnabled(achievement.category) and not missingAddon)
-        local haystack = lower(table.concat({ achievement.title, achievement.description, self.categoryNames[achievement.category] or achievement.category }, " "))
-        local searchMatch = filter == "" or string.find(haystack, filter, 1, true)
-        if categoryMatch and enabledMatch and searchMatch then
-            row:ClearAllPoints()
-            row:SetPoint("TOPLEFT", self.windowContent, "TOPLEFT", 0, -y)
-            row:SetPoint("TOPRIGHT", self.windowContent, "TOPRIGHT", 0, -y)
-            y = y + 58
+    local state = {
+        search = self.windowSearchText, category = self.windowCategory, classFilter = self.windowClassFilter,
+        status = self.windowStatus, enabledOnly = self.windowEnabledOnly,
+    }
+    local filtered = {}
+    for _, achievement in ipairs(self.catalog) do
+        if self:MatchesFilter(achievement, save, state, playerClassToken) then
+            filtered[#filtered + 1] = achievement
+        end
+    end
+    self.windowFilteredList = filtered
+    self.windowCurrentPage = 1
+    self:UpdateWindowPage()
+end
+
+-- Repopulates only the current page's pooled rows from self.windowFilteredList
+-- (built by RefreshWindow). Kept separate from RefreshWindow so Prev/Next
+-- (GoToPage) can flip pages without re-running EvaluateAll/MatchesFilter
+-- over the whole catalog on every click.
+function Achievements:UpdateWindowPage()
+    local list = self.windowFilteredList
+    local pool = self.windowPool
+    if not list or not pool then return end
+    local colors = winPalette()
+    local save = self:Ensure()
+    if not save then return end
+
+    local totalPages = max(1, ceil(#list / WINDOW_PAGE_SIZE))
+    self.windowCurrentPage = max(1, min(totalPages, self.windowCurrentPage or 1))
+    local firstIdx = (self.windowCurrentPage - 1) * WINDOW_PAGE_SIZE
+
+    for poolI = 1, WINDOW_PAGE_SIZE do
+        local achievement = list[firstIdx + poolI]
+        local row = pool[poolI]
+        if achievement then
+            row.achievement = achievement
             local value = self:GetStat(achievement.stat)
             local complete = save.unlocked[achievement.key] ~= nil
+            local missingAddon = achievementMissingAddon(achievement)
             local disabled = missingAddon ~= nil or not isCategoryEnabled(achievement.category)
             local label = (complete and "✓ " or "") .. achievement.title .. "  ·  TIER " .. tostring(achievement.tier)
                 .. "  ·  " .. (self.categoryNames[achievement.category] or achievement.category)
@@ -1238,17 +1542,38 @@ function Achievements:RefreshWindow()
             row.detail:SetText(achievement.description)
             row.progress:SetText(complete and "UNLOCKED" or (formatNumber(min(value, achievement.goal)) .. "/" .. formatNumber(achievement.goal)))
             row.reward:SetText("+" .. achievement.coins .. " coins · +" .. achievement.xp .. " XP")
-            winApplyBackdrop(row, complete and winDarken(colors.green, 0.58) or colors.panelSoft, complete and colors.green or colors.border)
-            if disabled and not complete then
-                row.title:SetTextColor(colors.muted[1], colors.muted[2], colors.muted[3], 1)
+            local rowState = complete and "UNLOCKED" or (disabled and "LOCKED" or "AVAILABLE")
+            local sc = _G.CreshSuiteUI and _G.CreshSuiteUI:GetStateColor(rowState, colors)
+            if sc then
+                winApplyBackdrop(row, sc.bg, sc.border)
+                row.title:SetTextColor(sc.text[1], sc.text[2], sc.text[3], 1)
+                row:SetAlpha(sc.alpha or 1)
             else
-                row.title:SetTextColor(complete and colors.green[1] or colors.text[1], complete and colors.green[2] or colors.text[2], complete and colors.green[3] or colors.text[3], 1)
+                winApplyBackdrop(row, colors.panelSoft, colors.border) -- cheap insurance, not an expected path
             end
-            row:SetAlpha(disabled and not complete and 0.55 or 1)
             row:Show()
         else
+            row.achievement = nil
             row:Hide()
         end
     end
-    self.windowContent:SetHeight(max(1, y))
+
+    if self.windowPageText then self.windowPageText:SetText("Page " .. self.windowCurrentPage .. " / " .. totalPages) end
+    if self.windowPrevButton then
+        local enabled = self.windowCurrentPage > 1
+        self.windowPrevButton:SetAlpha(enabled and 1 or 0.4)
+        self.windowPrevButton.creshDisabled = not enabled
+    end
+    if self.windowNextButton then
+        local enabled = self.windowCurrentPage < totalPages
+        self.windowNextButton:SetAlpha(enabled and 1 or 0.4)
+        self.windowNextButton.creshDisabled = not enabled
+    end
+end
+
+function Achievements:GoToPage(pageIndex)
+    if not self.windowFilteredList then return end
+    local totalPages = max(1, ceil(#self.windowFilteredList / WINDOW_PAGE_SIZE))
+    self.windowCurrentPage = max(1, min(totalPages, floor(tonumber(pageIndex) or 1)))
+    self:UpdateWindowPage()
 end
